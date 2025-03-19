@@ -21,14 +21,22 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border/40 h-16 px-6 flex items-center justify-between bg-background/80 backdrop-blur-sm">
         <div className="flex items-center space-x-4">
-          {/* Logo 1 placeholder */}
-          <div className="h-10 w-24 bg-gray-200 flex items-center justify-center rounded">
-            <span className="text-xs text-gray-500">Logo 1</span>
+          {/* Logo iPlan */}
+          <div className="h-10">
+            <img 
+              src="/lovable-uploads/0ceff2cd-db6e-45af-93ff-b54176c93864.png" 
+              alt="iPlan Logo" 
+              className="h-full object-contain"
+            />
           </div>
           
-          {/* Logo 2 placeholder */}
-          <div className="h-10 w-24 bg-gray-200 flex items-center justify-center rounded">
-            <span className="text-xs text-gray-500">Logo 2</span>
+          {/* Logo Transporte Público de Galicia */}
+          <div className="h-10">
+            <img 
+              src="/lovable-uploads/8612bd3a-aae6-4470-9f8c-90f0a60578c0.png" 
+              alt="Transporte Público de Galicia Logo" 
+              className="h-full object-contain"
+            />
           </div>
           
           <div className="ml-4 flex items-center">
