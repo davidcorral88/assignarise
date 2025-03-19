@@ -447,7 +447,5 @@ export {
   mockTimeEntries,
   mockHolidays,
   mockVacationDays,
-  mockWorkSchedule,
-  getTasksByUserId,
-  getTimeEntriesByUserId
+  mockWorkSchedule
 };
