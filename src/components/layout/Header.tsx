@@ -10,7 +10,8 @@ import {
   LogOut, 
   User,
   Menu,
-  X
+  X,
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,6 +73,12 @@ export const Header: React.FC = () => {
       icon: <Clock className="mr-2 h-4 w-4" />,
       label: 'Rexistro de Horas',
       show: currentUser?.role === 'worker'
+    },
+    {
+      to: '/settings',
+      icon: <Settings className="mr-2 h-4 w-4" />,
+      label: 'Configuración',
+      show: true
     }
   ];
 
