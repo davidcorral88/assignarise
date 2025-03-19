@@ -8,190 +8,264 @@ import {
   DailyHoursData,
 } from './types';
 
+// Datos iniciales para usuarios
+const initialUsers: User[] = [
+  {
+    id: 'user_1',
+    name: 'Ana Pereira',
+    email: 'ana.pereira@example.com',
+    role: 'manager',
+    avatar: 'https://ui-avatars.com/api/?name=Ana+Pereira&background=0D8ABC&color=fff',
+  },
+  {
+    id: 'user_2',
+    name: 'Carlos Silva',
+    email: 'carlos.silva@example.com',
+    role: 'worker',
+    avatar: 'https://ui-avatars.com/api/?name=Carlos+Silva&background=0D8ABC&color=fff',
+  },
+  {
+    id: 'user_3',
+    name: 'Mariana Costa',
+    email: 'mariana.costa@example.com',
+    role: 'worker',
+    avatar: 'https://ui-avatars.com/api/?name=Mariana+Costa&background=0D8ABC&color=fff',
+  },
+];
+
+// Datos iniciales para tareas
+const initialTasks: Task[] = [
+  {
+    id: 'task_1',
+    title: 'Desenvolver interface de usuario',
+    description: 'Implementar a interface de usuario para a nova aplicación web.',
+    status: 'in_progress',
+    createdBy: 'user_1',
+    createdAt: '2024-01-20T10:00:00Z',
+    startDate: '2024-01-22',
+    dueDate: '2024-02-15',
+    assignments: [
+      { userId: 'user_2', allocatedHours: 40 },
+    ],
+    priority: 'high',
+    tags: ['frontend', 'react'],
+    category: 'Desenvolvemento',
+    project: 'Novo Produto',
+  },
+  {
+    id: 'task_2',
+    title: 'Crear API de autenticación',
+    description: 'Desenvolver unha API segura para autenticación de usuarios.',
+    status: 'completed',
+    createdBy: 'user_1',
+    createdAt: '2024-01-25T14:00:00Z',
+    startDate: '2024-01-28',
+    dueDate: '2024-02-05',
+    assignments: [
+      { userId: 'user_2', allocatedHours: 20 },
+      { userId: 'user_3', allocatedHours: 20 },
+    ],
+    priority: 'medium',
+    tags: ['backend', 'api', 'authentication'],
+    category: 'Desenvolvemento',
+    project: 'Plataforma Principal',
+  },
+  {
+    id: 'task_3',
+    title: 'Redactar documentación técnica',
+    description: 'Elaborar documentación técnica detallada para a nova API.',
+    status: 'pending',
+    createdBy: 'user_1',
+    createdAt: '2024-02-01T09:00:00Z',
+    startDate: '2024-02-05',
+    dueDate: '2024-02-28',
+    assignments: [
+      { userId: 'user_3', allocatedHours: 30 },
+    ],
+    priority: 'low',
+    tags: ['documentation', 'api'],
+    category: 'Documentación',
+    project: 'Plataforma Principal',
+  },
+  {
+    id: 'task_4',
+    title: 'Testes de usabilidade da interface',
+    description: 'Realizar testes de usabilidade para identificar melloras na interface.',
+    status: 'in_progress',
+    createdBy: 'user_1',
+    createdAt: '2024-02-05T11:00:00Z',
+    startDate: '2024-02-08',
+    dueDate: '2024-02-22',
+    assignments: [
+      { userId: 'user_2', allocatedHours: 25 },
+    ],
+    priority: 'medium',
+    tags: ['usability', 'testing', 'frontend'],
+    category: 'Testes',
+    project: 'Novo Produto',
+  },
+  {
+    id: 'task_5',
+    title: 'Optimización de base de datos',
+    description: 'Mellorar o rendemento da base de datos para consultas máis rápidas.',
+    status: 'pending',
+    createdBy: 'user_1',
+    createdAt: '2024-02-10T15:00:00Z',
+    startDate: '2024-02-15',
+    dueDate: '2024-03-10',
+    assignments: [
+      { userId: 'user_3', allocatedHours: 35 },
+    ],
+    priority: 'high',
+    tags: ['database', 'optimization', 'backend'],
+    category: 'Infraestrutura',
+    project: 'Plataforma Principal',
+  },
+];
+
+// Datos iniciales para registros de tiempo
+const initialTimeEntries: TimeEntry[] = [
+  {
+    id: 'time_1',
+    taskId: 'task_1',
+    userId: 'user_2',
+    hours: 7.5,
+    date: '2024-02-01',
+    notes: 'Traballando na estrutura principal da interface.',
+    category: 'Desenvolvemento',
+    project: 'Novo Produto',
+    activity: 'Implementación',
+    timeFormat: '07:30',
+  },
+  {
+    id: 'time_2',
+    taskId: 'task_1',
+    userId: 'user_2',
+    hours: 8,
+    date: '2024-02-02',
+    notes: 'Axustes de deseño e probas de responsividade.',
+    category: 'Desenvolvemento',
+    project: 'Novo Produto',
+    activity: 'Testes',
+    timeFormat: '08:00',
+  },
+  {
+    id: 'time_3',
+    taskId: 'task_2',
+    userId: 'user_2',
+    hours: 6,
+    date: '2024-02-01',
+    notes: 'Creación de endpoints para autenticación.',
+    category: 'Desenvolvemento',
+    project: 'Plataforma Principal',
+    activity: 'Implementación',
+    timeFormat: '06:00',
+  },
+  {
+    id: 'time_4',
+    taskId: 'task_2',
+    userId: 'user_3',
+    hours: 6.5,
+    date: '2024-02-02',
+    notes: 'Implementación de middleware de seguridade.',
+    category: 'Desenvolvemento',
+    project: 'Plataforma Principal',
+    activity: 'Seguridade',
+    timeFormat: '06:30',
+  },
+  {
+    id: 'time_5',
+    taskId: 'task_4',
+    userId: 'user_2',
+    hours: 5,
+    date: '2024-02-08',
+    notes: 'Recollida de feedback inicial dos usuarios.',
+    category: 'Testes',
+    project: 'Novo Produto',
+    activity: 'Testes de Usabilidade',
+    timeFormat: '05:00',
+  },
+];
+
+// Datos iniciales para festivos
+const initialHolidays: Holiday[] = [
+  { date: '2024-01-01', name: 'Ano Novo' },
+  { date: '2024-01-06', name: 'Día de Reis' },
+  { date: '2024-04-19', name: 'Venres Santo' },
+  { date: '2024-05-01', name: 'Día do Traballo' },
+  { date: '2024-05-17', name: 'Día das Letras Galegas' },
+  { date: '2024-07-25', name: 'Día de Santiago' },
+  { date: '2024-08-15', name: 'Asunción da Virxe' },
+  { date: '2024-10-12', name: 'Día da Hispanidade' },
+  { date: '2024-11-01', name: 'Día de Todos os Santos' },
+  { date: '2024-12-06', name: 'Día da Constitución' },
+  { date: '2024-12-08', name: 'Inmaculada Concepción' },
+  { date: '2024-12-25', name: 'Nadal' },
+];
+
+// Datos iniciales para vacaciones
+const initialVacationDays: VacationDay[] = [
+  { userId: 'user_2', date: '2024-08-01', type: 'vacation' },
+  { userId: 'user_2', date: '2024-08-02', type: 'vacation' },
+  { userId: 'user_2', date: '2024-08-05', type: 'vacation' },
+  { userId: 'user_2', date: '2024-08-06', type: 'vacation' },
+  { userId: 'user_2', date: '2024-08-07', type: 'vacation' },
+  { userId: 'user_3', date: '2024-07-15', type: 'vacation' },
+  { userId: 'user_3', date: '2024-07-16', type: 'vacation' },
+  { userId: 'user_3', date: '2024-07-17', type: 'vacation' },
+  { userId: 'user_3', date: '2024-07-18', type: 'vacation' },
+  { userId: 'user_3', date: '2024-07-19', type: 'vacation' },
+  { userId: 'user_3', date: '2024-03-10', type: 'sick_leave' },
+  { userId: 'user_3', date: '2024-03-11', type: 'sick_leave' },
+  { userId: 'user_3', date: '2024-03-12', type: 'sick_leave' },
+];
+
+// Configuración inicial del horario de trabajo
+const initialWorkSchedule: WorkSchedule = {
+  regularHours: {
+    mondayToThursday: 8.5,
+    friday: 6,
+  },
+  reducedHours: {
+    dailyHours: 7,
+  },
+  reducedPeriods: [
+    {
+      start: '07-01', // July 1st
+      end: '08-31', // August 31st
+    },
+  ],
+};
+
 // Mock data for users
 let mockUsers: User[] = localStorage.getItem('mockUsers')
   ? JSON.parse(localStorage.getItem('mockUsers') as string)
-  : [
-      {
-        id: 'user_1',
-        name: 'Ana Pereira',
-        email: 'ana.pereira@example.com',
-        role: 'manager',
-        avatar: 'https://ui-avatars.com/api/?name=Ana+Pereira&background=0D8ABC&color=fff',
-      },
-      {
-        id: 'user_2',
-        name: 'Carlos Silva',
-        email: 'carlos.silva@example.com',
-        role: 'worker',
-        avatar: 'https://ui-avatars.com/api/?name=Carlos+Silva&background=0D8ABC&color=fff',
-      },
-      {
-        id: 'user_3',
-        name: 'Mariana Costa',
-        email: 'mariana.costa@example.com',
-        role: 'worker',
-        avatar: 'https://ui-avatars.com/api/?name=Mariana+Costa&background=0D8ABC&color=fff',
-      },
-    ];
+  : initialUsers;
 
 // Mock data for tasks
 let mockTasks: Task[] = localStorage.getItem('mockTasks')
   ? JSON.parse(localStorage.getItem('mockTasks') as string)
-  : [
-      {
-        id: 'task_1',
-        title: 'Desenvolver interface de usuario',
-        description: 'Implementar a interface de usuario para a nova aplicación web.',
-        status: 'in_progress',
-        createdBy: 'user_1',
-        createdAt: '2024-01-20T10:00:00Z',
-        startDate: '2024-01-22',
-        dueDate: '2024-02-15',
-        assignments: [
-          { userId: 'user_2', allocatedHours: 40 },
-        ],
-        priority: 'high',
-        tags: ['frontend', 'react'],
-        category: 'Desenvolvemento',
-        project: 'Novo Produto',
-      },
-      {
-        id: 'task_2',
-        title: 'Crear API de autenticación',
-        description: 'Desenvolver unha API segura para autenticación de usuarios.',
-        status: 'completed',
-        createdBy: 'user_1',
-        createdAt: '2024-01-25T14:00:00Z',
-        startDate: '2024-01-28',
-        dueDate: '2024-02-05',
-        assignments: [
-          { userId: 'user_2', allocatedHours: 20 },
-          { userId: 'user_3', allocatedHours: 20 },
-        ],
-        priority: 'medium',
-        tags: ['backend', 'api', 'authentication'],
-        category: 'Desenvolvemento',
-        project: 'Plataforma Principal',
-      },
-      {
-        id: 'task_3',
-        title: 'Redactar documentación técnica',
-        description: 'Elaborar documentación técnica detallada para a nova API.',
-        status: 'pending',
-        createdBy: 'user_1',
-        createdAt: '2024-02-01T09:00:00Z',
-        startDate: '2024-02-05',
-        dueDate: '2024-02-28',
-        assignments: [
-          { userId: 'user_3', allocatedHours: 30 },
-        ],
-        priority: 'low',
-        tags: ['documentation', 'api'],
-        category: 'Documentación',
-        project: 'Plataforma Principal',
-      },
-      {
-        id: 'task_4',
-        title: 'Testes de usabilidade da interface',
-        description: 'Realizar testes de usabilidade para identificar melloras na interface.',
-        status: 'in_progress',
-        createdBy: 'user_1',
-        createdAt: '2024-02-05T11:00:00Z',
-        startDate: '2024-02-08',
-        dueDate: '2024-02-22',
-        assignments: [
-          { userId: 'user_2', allocatedHours: 25 },
-        ],
-        priority: 'medium',
-        tags: ['usability', 'testing', 'frontend'],
-        category: 'Testes',
-        project: 'Novo Produto',
-      },
-      {
-        id: 'task_5',
-        title: 'Optimización de base de datos',
-        description: 'Mellorar o rendemento da base de datos para consultas máis rápidas.',
-        status: 'pending',
-        createdBy: 'user_1',
-        createdAt: '2024-02-10T15:00:00Z',
-        startDate: '2024-02-15',
-        dueDate: '2024-03-10',
-        assignments: [
-          { userId: 'user_3', allocatedHours: 35 },
-        ],
-        priority: 'high',
-        tags: ['database', 'optimization', 'backend'],
-        category: 'Infraestrutura',
-        project: 'Plataforma Principal',
-      },
-    ];
+  : initialTasks;
 
 // Mock data for time entries
 let mockTimeEntries: TimeEntry[] = localStorage.getItem('mockTimeEntries')
   ? JSON.parse(localStorage.getItem('mockTimeEntries') as string)
-  : [
-      {
-        id: 'time_1',
-        taskId: 'task_1',
-        userId: 'user_2',
-        hours: 7.5,
-        date: '2024-02-01',
-        notes: 'Traballando na estrutura principal da interface.',
-        category: 'Desenvolvemento',
-        project: 'Novo Produto',
-        activity: 'Implementación',
-        timeFormat: '07:30',
-      },
-      {
-        id: 'time_2',
-        taskId: 'task_1',
-        userId: 'user_2',
-        hours: 8,
-        date: '2024-02-02',
-        notes: 'Axustes de deseño e probas de responsividade.',
-        category: 'Desenvolvemento',
-        project: 'Novo Produto',
-        activity: 'Testes',
-        timeFormat: '08:00',
-      },
-      {
-        id: 'time_3',
-        taskId: 'task_2',
-        userId: 'user_2',
-        hours: 6,
-        date: '2024-02-01',
-        notes: 'Creación de endpoints para autenticación.',
-        category: 'Desenvolvemento',
-        project: 'Plataforma Principal',
-        activity: 'Implementación',
-        timeFormat: '06:00',
-      },
-      {
-        id: 'time_4',
-        taskId: 'task_2',
-        userId: 'user_3',
-        hours: 6.5,
-        date: '2024-02-02',
-        notes: 'Implementación de middleware de seguridade.',
-        category: 'Desenvolvemento',
-        project: 'Plataforma Principal',
-        activity: 'Seguridade',
-        timeFormat: '06:30',
-      },
-      {
-        id: 'time_5',
-        taskId: 'task_4',
-        userId: 'user_2',
-        hours: 5,
-        date: '2024-02-08',
-        notes: 'Recollida de feedback inicial dos usuarios.',
-        category: 'Testes',
-        project: 'Novo Produto',
-        activity: 'Testes de Usabilidade',
-        timeFormat: '05:00',
-      },
-    ];
+  : initialTimeEntries;
+
+// Holidays
+let mockHolidays: Holiday[] = localStorage.getItem('mockHolidays')
+  ? JSON.parse(localStorage.getItem('mockHolidays') as string)
+  : initialHolidays;
+
+// Vacation and sick leave days
+let mockVacationDays: VacationDay[] = localStorage.getItem('mockVacationDays')
+  ? JSON.parse(localStorage.getItem('mockVacationDays') as string)
+  : initialVacationDays;
+
+// Work schedule configuration
+let mockWorkSchedule: WorkSchedule = localStorage.getItem('mockWorkSchedule')
+  ? JSON.parse(localStorage.getItem('mockWorkSchedule') as string)
+  : initialWorkSchedule;
 
 // Save mock data to localStorage
 const saveUsers = () => {
@@ -204,6 +278,46 @@ const saveTasks = () => {
 
 const saveTimeEntries = () => {
   localStorage.setItem('mockTimeEntries', JSON.stringify(mockTimeEntries));
+};
+
+// Save updated mock data to localStorage
+const saveHolidays = () => {
+  localStorage.setItem('mockHolidays', JSON.stringify(mockHolidays));
+};
+
+const saveVacationDays = () => {
+  localStorage.setItem('mockVacationDays', JSON.stringify(mockVacationDays));
+};
+
+const saveWorkSchedule = () => {
+  localStorage.setItem('mockWorkSchedule', JSON.stringify(mockWorkSchedule));
+};
+
+// Función para restablecer la base de datos
+export const resetDatabase = () => {
+  mockUsers = [...initialUsers];
+  mockTasks = [...initialTasks];
+  mockTimeEntries = [...initialTimeEntries];
+  mockHolidays = [...initialHolidays];
+  mockVacationDays = [...initialVacationDays];
+  mockWorkSchedule = {...initialWorkSchedule};
+  
+  saveUsers();
+  saveTasks();
+  saveTimeEntries();
+  saveHolidays();
+  saveVacationDays();
+  saveWorkSchedule();
+  
+  // Si el usuario actual no existe después del restablecimiento, también limpiamos la sesión
+  const currentUser = localStorage.getItem('currentUser');
+  if (currentUser) {
+    const user = JSON.parse(currentUser);
+    const userExists = mockUsers.some(u => u.id === user.id);
+    if (!userExists) {
+      localStorage.removeItem('currentUser');
+    }
+  }
 };
 
 // User functions
@@ -293,77 +407,6 @@ export const getNextTaskId = (): number => {
   const taskIds = mockTasks.map(task => parseInt(task.id.replace('task_', '')));
   const maxId = Math.max(...taskIds, 0);
   return maxId + 1;
-};
-
-// Holidays
-let mockHolidays: Holiday[] = localStorage.getItem('mockHolidays')
-  ? JSON.parse(localStorage.getItem('mockHolidays') as string)
-  : [
-      { date: '2024-01-01', name: 'Ano Novo' },
-      { date: '2024-01-06', name: 'Día de Reis' },
-      { date: '2024-04-19', name: 'Venres Santo' },
-      { date: '2024-05-01', name: 'Día do Traballo' },
-      { date: '2024-05-17', name: 'Día das Letras Galegas' },
-      { date: '2024-07-25', name: 'Día de Santiago' },
-      { date: '2024-08-15', name: 'Asunción da Virxe' },
-      { date: '2024-10-12', name: 'Día da Hispanidade' },
-      { date: '2024-11-01', name: 'Día de Todos os Santos' },
-      { date: '2024-12-06', name: 'Día da Constitución' },
-      { date: '2024-12-08', name: 'Inmaculada Concepción' },
-      { date: '2024-12-25', name: 'Nadal' },
-    ];
-
-// Vacation and sick leave days
-let mockVacationDays: VacationDay[] = localStorage.getItem('mockVacationDays')
-  ? JSON.parse(localStorage.getItem('mockVacationDays') as string)
-  : [
-      { userId: 'user_2', date: '2024-08-01', type: 'vacation' },
-      { userId: 'user_2', date: '2024-08-02', type: 'vacation' },
-      { userId: 'user_2', date: '2024-08-05', type: 'vacation' },
-      { userId: 'user_2', date: '2024-08-06', type: 'vacation' },
-      { userId: 'user_2', date: '2024-08-07', type: 'vacation' },
-      { userId: 'user_3', date: '2024-07-15', type: 'vacation' },
-      { userId: 'user_3', date: '2024-07-16', type: 'vacation' },
-      { userId: 'user_3', date: '2024-07-17', type: 'vacation' },
-      { userId: 'user_3', date: '2024-07-18', type: 'vacation' },
-      { userId: 'user_3', date: '2024-07-19', type: 'vacation' },
-      { userId: 'user_3', date: '2024-03-10', type: 'sick_leave' },
-      { userId: 'user_3', date: '2024-03-11', type: 'sick_leave' },
-      { userId: 'user_3', date: '2024-03-12', type: 'sick_leave' },
-    ];
-
-// Work schedule configuration
-const defaultWorkSchedule: WorkSchedule = {
-  regularHours: {
-    mondayToThursday: 8.5,
-    friday: 6,
-  },
-  reducedHours: {
-    dailyHours: 7,
-  },
-  reducedPeriods: [
-    {
-      start: '07-01', // July 1st
-      end: '08-31', // August 31st
-    },
-  ],
-};
-
-let mockWorkSchedule: WorkSchedule = localStorage.getItem('mockWorkSchedule')
-  ? JSON.parse(localStorage.getItem('mockWorkSchedule') as string)
-  : defaultWorkSchedule;
-
-// Save updated mock data to localStorage
-const saveHolidays = () => {
-  localStorage.setItem('mockHolidays', JSON.stringify(mockHolidays));
-};
-
-const saveVacationDays = () => {
-  localStorage.setItem('mockVacationDays', JSON.stringify(mockVacationDays));
-};
-
-const saveWorkSchedule = () => {
-  localStorage.setItem('mockWorkSchedule', JSON.stringify(mockWorkSchedule));
 };
 
 // Holiday functions
