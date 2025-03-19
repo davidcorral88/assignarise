@@ -5,6 +5,7 @@ import {
   Holiday,
   VacationDay,
   WorkSchedule,
+  DailyHoursData,
 } from './types';
 
 // Mock data for users
@@ -258,6 +259,14 @@ export const getTimeEntryById = (id: string): TimeEntry | undefined => {
   return mockTimeEntries.find((entry) => entry.id === id);
 };
 
+export const getTimeEntriesByUserId = (userId: string): TimeEntry[] => {
+  return mockTimeEntries.filter((entry) => entry.userId === userId);
+};
+
+export const getTimeEntriesByTaskId = (taskId: string): TimeEntry[] => {
+  return mockTimeEntries.filter((entry) => entry.taskId === taskId);
+};
+
 export const addTimeEntryOld = (entry: TimeEntry): void => {
   mockTimeEntries.push(entry);
   saveTimeEntries();
@@ -268,8 +277,22 @@ export const updateTimeEntry = (entry: TimeEntry): void => {
   saveTimeEntries();
 };
 
-export const getTimeEntriesByUserId = (userId: string): TimeEntry[] => {
-  return mockTimeEntries.filter((entry) => entry.userId === userId);
+// Additional task and time entry helper functions
+export const getTotalHoursByTask = (taskId: string): number => {
+  return getTimeEntriesByTaskId(taskId).reduce((sum, entry) => sum + entry.hours, 0);
+};
+
+export const getTotalHoursAllocatedByTask = (taskId: string): number => {
+  const task = getTaskById(taskId);
+  if (!task) return 0;
+  
+  return task.assignments.reduce((sum, assignment) => sum + assignment.allocatedHours, 0);
+};
+
+export const getNextTaskId = (): number => {
+  const taskIds = mockTasks.map(task => parseInt(task.id.replace('task_', '')));
+  const maxId = Math.max(...taskIds, 0);
+  return maxId + 1;
 };
 
 // Holidays
@@ -417,16 +440,14 @@ export const addTimeEntry = (entry: TimeEntry): void => {
   saveTimeEntries();
 };
 
-// Add more functions as needed
-
-// Now add to existing export
+// Export mock data for direct access
 export {
   mockUsers,
   mockTasks,
   mockTimeEntries,
-  getTasksByUserId,
-  getTimeEntriesByUserId,
   mockHolidays,
   mockVacationDays,
-  mockWorkSchedule
+  mockWorkSchedule,
+  getTasksByUserId,
+  getTimeEntriesByUserId
 };

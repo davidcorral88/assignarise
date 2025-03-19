@@ -174,14 +174,13 @@ const UserVacations = () => {
                     sickLeave: 'bg-amber-100 text-amber-800 hover:bg-amber-200'
                   }}
                   components={{
-                    DayContent: (props) => (
+                    DayContent: ({ date }) => (
                       <div
                         className={cn(
-                          'relative flex h-8 w-8 items-center justify-center p-0',
-                          props.selected && 'text-white'
+                          'relative flex h-8 w-8 items-center justify-center p-0'
                         )}
                       >
-                        {props.date.getDate()}
+                        {date.getDate()}
                       </div>
                     )
                   }}
