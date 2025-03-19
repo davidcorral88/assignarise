@@ -225,7 +225,7 @@ const TimeTracking = () => {
                           )}
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {date ? format(date, "d MMMM yyyy") : <span>Seleccionar data</span>}
+                          {date ? format(date, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">

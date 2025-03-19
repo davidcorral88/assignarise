@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -310,7 +309,7 @@ const TaskForm = () => {
                           )}
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {startDate ? format(startDate, "d MMMM yyyy") : <span>Seleccionar data</span>}
+                          {startDate ? format(startDate, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
@@ -538,7 +537,7 @@ const TaskForm = () => {
                           )}
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {dueDate ? format(dueDate, "d MMMM yyyy") : <span>Seleccionar data</span>}
+                          {dueDate ? format(dueDate, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
