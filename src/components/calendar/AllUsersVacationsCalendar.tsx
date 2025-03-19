@@ -4,7 +4,8 @@ import {
   Card, 
   CardContent,
   CardHeader,
-  CardTitle
+  CardTitle,
+  CardDescription
 } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { 
@@ -24,6 +25,7 @@ import { User, Holiday, VacationDay } from '@/utils/types';
 import { format } from 'date-fns';
 import UserVacationsCalendar from './UserVacationsCalendar';
 import { Label } from '@/components/ui/label';
+import { Badge } from "@/components/ui/badge";
 
 const AllUsersVacationsCalendar: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -65,6 +67,13 @@ const AllUsersVacationsCalendar: React.FC = () => {
             <CardTitle>
               Vacacións e baixas de {users.find(u => u.id === selectedUserId)?.name}
             </CardTitle>
+            <CardDescription>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge variant="outline" className="bg-green-100">Vacacións</Badge>
+                <Badge variant="outline" className="bg-amber-100">Baixa</Badge>
+                <Badge variant="outline" className="bg-blue-100">Festivo</Badge>
+              </div>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <UserVacationsCalendar userId={selectedUserId} />
