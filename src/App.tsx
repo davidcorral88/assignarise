@@ -17,6 +17,7 @@ import TimeTracking from "./pages/TimeTracking";
 import CalendarView from "./pages/CalendarView";
 import WorkScheduleConfig from "./pages/WorkScheduleConfig";
 import UserVacations from "./pages/UserVacations";
+import UserConfig from "./pages/UserConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/calendar" element={<CalendarView />} />
             <Route path="/work-schedule" element={<WorkScheduleConfig />} />
             <Route path="/vacations" element={<UserVacations />} />
+            <Route path="/config" element={<UserConfig />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
