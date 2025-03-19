@@ -44,7 +44,9 @@ import {
   mockTasks, 
   mockUsers, 
   getTaskById,
-  getNextTaskId
+  getNextTaskId,
+  addTask,
+  updateTask
 } from '../utils/mockData';
 import { Task, User, TaskAssignment } from '../utils/types';
 import { format } from 'date-fns';
@@ -110,31 +112,36 @@ const TaskForm = () => {
     
     setSubmitting(true);
     
-    // Simulate API call
+    // Prepare the task object
+    const task: Task = {
+      id: String(taskId),
+      title: tarefa,
+      description,
+      status: status as 'pending' | 'in_progress' | 'completed',
+      priority: priority as 'low' | 'medium' | 'high',
+      createdBy: currentUser?.id || '',
+      createdAt: isEditing ? getTaskById(id!)?.createdAt || new Date().toISOString() : new Date().toISOString(),
+      startDate: startDate ? startDate.toISOString() : new Date().toISOString(),
+      dueDate: dueDate ? dueDate.toISOString() : undefined,
+      tags,
+      assignments,
+    };
+    
+    // Save the task
+    if (isEditing) {
+      updateTask(task);
+    } else {
+      addTask(task);
+    }
+    
+    toast({
+      title: isEditing ? 'Tarefa actualizada' : 'Tarefa creada',
+      description: isEditing ? 'A tarefa foi actualizada correctamente.' : 'A tarefa foi creada correctamente.',
+    });
+    
+    // Navigate back to tasks list
     setTimeout(() => {
-      // In a real app, this would be an API call to save the task
-      const task: Task = {
-        id: String(taskId),
-        title: tarefa,
-        description,
-        status: status as 'pending' | 'in_progress' | 'completed',
-        priority: priority as 'low' | 'medium' | 'high',
-        createdBy: currentUser?.id || '',
-        createdAt: isEditing ? getTaskById(id!)?.createdAt || new Date().toISOString() : new Date().toISOString(),
-        startDate: startDate ? startDate.toISOString() : new Date().toISOString(),
-        dueDate: dueDate ? dueDate.toISOString() : undefined,
-        tags,
-        assignments,
-      };
-      
-      toast({
-        title: isEditing ? 'Tarefa actualizada' : 'Tarefa creada',
-        description: isEditing ? 'A tarefa foi actualizada correctamente.' : 'A tarefa foi creada correctamente.',
-      });
-      
-      // Navigate back to tasks list
       navigate('/tasks');
-      
       setSubmitting(false);
     }, 800);
   };
@@ -348,6 +355,7 @@ const TaskForm = () => {
                 </CardContent>
               </Card>
               
+              {/* Card for tags */}
               <Card>
                 <CardHeader>
                   <CardTitle style={{ color: '#007bc4' }}>Etiquetas</CardTitle>
@@ -401,6 +409,7 @@ const TaskForm = () => {
                 </CardContent>
               </Card>
               
+              {/* Card for assignments */}
               <Card>
                 <CardHeader>
                   <CardTitle style={{ color: '#007bc4' }}>Asignacións</CardTitle>

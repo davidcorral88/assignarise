@@ -1,7 +1,8 @@
 
 import { User, Task, TimeEntry } from './types';
 
-export const mockUsers: User[] = [
+// Initial mock data
+const initialMockUsers: User[] = [
   {
     id: '1',
     name: 'Alex Smith',
@@ -32,7 +33,7 @@ export const mockUsers: User[] = [
   }
 ];
 
-export const mockTasks: Task[] = [
+const initialMockTasks: Task[] = [
   {
     id: '1',
     title: 'Website Redesign',
@@ -98,7 +99,7 @@ export const mockTasks: Task[] = [
   }
 ];
 
-export const mockTimeEntries: TimeEntry[] = [
+const initialMockTimeEntries: TimeEntry[] = [
   {
     id: '1',
     taskId: '1',
@@ -141,6 +142,32 @@ export const mockTimeEntries: TimeEntry[] = [
   }
 ];
 
+// Load data from localStorage or use initial data if not available
+const loadData = <T>(key: string, initialData: T[]): T[] => {
+  try {
+    const storedData = localStorage.getItem(key);
+    return storedData ? JSON.parse(storedData) : initialData;
+  } catch (error) {
+    console.error(`Error loading data for ${key}:`, error);
+    return initialData;
+  }
+};
+
+// Save data to localStorage
+const saveData = <T>(key: string, data: T[]): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error(`Error saving data for ${key}:`, error);
+  }
+};
+
+// Initialize data
+export let mockUsers: User[] = loadData('users', initialMockUsers);
+export let mockTasks: Task[] = loadData('tasks', initialMockTasks);
+export let mockTimeEntries: TimeEntry[] = loadData('timeEntries', initialMockTimeEntries);
+
+// Helper functions
 export function getUserById(id: string): User | undefined {
   return mockUsers.find(user => user.id === id);
 }
@@ -179,4 +206,80 @@ export function getTotalHoursAllocatedByTask(taskId: string): number {
   if (!task) return 0;
   
   return task.assignments.reduce((sum, assignment) => sum + assignment.allocatedHours, 0);
+}
+
+// Functions to add, update, and delete data
+export function addUser(user: User): User {
+  // Ensure unique ID
+  if (!user.id) {
+    const ids = mockUsers.map(u => parseInt(u.id));
+    user.id = String(Math.max(...ids, 0) + 1);
+  }
+  mockUsers = [...mockUsers, user];
+  saveData('users', mockUsers);
+  return user;
+}
+
+export function updateUser(updatedUser: User): User {
+  mockUsers = mockUsers.map(user => 
+    user.id === updatedUser.id ? updatedUser : user
+  );
+  saveData('users', mockUsers);
+  return updatedUser;
+}
+
+export function deleteUser(userId: string): void {
+  mockUsers = mockUsers.filter(user => user.id !== userId);
+  saveData('users', mockUsers);
+}
+
+export function addTask(task: Task): Task {
+  // Ensure unique ID
+  if (!task.id) {
+    task.id = String(getNextTaskId());
+  }
+  mockTasks = [...mockTasks, task];
+  saveData('tasks', mockTasks);
+  return task;
+}
+
+export function updateTask(updatedTask: Task): Task {
+  mockTasks = mockTasks.map(task => 
+    task.id === updatedTask.id ? updatedTask : task
+  );
+  saveData('tasks', mockTasks);
+  return updatedTask;
+}
+
+export function deleteTask(taskId: string): void {
+  mockTasks = mockTasks.filter(task => task.id !== taskId);
+  saveData('tasks', mockTasks);
+  
+  // Delete associated time entries
+  mockTimeEntries = mockTimeEntries.filter(entry => entry.taskId !== taskId);
+  saveData('timeEntries', mockTimeEntries);
+}
+
+export function addTimeEntry(entry: TimeEntry): TimeEntry {
+  // Ensure unique ID
+  if (!entry.id) {
+    const ids = mockTimeEntries.map(e => parseInt(e.id));
+    entry.id = String(Math.max(...ids, 0) + 1);
+  }
+  mockTimeEntries = [...mockTimeEntries, entry];
+  saveData('timeEntries', mockTimeEntries);
+  return entry;
+}
+
+export function updateTimeEntry(updatedEntry: TimeEntry): TimeEntry {
+  mockTimeEntries = mockTimeEntries.map(entry => 
+    entry.id === updatedEntry.id ? updatedEntry : entry
+  );
+  saveData('timeEntries', mockTimeEntries);
+  return updatedEntry;
+}
+
+export function deleteTimeEntry(entryId: string): void {
+  mockTimeEntries = mockTimeEntries.filter(entry => entry.id !== entryId);
+  saveData('timeEntries', mockTimeEntries);
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { mockUsers, getUserById } from '../utils/mockData';
+import { mockUsers, getUserById, addUser, updateUser } from '../utils/mockData';
 import { User, UserRole } from '../utils/types';
 import { toast } from '@/components/ui/use-toast';
 
@@ -68,25 +67,30 @@ const UserForm = () => {
     
     setSubmitting(true);
     
-    // Simulate API call
+    // Create the user object
+    const user: User = {
+      id: isEditing && id ? id : String(mockUsers.length + 1),
+      name,
+      email,
+      role,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`
+    };
+    
+    // Save the user
+    if (isEditing) {
+      updateUser(user);
+    } else {
+      addUser(user);
+    }
+    
+    toast({
+      title: isEditing ? 'Usuario actualizado' : 'Usuario creado',
+      description: isEditing ? 'O usuario foi actualizado correctamente.' : 'O usuario foi creado correctamente.',
+    });
+    
+    // Navigate back to users list
     setTimeout(() => {
-      // In a real app, this would be an API call to save the user
-      const user: User = {
-        id: isEditing && id ? id : String(mockUsers.length + 1),
-        name,
-        email,
-        role,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`
-      };
-      
-      toast({
-        title: isEditing ? 'Usuario actualizado' : 'Usuario creado',
-        description: isEditing ? 'O usuario foi actualizado correctamente.' : 'O usuario foi creado correctamente.',
-      });
-      
-      // Navigate back to users list
       navigate('/users');
-      
       setSubmitting(false);
     }, 800);
   };
