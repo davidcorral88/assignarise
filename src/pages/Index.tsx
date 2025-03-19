@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckSquare, ArrowRight } from 'lucide-react';
@@ -31,7 +32,7 @@ const Index = () => {
           
           <div className="ml-4 flex items-center">
             <CheckSquare className="h-6 w-6 text-primary mr-2" />
-            <span className="font-semibold text-xl">App de Tarefas</span>
+            <span className="font-semibold text-xl">Rexistro de Tarefas</span>
           </div>
         </div>
         

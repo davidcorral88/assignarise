@@ -100,7 +100,7 @@ export const Header: React.FC = () => {
 
           <Link to="/dashboard" className="flex items-center mr-8 font-semibold text-xl">
             <CheckSquare className="h-6 w-6 mr-2 text-primary" />
-            <span className="animate-fade-in" style={{ color: "#007bc4" }}>App de Tarefas</span>
+            <span className="animate-fade-in" style={{ color: "#007bc4" }}>Rexistro de Tarefas</span>
           </Link>
 
           {isMobile ? (
