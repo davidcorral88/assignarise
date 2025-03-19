@@ -20,9 +20,21 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border/40 h-16 px-6 flex items-center justify-between bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center">
-          <CheckSquare className="h-6 w-6 text-primary mr-2" />
-          <span className="font-semibold text-xl">App de Tarefas</span>
+        <div className="flex items-center space-x-4">
+          {/* Logo 1 placeholder */}
+          <div className="h-10 w-24 bg-gray-200 flex items-center justify-center rounded">
+            <span className="text-xs text-gray-500">Logo 1</span>
+          </div>
+          
+          {/* Logo 2 placeholder */}
+          <div className="h-10 w-24 bg-gray-200 flex items-center justify-center rounded">
+            <span className="text-xs text-gray-500">Logo 2</span>
+          </div>
+          
+          <div className="ml-4 flex items-center">
+            <CheckSquare className="h-6 w-6 text-primary mr-2" />
+            <span className="font-semibold text-xl">App de Tarefas</span>
+          </div>
         </div>
         <Button onClick={() => navigate('/login')}>
           {isAuthenticated ? 'Panel' : 'Iniciar sesión'}
