@@ -36,14 +36,16 @@ const Index = () => {
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
                 Rexistro de Tarefas do Plan de Transporte Público de Galicia
               </h1>
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-                Unha aplicación intuitiva para a xestión de tarefas, deseñada para xerentes e traballadores.
-              </p>
             </div>
             
             <div className="animate-slide-in delay-100">
-              <Button size="lg" onClick={handleGetStarted} className="text-lg px-8 py-6 rounded-full">
-                Comezar agora
+              <Button 
+                size="lg" 
+                onClick={handleGetStarted} 
+                className="text-lg px-8 py-6 rounded-full text-white"
+                style={{ backgroundColor: '#007bc4' }}
+              >
+                Acceso
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
