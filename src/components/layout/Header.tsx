@@ -89,6 +89,15 @@ export const Header: React.FC = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
+          {/* Logo Transporte Público de Galicia - Left */}
+          <div className="h-10 mr-4">
+            <img 
+              src="/lovable-uploads/8612bd3a-aae6-4470-9f8c-90f0a60578c0.png" 
+              alt="Transporte Público de Galicia Logo" 
+              className="h-full object-contain"
+            />
+          </div>
+
           <Link to="/dashboard" className="flex items-center mr-8 font-semibold text-xl">
             <CheckSquare className="h-6 w-6 mr-2 text-primary" />
             <span className="animate-fade-in">App de Tarefas</span>
@@ -125,6 +134,15 @@ export const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center">
+          {/* Logo iPlan - Right */}
+          <div className="h-10 mr-4">
+            <img 
+              src="/lovable-uploads/0ceff2cd-db6e-45af-93ff-b54176c93864.png" 
+              alt="iPlan Logo" 
+              className="h-full object-contain"
+            />
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
