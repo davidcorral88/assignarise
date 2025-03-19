@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { addHoliday, removeHoliday, getHolidays } from '@/utils/mockData';
 import { Holiday } from '@/utils/types';
 import { format } from 'date-fns';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Info, Plus, Trash2 } from 'lucide-react';
 
 interface HolidaysCalendarProps {
@@ -35,6 +35,7 @@ const HolidaysCalendar: React.FC<HolidaysCalendarProps> = ({ isEditable }) => {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [holidayToDelete, setHolidayToDelete] = useState<Holiday | null>(null);
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState<boolean>(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadHolidays();

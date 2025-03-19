@@ -18,7 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Calendar } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   Dialog,
@@ -31,6 +31,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { resetDatabase } from '@/utils/mockData';
+import HolidaysCalendar from '@/components/calendar/HolidaysCalendar';
 
 const Settings = () => {
   const { currentUser } = useAuth();
@@ -56,12 +57,29 @@ const Settings = () => {
           </p>
         </div>
         
-        <Tabs defaultValue="general">
+        <Tabs defaultValue="calendar">
           <TabsList className="mb-4">
+            <TabsTrigger value="calendar">Calendario</TabsTrigger>
             <TabsTrigger value="general">Xeral</TabsTrigger>
             {isManager && <TabsTrigger value="advanced">Avanzada</TabsTrigger>}
             <TabsTrigger value="profile">Perfil</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="calendar">
+            <Card>
+              <CardHeader>
+                <CardTitle>Calendario Anual</CardTitle>
+                <CardDescription>
+                  {isManager 
+                    ? "Xestiona os días festivos para todo o persoal. Fai clic no calendario para engadir ou quitar festivos."
+                    : "Visualiza os días festivos establecidos para a empresa."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <HolidaysCalendar isEditable={isManager} />
+              </CardContent>
+            </Card>
+          </TabsContent>
           
           <TabsContent value="general">
             <Card>
