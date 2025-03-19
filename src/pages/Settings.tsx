@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/dialog";
 import { resetDatabase } from '@/utils/mockData';
 import HolidaysCalendar from '@/components/calendar/HolidaysCalendar';
+import UserVacationsCalendar from '@/components/calendar/UserVacationsCalendar';
+import AllUsersVacationsCalendar from '@/components/calendar/AllUsersVacationsCalendar';
 
 const Settings = () => {
   const { currentUser } = useAuth();
@@ -60,6 +62,7 @@ const Settings = () => {
         <Tabs defaultValue="calendar">
           <TabsList className="mb-4">
             <TabsTrigger value="calendar">Calendario</TabsTrigger>
+            <TabsTrigger value="absences">Ausencias</TabsTrigger>
             <TabsTrigger value="general">Xeral</TabsTrigger>
             {isManager && <TabsTrigger value="advanced">Avanzada</TabsTrigger>}
             <TabsTrigger value="profile">Perfil</TabsTrigger>
@@ -77,6 +80,22 @@ const Settings = () => {
               </CardHeader>
               <CardContent>
                 <HolidaysCalendar isEditable={isManager} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="absences">
+            <Card>
+              <CardHeader>
+                <CardTitle>Xestión de Ausencias</CardTitle>
+                <CardDescription>
+                  {isManager 
+                    ? "Xestiona as ausencias (vacacións e baixas médicas) para todo o persoal."
+                    : "Xestiona as túas ausencias (vacacións e baixas médicas)."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isManager ? <AllUsersVacationsCalendar /> : <UserVacationsCalendar />}
               </CardContent>
             </Card>
           </TabsContent>

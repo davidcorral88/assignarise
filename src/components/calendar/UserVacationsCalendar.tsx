@@ -1,10 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
-import { 
-  Card, 
-  CardContent
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Dialog,
@@ -28,7 +24,7 @@ import {
   removeVacationDay 
 } from '@/utils/mockData';
 import { format } from 'date-fns';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { Holiday, VacationDay } from '@/utils/types';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuth } from '@/components/auth/AuthContext';
@@ -97,13 +93,13 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
 
   const modifiersStyles = {
     vacation: {
-      backgroundColor: '#c6e6ff',
-      color: '#0066cc',
+      backgroundColor: '#FEC6A1',
+      color: '#994D00',
       fontWeight: 'bold',
     },
     sickLeave: {
-      backgroundColor: '#ffecc6',
-      color: '#cc7700',
+      backgroundColor: '#F2FCE2',
+      color: '#3F6212',
       fontWeight: 'bold',
     },
     holiday: {
@@ -191,6 +187,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
   };
 
   const filteredVacations = getVacationsList();
+  const { toast } = useToast();
 
   return (
     <div className="space-y-6">
@@ -243,8 +240,8 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
                     <span className="font-medium mr-2">{format(new Date(day.date), 'dd/MM/yyyy')}</span>
                     <span className="px-2 py-1 rounded-full text-xs" 
                       style={{
-                        backgroundColor: day.type === 'vacation' ? '#c6e6ff' : '#ffecc6',
-                        color: day.type === 'vacation' ? '#0066cc' : '#cc7700'
+                        backgroundColor: day.type === 'vacation' ? '#FEC6A1' : '#F2FCE2',
+                        color: day.type === 'vacation' ? '#994D00' : '#3F6212'
                       }}
                     >
                       {day.type === 'vacation' ? 'Vacacións' : 'Baixa médica'}

@@ -2,12 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
+  CardContent
 } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
 import { 
   Select,
   SelectContent,
@@ -15,17 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from '@/components/ui/button';
-import { 
-  getUsers, 
-  getHolidays, 
-  getVacationDays 
-} from '@/utils/mockData';
-import { User, Holiday, VacationDay } from '@/utils/types';
-import { format } from 'date-fns';
-import UserVacationsCalendar from './UserVacationsCalendar';
 import { Label } from '@/components/ui/label';
-import { Badge } from "@/components/ui/badge";
+import { getUsers } from '@/utils/mockData';
+import { User } from '@/utils/types';
+import UserVacationsCalendar from './UserVacationsCalendar';
 
 const AllUsersVacationsCalendar: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -63,19 +52,10 @@ const AllUsersVacationsCalendar: React.FC = () => {
       
       {selectedUserId && (
         <Card className="mt-4">
-          <CardHeader>
-            <CardTitle>
-              Vacacións e baixas de {users.find(u => u.id === selectedUserId)?.name}
-            </CardTitle>
-            <CardDescription>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <Badge variant="outline" className="bg-green-100">Vacacións</Badge>
-                <Badge variant="outline" className="bg-amber-100">Baixa</Badge>
-                <Badge variant="outline" className="bg-blue-100">Festivo</Badge>
-              </div>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-medium mb-4">
+              Ausencias de {users.find(u => u.id === selectedUserId)?.name}
+            </h3>
             <UserVacationsCalendar userId={selectedUserId} />
           </CardContent>
         </Card>
