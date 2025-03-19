@@ -28,7 +28,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Holiday, VacationDay } from '@/utils/types';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuth } from '@/components/auth/AuthContext';
-import { Info, Briefcase, Stethoscope } from 'lucide-react';
+import { Info, Briefcase, Stethoscope, Filter } from 'lucide-react';
 
 interface UserVacationsCalendarProps {
   userId?: string;
@@ -41,7 +41,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState<boolean>(false);
-  const [daysToShow, setDaysToShow] = useState<string[]>(["vacation", "sick_leave"]);
+  const [daysToShow, setDaysToShow] = useState<string[]>(["all", "vacation", "sick_leave"]);
   const [dayType, setDayType] = useState<'vacation' | 'sick_leave'>('vacation');
   const [vacationToDelete, setVacationToDelete] = useState<VacationDay | null>(null);
   
@@ -65,7 +65,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
       day.userId === actualUserId && 
       day.date === formattedDate && 
       day.type === 'vacation' &&
-      daysToShow.includes('vacation')
+      (daysToShow.includes('vacation') || daysToShow.includes('all'))
     );
   };
 
@@ -76,7 +76,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
       day.userId === actualUserId && 
       day.date === formattedDate && 
       day.type === 'sick_leave' &&
-      daysToShow.includes('sick_leave')
+      (daysToShow.includes('sick_leave') || daysToShow.includes('all'))
     );
   };
 
@@ -178,7 +178,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
     
     const filteredDays = vacationDays.filter(day => 
       day.userId === actualUserId && 
-      daysToShow.includes(day.type)
+      (daysToShow.includes(day.type) || daysToShow.includes('all'))
     );
     
     return filteredDays.sort((a, b) => 
@@ -188,6 +188,23 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
 
   const filteredVacations = getVacationsList();
   const { toast } = useToast();
+
+  const handleToggleChange = (value: string[]) => {
+    // If "all" is being added or removed, handle special logic
+    if (value.includes('all') && !daysToShow.includes('all')) {
+      // If "all" is being added, remove other options
+      setDaysToShow(['all']);
+    } else if (!value.includes('all') && daysToShow.includes('all')) {
+      // If "all" is being removed, add both other options
+      setDaysToShow(['vacation', 'sick_leave']);
+    } else if (value.length === 0) {
+      // Don't allow empty selection, default to "all"
+      setDaysToShow(['all']);
+    } else {
+      // For other changes, just update as normal
+      setDaysToShow(value);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -200,12 +217,12 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
         <ToggleGroup 
           type="multiple" 
           value={daysToShow}
-          onValueChange={(value) => {
-            if (value.length > 0) {
-              setDaysToShow(value);
-            }
-          }}
+          onValueChange={handleToggleChange}
         >
+          <ToggleGroupItem value="all" aria-label="Mostrar todos">
+            <Filter className="h-4 w-4 mr-2" />
+            Todos
+          </ToggleGroupItem>
           <ToggleGroupItem value="vacation" aria-label="Mostrar vacacións">
             <Briefcase className="h-4 w-4 mr-2" />
             Vacacións
