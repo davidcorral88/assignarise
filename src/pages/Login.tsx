@@ -52,7 +52,7 @@ const Login = () => {
           <div className="flex justify-center">
             <CheckSquare className="h-12 w-12 text-primary" />
           </div>
-          <h1 className="mt-6 text-3xl font-bold">App de Tarefas</h1>
+          <h1 className="mt-6 text-3xl font-bold">Rexistro de Tarefas do Plan de Transporte Público de Galicia</h1>
           <p className="mt-2 text-muted-foreground">Sistema de xestión de tarefas</p>
         </div>
         

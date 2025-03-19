@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckSquare, ArrowRight } from 'lucide-react';
@@ -21,16 +20,7 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border/40 h-16 px-6 flex items-center justify-between bg-background/80 backdrop-blur-sm">
         <div className="flex items-center space-x-4">
-          {/* Logo iPlan */}
-          <div className="h-10">
-            <img 
-              src="/lovable-uploads/0ceff2cd-db6e-45af-93ff-b54176c93864.png" 
-              alt="iPlan Logo" 
-              className="h-full object-contain"
-            />
-          </div>
-          
-          {/* Logo Transporte Público de Galicia */}
+          {/* Logo Transporte Público de Galicia - Left */}
           <div className="h-10">
             <img 
               src="/lovable-uploads/8612bd3a-aae6-4470-9f8c-90f0a60578c0.png" 
@@ -44,9 +34,21 @@ const Index = () => {
             <span className="font-semibold text-xl">App de Tarefas</span>
           </div>
         </div>
-        <Button onClick={() => navigate('/login')}>
-          {isAuthenticated ? 'Panel' : 'Iniciar sesión'}
-        </Button>
+        
+        <div className="flex items-center space-x-4">
+          {/* Logo iPlan - Right */}
+          <div className="h-10">
+            <img 
+              src="/lovable-uploads/0ceff2cd-db6e-45af-93ff-b54176c93864.png" 
+              alt="iPlan Logo" 
+              className="h-full object-contain"
+            />
+          </div>
+          
+          <Button onClick={() => navigate('/login')}>
+            {isAuthenticated ? 'Panel' : 'Iniciar sesión'}
+          </Button>
+        </div>
       </header>
       
       <main className="flex-1 px-6 py-20 md:py-40">
