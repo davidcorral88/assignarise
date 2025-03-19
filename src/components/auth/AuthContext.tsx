@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // In a real app, we would validate the password here
+      // For demo purposes, any password is accepted for the mock users
       
       setCurrentUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));
@@ -48,6 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: 'Benvido/a!',
         description: `Iniciaches sesión como ${user.name}`,
       });
+      
+      return user;
     } catch (error) {
       console.error('Login error:', error);
       toast({
