@@ -12,7 +12,8 @@ import {
   Trash2, 
   X,
   Clock,
-  Save
+  Save,
+  Search
 } from 'lucide-react';
 import { 
   Card, 
@@ -43,7 +44,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   mockTasks, 
   mockUsers, 
-  getTaskById 
+  getTaskById,
+  getNextTaskId
 } from '../utils/mockData';
 import { Task, User, TaskAssignment } from '../utils/types';
 import { format } from 'date-fns';
@@ -56,10 +58,13 @@ const TaskForm = () => {
   const navigate = useNavigate();
   const isEditing = !!id;
   
-  const [title, setTitle] = useState('');
+  const [taskId, setTaskId] = useState(getNextTaskId());
+  const [searchTaskId, setSearchTaskId] = useState('');
+  const [tarefa, setTarefa] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<string>('pending');
   const [priority, setPriority] = useState<string>('medium');
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [tag, setTag] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
@@ -76,14 +81,18 @@ const TaskForm = () => {
     if (isEditing && id) {
       const task = getTaskById(id);
       if (task) {
-        setTitle(task.title);
+        setTaskId(parseInt(task.id));
+        setTarefa(task.title);
         setDescription(task.description);
         setStatus(task.status);
         setPriority(task.priority);
+        setStartDate(task.startDate ? new Date(task.startDate) : new Date());
         setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
         setTags(task.tags || []);
         setAssignments([...task.assignments]);
       }
+    } else {
+      setTaskId(getNextTaskId());
     }
     setLoading(false);
   }, [id, isEditing]);
@@ -91,10 +100,10 @@ const TaskForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim()) {
+    if (!tarefa.trim()) {
       toast({
-        title: 'Error',
-        description: 'Por favor ingresa un título para la tarea',
+        title: 'Erro',
+        description: 'Por favor ingresa un nome para a tarefa',
         variant: 'destructive',
       });
       return;
@@ -106,21 +115,22 @@ const TaskForm = () => {
     setTimeout(() => {
       // In a real app, this would be an API call to save the task
       const task: Task = {
-        id: isEditing && id ? id : String(mockTasks.length + 1),
-        title,
+        id: String(taskId),
+        title: tarefa,
         description,
         status: status as 'pending' | 'in_progress' | 'completed',
         priority: priority as 'low' | 'medium' | 'high',
         createdBy: currentUser?.id || '',
         createdAt: isEditing ? getTaskById(id!)?.createdAt || new Date().toISOString() : new Date().toISOString(),
+        startDate: startDate ? startDate.toISOString() : new Date().toISOString(),
         dueDate: dueDate ? dueDate.toISOString() : undefined,
         tags,
         assignments,
       };
       
       toast({
-        title: isEditing ? 'Tarea actualizada' : 'Tarea creada',
-        description: isEditing ? 'La tarea ha sido actualizada correctamente.' : 'La tarea ha sido creada correctamente.',
+        title: isEditing ? 'Tarefa actualizada' : 'Tarefa creada',
+        description: isEditing ? 'A tarefa foi actualizada correctamente.' : 'A tarefa foi creada correctamente.',
       });
       
       // Navigate back to tasks list
@@ -128,6 +138,34 @@ const TaskForm = () => {
       
       setSubmitting(false);
     }, 800);
+  };
+  
+  const handleSearchTask = () => {
+    if (searchTaskId.trim()) {
+      const task = getTaskById(searchTaskId);
+      if (task) {
+        setTaskId(parseInt(task.id));
+        setTarefa(task.title);
+        setDescription(task.description);
+        setStatus(task.status);
+        setPriority(task.priority);
+        setStartDate(task.startDate ? new Date(task.startDate) : new Date());
+        setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
+        setTags(task.tags || []);
+        setAssignments([...task.assignments]);
+        
+        toast({
+          title: 'Tarefa atopada',
+          description: `Cargouse a tarefa con ID ${searchTaskId}`,
+        });
+      } else {
+        toast({
+          title: 'Tarefa non atopada',
+          description: `Non se atopou ningunha tarefa co ID ${searchTaskId}`,
+          variant: 'destructive',
+        });
+      }
+    }
   };
   
   const handleAddTag = () => {
@@ -155,15 +193,15 @@ const TaskForm = () => {
         setAllocatedHours(0);
       } else {
         toast({
-          title: 'Usuario ya asignado',
-          description: 'Este usuario ya está asignado a la tarea.',
+          title: 'Usuario xa asignado',
+          description: 'Este usuario xa está asignado á tarefa.',
           variant: 'destructive',
         });
       }
     } else {
       toast({
         title: 'Campos incompletos',
-        description: 'Por favor selecciona un usuario y asigna horas.',
+        description: 'Por favor selecciona un usuario e asigna horas.',
         variant: 'destructive',
       });
     }
@@ -204,11 +242,11 @@ const TaskForm = () => {
             onClick={() => navigate('/tasks')}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver a tareas
+            Volver a tarefas
           </Button>
           
-          <h1 className="text-3xl font-bold tracking-tight">
-            {isEditing ? 'Editar tarea' : 'Nueva tarea'}
+          <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
+            {isEditing ? 'Editar tarefa' : 'Nova tarefa'}
           </h1>
         </div>
         
@@ -217,30 +255,94 @@ const TaskForm = () => {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Información básica</CardTitle>
+                  <CardTitle style={{ color: '#007bc4' }}>Información básica</CardTitle>
                   <CardDescription>
-                    Ingresa los detalles básicos de la tarea
+                    Ingresa os detalles básicos da tarefa
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="flex space-x-4">
+                    <div className="w-1/3 space-y-2">
+                      <Label htmlFor="id">ID</Label>
+                      <div className="flex">
+                        <Input
+                          id="id"
+                          value={taskId}
+                          onChange={(e) => setTaskId(parseInt(e.target.value))}
+                          readOnly
+                          className="bg-gray-100"
+                        />
+                      </div>
+                    </div>
+
+                    {!isEditing && (
+                      <div className="w-2/3 space-y-2">
+                        <Label htmlFor="searchId">Buscar tarefa por ID</Label>
+                        <div className="flex space-x-2">
+                          <Input
+                            id="searchId"
+                            value={searchTaskId}
+                            onChange={(e) => setSearchTaskId(e.target.value)}
+                            placeholder="Introducir ID da tarefa"
+                          />
+                          <Button 
+                            type="button" 
+                            onClick={handleSearchTask} 
+                            className="flex-shrink-0"
+                          >
+                            <Search className="h-4 w-4 mr-1" />
+                            Buscar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="title">Título *</Label>
+                    <Label htmlFor="startDate">Data Inicio</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !startDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {startDate ? format(startDate, "d MMMM yyyy") : <span>Seleccionar data</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={startDate}
+                          onSelect={setStartDate}
+                          initialFocus
+                          className="bg-white pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="tarefa">Tarefa *</Label>
                     <Input
-                      id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Ingresa el título de la tarea"
+                      id="tarefa"
+                      value={tarefa}
+                      onChange={(e) => setTarefa(e.target.value)}
+                      placeholder="Ingresa o nome da tarefa"
                       required
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="description">Descripción</Label>
+                    <Label htmlFor="description">Descrición</Label>
                     <Textarea
                       id="description"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Describe la tarea en detalle"
+                      placeholder="Describe a tarefa en detalle"
                       className="min-h-[150px]"
                     />
                   </div>
@@ -249,9 +351,9 @@ const TaskForm = () => {
               
               <Card>
                 <CardHeader>
-                  <CardTitle>Etiquetas</CardTitle>
+                  <CardTitle style={{ color: '#007bc4' }}>Etiquetas</CardTitle>
                   <CardDescription>
-                    Añade etiquetas para categorizar esta tarea
+                    Engade etiquetas para categorizar esta tarefa
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -273,7 +375,7 @@ const TaskForm = () => {
                     
                     {tags.length === 0 && (
                       <div className="text-sm text-muted-foreground">
-                        No hay etiquetas aún
+                        Non hai etiquetas aínda
                       </div>
                     )}
                   </div>
@@ -283,7 +385,7 @@ const TaskForm = () => {
                       <Input
                         value={tag}
                         onChange={(e) => setTag(e.target.value)}
-                        placeholder="Añadir nueva etiqueta"
+                        placeholder="Engadir nova etiqueta"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -294,7 +396,7 @@ const TaskForm = () => {
                     </div>
                     <Button type="button" size="sm" onClick={handleAddTag}>
                       <Plus className="h-4 w-4 mr-1" />
-                      Añadir
+                      Engadir
                     </Button>
                   </div>
                 </CardContent>
@@ -302,9 +404,9 @@ const TaskForm = () => {
               
               <Card>
                 <CardHeader>
-                  <CardTitle>Asignaciones</CardTitle>
+                  <CardTitle style={{ color: '#007bc4' }}>Asignacións</CardTitle>
                   <CardDescription>
-                    Asigna esta tarea a uno o varios trabajadores
+                    Asigna esta tarefa a un ou varios traballadores
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -380,7 +482,7 @@ const TaskForm = () => {
                       onClick={handleAddAssignment}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Añadir asignación
+                      Engadir asignación
                     </Button>
                   </div>
                 </CardContent>
@@ -390,9 +492,9 @@ const TaskForm = () => {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Detalles</CardTitle>
+                  <CardTitle style={{ color: '#007bc4' }}>Detalles</CardTitle>
                   <CardDescription>
-                    Configura el estado y la prioridad
+                    Configura o estado e a prioridade
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -403,7 +505,7 @@ const TaskForm = () => {
                         <SelectValue placeholder="Seleccionar estado" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Pendiente</SelectItem>
+                        <SelectItem value="pending">Pendente</SelectItem>
                         <SelectItem value="in_progress">En progreso</SelectItem>
                         <SelectItem value="completed">Completada</SelectItem>
                       </SelectContent>
@@ -411,13 +513,13 @@ const TaskForm = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="priority">Prioridad</Label>
+                    <Label htmlFor="priority">Prioridade</Label>
                     <Select value={priority} onValueChange={setPriority}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar prioridad" />
+                        <SelectValue placeholder="Seleccionar prioridade" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="low">Baja</SelectItem>
+                        <SelectItem value="low">Baixa</SelectItem>
                         <SelectItem value="medium">Media</SelectItem>
                         <SelectItem value="high">Alta</SelectItem>
                       </SelectContent>
@@ -425,7 +527,7 @@ const TaskForm = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Fecha de vencimiento</Label>
+                    <Label>Data de vencemento</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -436,7 +538,7 @@ const TaskForm = () => {
                           )}
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {dueDate ? format(dueDate, "d MMMM yyyy") : <span>Seleccionar fecha</span>}
+                          {dueDate ? format(dueDate, "d MMMM yyyy") : <span>Seleccionar data</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
@@ -461,7 +563,7 @@ const TaskForm = () => {
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        {isEditing ? 'Actualizar tarea' : 'Crear tarea'}
+                        {isEditing ? 'Actualizar tarefa' : 'Crear tarefa'}
                       </>
                     )}
                   </Button>

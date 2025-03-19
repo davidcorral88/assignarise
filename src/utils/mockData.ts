@@ -40,6 +40,7 @@ export const mockTasks: Task[] = [
     status: 'in_progress',
     createdBy: '1',
     createdAt: '2023-05-01T10:00:00Z',
+    startDate: '2023-05-01T10:00:00Z',
     dueDate: '2023-06-01T18:00:00Z',
     assignments: [
       { userId: '2', allocatedHours: 20 },
@@ -55,6 +56,7 @@ export const mockTasks: Task[] = [
     status: 'pending',
     createdBy: '1',
     createdAt: '2023-05-05T14:30:00Z',
+    startDate: '2023-05-05T14:30:00Z',
     dueDate: '2023-05-20T18:00:00Z',
     assignments: [
       { userId: '4', allocatedHours: 10 }
@@ -69,6 +71,7 @@ export const mockTasks: Task[] = [
     status: 'pending',
     createdBy: '1',
     createdAt: '2023-05-10T09:15:00Z',
+    startDate: '2023-05-10T09:15:00Z',
     dueDate: '2023-07-15T18:00:00Z',
     assignments: [
       { userId: '2', allocatedHours: 40 },
@@ -85,6 +88,7 @@ export const mockTasks: Task[] = [
     status: 'completed',
     createdBy: '1',
     createdAt: '2023-04-20T11:00:00Z',
+    startDate: '2023-04-20T11:00:00Z',
     dueDate: '2023-05-10T18:00:00Z',
     assignments: [
       { userId: '3', allocatedHours: 25 }
@@ -143,6 +147,11 @@ export function getUserById(id: string): User | undefined {
 
 export function getTaskById(id: string): Task | undefined {
   return mockTasks.find(task => task.id === id);
+}
+
+export function getNextTaskId(): number {
+  const ids = mockTasks.map(task => parseInt(task.id));
+  return Math.max(...ids, 0) + 1;
 }
 
 export function getTimeEntriesByTaskId(taskId: string): TimeEntry[] {

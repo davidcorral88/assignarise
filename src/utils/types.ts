@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'manager' | 'worker';
 
 export interface User {
@@ -30,6 +31,7 @@ export interface Task {
   status: 'pending' | 'in_progress' | 'completed';
   createdBy: string;
   createdAt: string;
+  startDate: string;
   dueDate?: string;
   assignments: TaskAssignment[];
   priority: 'low' | 'medium' | 'high';
