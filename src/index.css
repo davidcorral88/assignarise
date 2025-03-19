@@ -1,7 +1,27 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Xunta Sans Font */
+@font-face {
+  font-family: 'Xunta Sans';
+  src: url('/fonts/XuntaSans-Regular.woff') format('woff'),
+       url('/fonts/XuntaSans-Regular.ttf') format('truetype'),
+       url('/fonts/XuntaSans-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Xunta Sans';
+  src: url('/fonts/XuntaSans-Bold.woff') format('woff'),
+       url('/fonts/XuntaSans-Bold.ttf') format('truetype'),
+       url('/fonts/XuntaSans-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 @layer base {
   :root {
@@ -91,12 +111,12 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Xunta Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Smooth transitions */
   .page-transition-enter {
     opacity: 0;
     transform: translate3d(0, 20px, 0);
@@ -127,6 +147,3 @@
     @apply bg-black/80 backdrop-blur-md border border-white/10 shadow-lg;
   }
 }
-
-/* Import Inter font */
-@import url('https://rsms.me/inter/inter.css');
