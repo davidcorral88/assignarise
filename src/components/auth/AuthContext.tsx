@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const user = mockUsers.find(u => u.email === email);
       
       if (!user) {
-        throw new Error('Usuario no encontrado');
+        throw new Error('Usuario non atopado');
       }
       
       // In a real app, we would validate the password here
@@ -45,14 +45,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));
       toast({
-        title: '¡Bienvenido!',
-        description: `Has iniciado sesión como ${user.name}`,
+        title: 'Benvido/a!',
+        description: `Iniciaches sesión como ${user.name}`,
       });
     } catch (error) {
       console.error('Login error:', error);
       toast({
-        title: 'Error de inicio de sesión',
-        description: error instanceof Error ? error.message : 'Ocurrió un error durante el inicio de sesión',
+        title: 'Erro de inicio de sesión',
+        description: error instanceof Error ? error.message : 'Produciuse un erro durante o inicio de sesión',
         variant: 'destructive',
       });
       throw error;
@@ -65,8 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
     toast({
-      title: 'Sesión cerrada',
-      description: 'Has cerrado sesión correctamente',
+      title: 'Sesión pechada',
+      description: 'Pecháchela sesión correctamente',
     });
   };
   

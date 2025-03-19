@@ -99,8 +99,8 @@ const TimeTracking = () => {
     
     if (!selectedTaskId || hours <= 0 || !date) {
       toast({
-        title: 'Error',
-        description: 'Por favor completa todos los campos requeridos',
+        title: 'Erro',
+        description: 'Por favor, completa todos os campos requiridos',
         variant: 'destructive',
       });
       return;
@@ -124,8 +124,8 @@ const TimeTracking = () => {
       setTimeEntries([newEntry, ...timeEntries]);
       
       toast({
-        title: 'Horas registradas',
-        description: 'Se han registrado tus horas correctamente.',
+        title: 'Horas rexistradas',
+        description: 'Rexistráronse as túas horas correctamente.',
       });
       
       // Reset form
@@ -155,9 +155,9 @@ const TimeTracking = () => {
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Registro de horas</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Rexistro de horas</h1>
             <p className="text-muted-foreground mt-1">
-              Registra el tiempo trabajado en tus tareas asignadas
+              Rexistra o tempo traballado nas túas tarefas asignadas
             </p>
           </div>
           <Button 
@@ -165,29 +165,29 @@ const TimeTracking = () => {
             onClick={() => setIsAddingEntry(true)}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            Registrar horas
+            Rexistrar horas
           </Button>
         </div>
         
         {isAddingEntry && (
           <Card className="animate-scale-in">
             <CardHeader>
-              <CardTitle>Nuevo registro de horas</CardTitle>
+              <CardTitle>Novo rexistro de horas</CardTitle>
               <CardDescription>
-                Ingresa las horas trabajadas en una tarea asignada
+                Introduce as horas traballadas nunha tarefa asignada
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="task">Tarea *</Label>
+                  <Label htmlFor="task">Tarefa *</Label>
                   <Select 
                     value={selectedTaskId} 
                     onValueChange={setSelectedTaskId}
                     required
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar tarea" />
+                      <SelectValue placeholder="Seleccionar tarefa" />
                     </SelectTrigger>
                     <SelectContent>
                       {userTasks.map(task => (
@@ -201,7 +201,7 @@ const TimeTracking = () => {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="hours">Horas trabajadas *</Label>
+                    <Label htmlFor="hours">Horas traballadas *</Label>
                     <Input
                       id="hours"
                       type="number"
@@ -214,7 +214,7 @@ const TimeTracking = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Fecha *</Label>
+                    <Label>Data *</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -225,7 +225,7 @@ const TimeTracking = () => {
                           )}
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {date ? format(date, "d MMMM yyyy") : <span>Seleccionar fecha</span>}
+                          {date ? format(date, "d MMMM yyyy") : <span>Seleccionar data</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
@@ -247,7 +247,7 @@ const TimeTracking = () => {
                     id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Añade detalles sobre el trabajo realizado"
+                    placeholder="Engade detalles sobre o traballo realizado"
                   />
                 </div>
               </CardContent>
@@ -259,12 +259,12 @@ const TimeTracking = () => {
                   {submitting ? (
                     <>
                       <Clock className="mr-2 h-4 w-4 animate-spin" />
-                      Guardando...
+                      Gardando...
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
-                      Guardar registro
+                      Gardar rexistro
                     </>
                   )}
                 </Button>
@@ -275,9 +275,9 @@ const TimeTracking = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Historial de horas registradas</CardTitle>
+            <CardTitle>Historial de horas rexistradas</CardTitle>
             <CardDescription>
-              Visualiza y gestiona tus registros de horas trabajadas
+              Visualiza e xestiona os teus rexistros de horas traballadas
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -285,11 +285,11 @@ const TimeTracking = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tarea</TableHead>
-                    <TableHead>Fecha</TableHead>
+                    <TableHead>Tarefa</TableHead>
+                    <TableHead>Data</TableHead>
                     <TableHead>Horas</TableHead>
                     <TableHead>Notas</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                    <TableHead className="text-right">Accións</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -301,7 +301,7 @@ const TimeTracking = () => {
                           <TableCell className="font-medium">
                             <div className="flex items-center">
                               <CheckSquare className="mr-2 h-4 w-4 text-primary" />
-                              <span>{task?.title || 'Tarea no encontrada'}</span>
+                              <span>{task?.title || 'Tarefa non atopada'}</span>
                             </div>
                           </TableCell>
                           <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy')}</TableCell>
@@ -316,20 +316,20 @@ const TimeTracking = () => {
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
                                   <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Acciones</span>
+                                  <span className="sr-only">Accións</span>
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DropdownMenuLabel>Accións</DropdownMenuLabel>
                                 {task && (
                                   <DropdownMenuItem onClick={() => navigate(`/tasks/${task.id}`)}>
                                     <Eye className="mr-2 h-4 w-4" />
-                                    Ver tarea
+                                    Ver tarefa
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem>
                                   <Edit className="mr-2 h-4 w-4" />
-                                  Editar registro
+                                  Editar rexistro
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-red-500">
@@ -347,14 +347,14 @@ const TimeTracking = () => {
                       <TableCell colSpan={5} className="h-24 text-center">
                         <div className="flex flex-col items-center justify-center py-8">
                           <Timer className="h-10 w-10 text-muted-foreground/50 mb-4" />
-                          <p className="text-sm text-muted-foreground">No has registrado horas aún</p>
+                          <p className="text-sm text-muted-foreground">Non rexistraches horas aínda</p>
                           <Button 
                             variant="outline" 
                             className="mt-4" 
                             onClick={() => setIsAddingEntry(true)}
                           >
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Registrar horas
+                            Rexistrar horas
                           </Button>
                         </div>
                       </TableCell>
@@ -368,9 +368,9 @@ const TimeTracking = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Resumen de horas por tarea</CardTitle>
+            <CardTitle>Resumo de horas por tarefa</CardTitle>
             <CardDescription>
-              Visualiza el progreso de tus horas en cada tarea asignada
+              Visualiza o progreso das túas horas en cada tarefa asignada
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -392,7 +392,7 @@ const TimeTracking = () => {
                         <h3 className="font-medium text-lg mb-1">{task.title}</h3>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <CheckSquare className="mr-1.5 h-4 w-4" />
-                          <span>Estado: {task.status === 'completed' ? 'Completada' : task.status === 'in_progress' ? 'En progreso' : 'Pendiente'}</span>
+                          <span>Estado: {task.status === 'completed' ? 'Completada' : task.status === 'in_progress' ? 'En progreso' : 'Pendente'}</span>
                         </div>
                       </div>
                       
@@ -425,7 +425,7 @@ const TimeTracking = () => {
               {userTasks.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <CheckSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground mb-4">No tienes tareas asignadas</p>
+                  <p className="text-muted-foreground mb-4">Non tes tarefas asignadas</p>
                 </div>
               )}
             </div>

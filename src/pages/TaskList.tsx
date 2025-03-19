@@ -105,7 +105,7 @@ const TaskList = () => {
       case 'in_progress':
         return 'En progreso';
       case 'pending':
-        return 'Pendiente';
+        return 'Pendente';
       default:
         return status;
     }
@@ -118,7 +118,7 @@ const TaskList = () => {
       case 'medium':
         return <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200">Media</Badge>;
       case 'low':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Baja</Badge>;
+        return <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Baixa</Badge>;
       default:
         return <Badge variant="outline">{priority}</Badge>;
     }
@@ -129,9 +129,9 @@ const TaskList = () => {
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Tareas</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Tarefas</h1>
             <p className="text-muted-foreground mt-1">
-              {currentUser?.role === 'manager' ? 'Administra todas las tareas' : 'Administra tus tareas asignadas'}
+              {currentUser?.role === 'manager' ? 'Administra todas as tarefas' : 'Administra as túas tarefas asignadas'}
             </p>
           </div>
           <Button 
@@ -139,7 +139,7 @@ const TaskList = () => {
             onClick={() => navigate('/tasks/new')}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            Nueva tarea
+            Nova tarefa
           </Button>
         </div>
         
@@ -148,7 +148,7 @@ const TaskList = () => {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Buscar tareas..."
+              placeholder="Buscar tarefas..."
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -171,7 +171,7 @@ const TaskList = () => {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setStatusFilter('pending')}>
                 <Circle className="mr-2 h-4 w-4 text-gray-400" />
-                Pendiente
+                Pendente
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setStatusFilter('in_progress')}>
                 <Clock className="mr-2 h-4 w-4 text-amber-500" />
@@ -191,10 +191,10 @@ const TaskList = () => {
               <TableRow>
                 <TableHead>Título</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead>Prioridad</TableHead>
+                <TableHead>Prioridade</TableHead>
                 <TableHead>Asignados</TableHead>
-                <TableHead>Vencimiento</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead>Vencemento</TableHead>
+                <TableHead className="text-right">Accións</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -257,7 +257,7 @@ const TaskList = () => {
                   <TableCell colSpan={6} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
                       <CheckSquare className="h-10 w-10 text-muted-foreground/50 mb-4" />
-                      <p className="text-sm text-muted-foreground">No se encontraron tareas</p>
+                      <p className="text-sm text-muted-foreground">Non se atoparon tarefas</p>
                     </div>
                   </TableCell>
                 </TableRow>

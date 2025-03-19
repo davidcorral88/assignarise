@@ -52,13 +52,13 @@ export const Header: React.FC = () => {
     {
       to: '/dashboard',
       icon: <CheckSquare className="mr-2 h-4 w-4" />,
-      label: 'Dashboard',
+      label: 'Panel',
       show: true
     },
     {
       to: '/tasks',
       icon: <CheckSquare className="mr-2 h-4 w-4" />,
-      label: 'Tareas',
+      label: 'Tarefas',
       show: true
     },
     {
@@ -70,7 +70,7 @@ export const Header: React.FC = () => {
     {
       to: '/time-tracking',
       icon: <Clock className="mr-2 h-4 w-4" />,
-      label: 'Registro de Horas',
+      label: 'Rexistro de Horas',
       show: currentUser?.role === 'worker'
     }
   ];
@@ -91,7 +91,7 @@ export const Header: React.FC = () => {
         <div className="flex items-center">
           <Link to="/dashboard" className="flex items-center mr-8 font-semibold text-xl">
             <CheckSquare className="h-6 w-6 mr-2 text-primary" />
-            <span className="animate-fade-in">Tareas App</span>
+            <span className="animate-fade-in">App de Tarefas</span>
           </Link>
 
           {isMobile ? (
@@ -101,7 +101,7 @@ export const Header: React.FC = () => {
               ) : (
                 <Menu className="h-5 w-5" />
               )}
-              <span className="sr-only">Toggle menu</span>
+              <span className="sr-only">Alternar menú</span>
             </Button>
           ) : (
             <nav className="hidden md:flex items-center space-x-1">
@@ -140,14 +140,14 @@ export const Header: React.FC = () => {
                   <p className="text-sm font-medium leading-none">{currentUser.name}</p>
                   <p className="text-xs leading-none text-muted-foreground">{currentUser.email}</p>
                   <p className="text-xs leading-none text-muted-foreground capitalize">
-                    {currentUser.role === 'manager' ? 'Gerente' : 'Trabajador'}
+                    {currentUser.role === 'manager' ? 'Xerente' : 'Traballador'}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Cerrar sesión</span>
+                <span>Pechar sesión</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -22,10 +22,10 @@ const Index = () => {
       <header className="border-b border-border/40 h-16 px-6 flex items-center justify-between bg-background/80 backdrop-blur-sm">
         <div className="flex items-center">
           <CheckSquare className="h-6 w-6 text-primary mr-2" />
-          <span className="font-semibold text-xl">Tareas App</span>
+          <span className="font-semibold text-xl">App de Tarefas</span>
         </div>
         <Button onClick={() => navigate('/login')}>
-          {isAuthenticated ? 'Dashboard' : 'Iniciar sesión'}
+          {isAuthenticated ? 'Panel' : 'Iniciar sesión'}
         </Button>
       </header>
       
@@ -34,16 +34,16 @@ const Index = () => {
           <div className="flex flex-col space-y-10 items-center text-center">
             <div className="space-y-4 animate-fade-in">
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-                Gestiona tus tareas con precisión y elegancia
+                Xestiona as túas tarefas con precisión e elegancia
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-                Una aplicación intuitiva para la gestión de tareas, diseñada para managers y trabajadores.
+                Unha aplicación intuitiva para a xestión de tarefas, deseñada para xerentes e traballadores.
               </p>
             </div>
             
             <div className="animate-slide-in delay-100">
               <Button size="lg" onClick={handleGetStarted} className="text-lg px-8 py-6 rounded-full">
-                Comenzar ahora
+                Comezar agora
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
@@ -53,8 +53,8 @@ const Index = () => {
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <CheckSquare className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Gestión de tareas</h3>
-                <p className="text-muted-foreground">Crea, edita y supervisa todas las tareas en un solo lugar con una interfaz intuitiva.</p>
+                <h3 className="text-xl font-semibold mb-2">Xestión de tarefas</h3>
+                <p className="text-muted-foreground">Crea, edita e supervisa todas as tarefas nun só lugar cunha interface intuitiva.</p>
               </div>
               
               <div className="bg-card rounded-lg p-6 shadow-sm border">
@@ -76,8 +76,8 @@ const Index = () => {
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Gestión de usuarios</h3>
-                <p className="text-muted-foreground">Maneja perfiles de manager y trabajador con diferentes niveles de acceso y permisos.</p>
+                <h3 className="text-xl font-semibold mb-2">Xestión de usuarios</h3>
+                <p className="text-muted-foreground">Manexa perfís de xerente e traballador con diferentes niveis de acceso e permisos.</p>
               </div>
               
               <div className="bg-card rounded-lg p-6 shadow-sm border">
@@ -97,8 +97,8 @@ const Index = () => {
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Seguimiento de horas</h3>
-                <p className="text-muted-foreground">Registra las horas trabajadas en cada tarea y mantén un control preciso del tiempo.</p>
+                <h3 className="text-xl font-semibold mb-2">Seguimento de horas</h3>
+                <p className="text-muted-foreground">Rexistra as horas traballadas en cada tarefa e mantén un control preciso do tempo.</p>
               </div>
             </div>
           </div>

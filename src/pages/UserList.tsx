@@ -82,7 +82,7 @@ const UserList = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
             <p className="text-muted-foreground mt-1">
-              Gestiona los usuarios del sistema
+              Xestiona os usuarios do sistema
             </p>
           </div>
           <Button 
@@ -90,7 +90,7 @@ const UserList = () => {
             onClick={() => navigate('/users/new')}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            Nuevo usuario
+            Novo usuario
           </Button>
         </div>
         
@@ -111,10 +111,10 @@ const UserList = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
+                <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Rol</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="text-right">Accións</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -135,12 +135,12 @@ const UserList = () => {
                       {user.role === 'manager' ? (
                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                           <Shield className="mr-1 h-3 w-3" />
-                          Gerente
+                          Xerente
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-muted text-muted-foreground">
                           <UserIcon className="mr-1 h-3 w-3" />
-                          Trabajador
+                          Traballador
                         </Badge>
                       )}
                     </TableCell>
@@ -149,11 +149,11 @@ const UserList = () => {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Acciones</span>
+                            <span className="sr-only">Accións</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                          <DropdownMenuLabel>Accións</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => navigate(`/users/${user.id}/edit`)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar
@@ -173,7 +173,7 @@ const UserList = () => {
                   <TableCell colSpan={4} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
                       <Users className="h-10 w-10 text-muted-foreground/50 mb-4" />
-                      <p className="text-sm text-muted-foreground">No se encontraron usuarios</p>
+                      <p className="text-sm text-muted-foreground">Non se atoparon usuarios</p>
                     </div>
                   </TableCell>
                 </TableRow>

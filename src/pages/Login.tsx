@@ -26,8 +26,8 @@ const Login = () => {
     
     if (!email || !password) {
       toast({
-        title: 'Campos requeridos',
-        description: 'Por favor ingresa email y contraseña',
+        title: 'Campos requiridos',
+        description: 'Por favor, introduce email e contrasinal',
         variant: 'destructive',
       });
       return;
@@ -52,15 +52,15 @@ const Login = () => {
           <div className="flex justify-center">
             <CheckSquare className="h-12 w-12 text-primary" />
           </div>
-          <h1 className="mt-6 text-3xl font-bold">Tareas App</h1>
-          <p className="mt-2 text-muted-foreground">Sistema de gestión de tareas</p>
+          <h1 className="mt-6 text-3xl font-bold">App de Tarefas</h1>
+          <p className="mt-2 text-muted-foreground">Sistema de xestión de tarefas</p>
         </div>
         
         <Card className="shadow-xl">
           <CardHeader>
             <CardTitle>Iniciar sesión</CardTitle>
             <CardDescription>
-              Ingresa tus credenciales para acceder
+              Introduce as túas credenciais para acceder
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
@@ -70,13 +70,13 @@ const Login = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="tu@email.com"
+                  placeholder="teu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password">Contrasinal</Label>
                 <Input
                   id="password"
                   type="password"
@@ -102,10 +102,10 @@ const Login = () => {
         </Card>
         
         <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Para propósitos de demostración, usa:</p>
-          <p className="mt-1 font-medium">Email: alex@example.com (manager)</p>
-          <p className="font-medium">Email: jamie@example.com (worker)</p>
-          <p className="mt-1">La contraseña puede ser cualquier texto</p>
+          <p>Para fins de demostración, usa:</p>
+          <p className="mt-1 font-medium">Email: alex@example.com (xerente)</p>
+          <p className="font-medium">Email: jamie@example.com (traballador)</p>
+          <p className="mt-1">O contrasinal pode ser calquera texto</p>
         </div>
       </div>
     </div>

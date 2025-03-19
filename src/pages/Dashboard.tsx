@@ -82,7 +82,7 @@ const Dashboard = () => {
       return [
         { name: 'Completadas', value: statusCounts.completed },
         { name: 'En progreso', value: statusCounts.in_progress },
-        { name: 'Pendientes', value: statusCounts.pending },
+        { name: 'Pendentes', value: statusCounts.pending },
       ];
     } else {
       // For workers: hours by task for their tasks
@@ -106,9 +106,9 @@ const Dashboard = () => {
       <div className="space-y-8 animate-fade-in">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Panel</h1>
             <p className="text-muted-foreground mt-1">
-              Bienvenido, {currentUser?.name}. {currentUser?.role === 'manager' ? 'Aquí tienes un resumen de todas las tareas.' : 'Aquí tienes tus tareas asignadas.'}
+              Benvido/a, {currentUser?.name}. {currentUser?.role === 'manager' ? 'Aquí tes un resumo de todas as tarefas.' : 'Aquí tes as túas tarefas asignadas.'}
             </p>
           </div>
           <Button 
@@ -116,7 +116,7 @@ const Dashboard = () => {
             onClick={() => navigate('/tasks/new')}
           >
             <PlusCircle className="mr-2 h-4 w-4" />
-            Nueva tarea
+            Nova tarefa
           </Button>
         </div>
         
@@ -124,7 +124,7 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
-                Tareas totales
+                Tarefas totais
               </CardTitle>
               <CheckSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -134,8 +134,8 @@ const Dashboard = () => {
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {currentUser?.role === 'manager' 
-                  ? 'Todas las tareas en el sistema' 
-                  : 'Tareas asignadas a ti'}
+                  ? 'Todas as tarefas no sistema' 
+                  : 'Tarefas asignadas a ti'}
               </p>
             </CardContent>
           </Card>
@@ -152,7 +152,7 @@ const Dashboard = () => {
                 {userTasks.filter(task => task.status === 'in_progress').length}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Tareas actualmente en progreso
+                Tarefas actualmente en progreso
               </p>
             </CardContent>
           </Card>
@@ -170,7 +170,7 @@ const Dashboard = () => {
                   {mockUsers.length}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Usuarios registrados en el sistema
+                  Usuarios rexistrados no sistema
                 </p>
               </CardContent>
             </Card>
@@ -178,7 +178,7 @@ const Dashboard = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Horas registradas
+                  Horas rexistradas
                 </CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -187,7 +187,7 @@ const Dashboard = () => {
                   {getTimeEntriesByUserId(currentUser?.id || '').reduce((sum, entry) => sum + entry.hours, 0)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Total de horas registradas
+                  Total de horas rexistradas
                 </p>
               </CardContent>
             </Card>
@@ -197,9 +197,9 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <Card className="col-span-1">
             <CardHeader>
-              <CardTitle>Tareas recientes</CardTitle>
+              <CardTitle>Tarefas recentes</CardTitle>
               <CardDescription>
-                {currentUser?.role === 'manager' ? 'Todas las tareas' : 'Tus tareas asignadas'}
+                {currentUser?.role === 'manager' ? 'Todas as tarefas' : 'As túas tarefas asignadas'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -217,7 +217,7 @@ const Dashboard = () => {
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="font-medium text-sm truncate">{task.title}</h4>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${getPriorityColor(task.priority)}`}>
-                          {task.priority}
+                          {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Media' : 'Baixa'}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
@@ -225,7 +225,7 @@ const Dashboard = () => {
                       </p>
                       <div className="flex items-center mt-2 text-xs text-muted-foreground">
                         <span>
-                          Vencimiento: {task.dueDate ? format(new Date(task.dueDate), 'dd/MM/yyyy') : 'No definido'}
+                          Vencemento: {task.dueDate ? format(new Date(task.dueDate), 'dd/MM/yyyy') : 'Non definido'}
                         </span>
                         <span className="mx-2">•</span>
                         <span>
@@ -240,15 +240,15 @@ const Dashboard = () => {
                 {userTasks.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <CheckSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <h3 className="text-lg font-medium mb-1">No hay tareas</h3>
+                    <h3 className="text-lg font-medium mb-1">Non hai tarefas</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                       {currentUser?.role === 'manager' 
-                        ? 'No hay tareas en el sistema.' 
-                        : 'No tienes tareas asignadas.'}
+                        ? 'Non hai tarefas no sistema.' 
+                        : 'Non tes tarefas asignadas.'}
                     </p>
                     <Button onClick={() => navigate('/tasks/new')}>
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Crear tarea
+                      Crear tarefa
                     </Button>
                   </div>
                 )}
@@ -256,7 +256,7 @@ const Dashboard = () => {
             </CardContent>
             <CardFooter className="border-t pt-4">
               <Button variant="ghost" className="w-full" onClick={() => navigate('/tasks')}>
-                Ver todas las tareas
+                Ver todas as tarefas
               </Button>
             </CardFooter>
           </Card>
@@ -264,11 +264,11 @@ const Dashboard = () => {
           <Card className="col-span-1">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Análisis</CardTitle>
+                <CardTitle>Análise</CardTitle>
                 <CardDescription>
                   {currentUser?.role === 'manager' 
-                    ? 'Estado de las tareas' 
-                    : 'Horas trabajadas por tarea'}
+                    ? 'Estado das tarefas' 
+                    : 'Horas traballadas por tarefa'}
                 </CardDescription>
               </div>
               <BarChart2 className="h-4 w-4 text-muted-foreground" />
@@ -281,7 +281,7 @@ const Dashboard = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="value" fill="hsl(var(--primary))" name={currentUser?.role === 'manager' ? 'Tareas' : 'Horas'} />
+                    <Bar dataKey="value" fill="hsl(var(--primary))" name={currentUser?.role === 'manager' ? 'Tarefas' : 'Horas'} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

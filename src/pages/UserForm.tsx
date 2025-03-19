@@ -48,8 +48,8 @@ const UserForm = () => {
     
     if (!name.trim() || !email.trim()) {
       toast({
-        title: 'Error',
-        description: 'Por favor completa todos los campos requeridos',
+        title: 'Erro',
+        description: 'Por favor, completa todos os campos requiridos',
         variant: 'destructive',
       });
       return;
@@ -59,8 +59,8 @@ const UserForm = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast({
-        title: 'Error',
-        description: 'Por favor ingresa un email válido',
+        title: 'Erro',
+        description: 'Por favor, introduce un email válido',
         variant: 'destructive',
       });
       return;
@@ -81,7 +81,7 @@ const UserForm = () => {
       
       toast({
         title: isEditing ? 'Usuario actualizado' : 'Usuario creado',
-        description: isEditing ? 'El usuario ha sido actualizado correctamente.' : 'El usuario ha sido creado correctamente.',
+        description: isEditing ? 'O usuario foi actualizado correctamente.' : 'O usuario foi creado correctamente.',
       });
       
       // Navigate back to users list
@@ -117,26 +117,26 @@ const UserForm = () => {
           </Button>
           
           <h1 className="text-3xl font-bold tracking-tight">
-            {isEditing ? 'Editar usuario' : 'Nuevo usuario'}
+            {isEditing ? 'Editar usuario' : 'Novo usuario'}
           </h1>
         </div>
         
         <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
-              <CardTitle>Información del usuario</CardTitle>
+              <CardTitle>Información do usuario</CardTitle>
               <CardDescription>
-                Ingresa los detalles del usuario
+                Introduce os detalles do usuario
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre completo *</Label>
+                <Label htmlFor="name">Nome completo *</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ingresa el nombre completo"
+                  placeholder="Introduce o nome completo"
                   required
                 />
               </div>
@@ -148,7 +148,7 @@ const UserForm = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="correo@ejemplo.com"
+                  placeholder="correo@exemplo.com"
                   required
                 />
               </div>
@@ -160,14 +160,14 @@ const UserForm = () => {
                     <RadioGroupItem value="worker" id="worker" />
                     <Label htmlFor="worker" className="flex items-center cursor-pointer">
                       <UserIcon className="mr-1.5 h-4 w-4" />
-                      Trabajador
+                      Traballador
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="manager" id="manager" />
                     <Label htmlFor="manager" className="flex items-center cursor-pointer">
                       <Shield className="mr-1.5 h-4 w-4" />
-                      Gerente
+                      Xerente
                     </Label>
                   </div>
                 </RadioGroup>
@@ -177,8 +177,8 @@ const UserForm = () => {
                 <p className="text-sm text-muted-foreground">
                   <span className="font-semibold">Nota: </span>
                   {role === 'manager' 
-                    ? 'Los gerentes pueden crear, ver y editar todas las tareas y usuarios en el sistema.' 
-                    : 'Los trabajadores solo pueden ver, crear y editar sus propias tareas asignadas.'}
+                    ? 'Os xerentes poden crear, ver e editar todas as tarefas e usuarios no sistema.' 
+                    : 'Os traballadores só poden ver, crear e editar as súas propias tarefas asignadas.'}
                 </p>
               </div>
             </CardContent>
