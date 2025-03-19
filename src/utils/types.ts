@@ -1,5 +1,4 @@
 
-
 export type UserRole = 'manager' | 'worker';
 
 export interface User {
@@ -22,6 +21,10 @@ export interface TimeEntry {
   hours: number;
   date: string;
   notes?: string;
+  category?: string;
+  project?: string;
+  activity?: string;
+  timeFormat?: string; // Para formato hh:mm
 }
 
 export interface Task {
@@ -36,6 +39,8 @@ export interface Task {
   assignments: TaskAssignment[];
   priority: 'low' | 'medium' | 'high';
   tags?: string[];
+  category?: string;
+  project?: string;
 }
 
 export interface AuthContextType {
@@ -44,4 +49,38 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+}
+
+export interface Holiday {
+  date: string;
+  name: string;
+}
+
+export interface VacationDay {
+  userId: string;
+  date: string;
+  type: 'vacation' | 'sick_leave';
+}
+
+export interface WorkSchedule {
+  regularHours: {
+    mondayToThursday: number;
+    friday: number;
+  };
+  reducedHours: {
+    dailyHours: number;
+  };
+  reducedPeriods: {
+    start: string; // formato MM-DD
+    end: string;   // formato MM-DD
+  }[];
+}
+
+export interface DailyHoursData {
+  date: Date;
+  hours: number;
+  isComplete: boolean;
+  isHoliday?: boolean;
+  isVacation?: boolean;
+  isSickLeave?: boolean;
 }

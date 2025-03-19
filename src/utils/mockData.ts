@@ -1,285 +1,432 @@
+import {
+  User,
+  Task,
+  TimeEntry,
+  Holiday,
+  VacationDay,
+  WorkSchedule,
+} from './types';
 
-import { User, Task, TimeEntry } from './types';
+// Mock data for users
+let mockUsers: User[] = localStorage.getItem('mockUsers')
+  ? JSON.parse(localStorage.getItem('mockUsers') as string)
+  : [
+      {
+        id: 'user_1',
+        name: 'Ana Pereira',
+        email: 'ana.pereira@example.com',
+        role: 'manager',
+        avatar: 'https://ui-avatars.com/api/?name=Ana+Pereira&background=0D8ABC&color=fff',
+      },
+      {
+        id: 'user_2',
+        name: 'Carlos Silva',
+        email: 'carlos.silva@example.com',
+        role: 'worker',
+        avatar: 'https://ui-avatars.com/api/?name=Carlos+Silva&background=0D8ABC&color=fff',
+      },
+      {
+        id: 'user_3',
+        name: 'Mariana Costa',
+        email: 'mariana.costa@example.com',
+        role: 'worker',
+        avatar: 'https://ui-avatars.com/api/?name=Mariana+Costa&background=0D8ABC&color=fff',
+      },
+    ];
 
-// Initial mock data
-const initialMockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Alex Smith',
-    email: 'alex@example.com',
-    role: 'manager',
-    avatar: 'https://ui-avatars.com/api/?name=Alex+Smith&background=0D8ABC&color=fff'
-  },
-  {
-    id: '2',
-    name: 'Jamie Taylor',
-    email: 'jamie@example.com',
-    role: 'worker',
-    avatar: 'https://ui-avatars.com/api/?name=Jamie+Taylor&background=0D8ABC&color=fff'
-  },
-  {
-    id: '3',
-    name: 'Morgan Lewis',
-    email: 'morgan@example.com',
-    role: 'worker',
-    avatar: 'https://ui-avatars.com/api/?name=Morgan+Lewis&background=0D8ABC&color=fff'
-  },
-  {
-    id: '4',
-    name: 'Casey Jones',
-    email: 'casey@example.com',
-    role: 'worker',
-    avatar: 'https://ui-avatars.com/api/?name=Casey+Jones&background=0D8ABC&color=fff'
-  }
-];
+// Mock data for tasks
+let mockTasks: Task[] = localStorage.getItem('mockTasks')
+  ? JSON.parse(localStorage.getItem('mockTasks') as string)
+  : [
+      {
+        id: 'task_1',
+        title: 'Desenvolver interface de usuario',
+        description: 'Implementar a interface de usuario para a nova aplicación web.',
+        status: 'in_progress',
+        createdBy: 'user_1',
+        createdAt: '2024-01-20T10:00:00Z',
+        startDate: '2024-01-22',
+        dueDate: '2024-02-15',
+        assignments: [
+          { userId: 'user_2', allocatedHours: 40 },
+        ],
+        priority: 'high',
+        tags: ['frontend', 'react'],
+        category: 'Desenvolvemento',
+        project: 'Novo Produto',
+      },
+      {
+        id: 'task_2',
+        title: 'Crear API de autenticación',
+        description: 'Desenvolver unha API segura para autenticación de usuarios.',
+        status: 'completed',
+        createdBy: 'user_1',
+        createdAt: '2024-01-25T14:00:00Z',
+        startDate: '2024-01-28',
+        dueDate: '2024-02-05',
+        assignments: [
+          { userId: 'user_2', allocatedHours: 20 },
+          { userId: 'user_3', allocatedHours: 20 },
+        ],
+        priority: 'medium',
+        tags: ['backend', 'api', 'authentication'],
+        category: 'Desenvolvemento',
+        project: 'Plataforma Principal',
+      },
+      {
+        id: 'task_3',
+        title: 'Redactar documentación técnica',
+        description: 'Elaborar documentación técnica detallada para a nova API.',
+        status: 'pending',
+        createdBy: 'user_1',
+        createdAt: '2024-02-01T09:00:00Z',
+        startDate: '2024-02-05',
+        dueDate: '2024-02-28',
+        assignments: [
+          { userId: 'user_3', allocatedHours: 30 },
+        ],
+        priority: 'low',
+        tags: ['documentation', 'api'],
+        category: 'Documentación',
+        project: 'Plataforma Principal',
+      },
+      {
+        id: 'task_4',
+        title: 'Testes de usabilidade da interface',
+        description: 'Realizar testes de usabilidade para identificar melloras na interface.',
+        status: 'in_progress',
+        createdBy: 'user_1',
+        createdAt: '2024-02-05T11:00:00Z',
+        startDate: '2024-02-08',
+        dueDate: '2024-02-22',
+        assignments: [
+          { userId: 'user_2', allocatedHours: 25 },
+        ],
+        priority: 'medium',
+        tags: ['usability', 'testing', 'frontend'],
+        category: 'Testes',
+        project: 'Novo Produto',
+      },
+      {
+        id: 'task_5',
+        title: 'Optimización de base de datos',
+        description: 'Mellorar o rendemento da base de datos para consultas máis rápidas.',
+        status: 'pending',
+        createdBy: 'user_1',
+        createdAt: '2024-02-10T15:00:00Z',
+        startDate: '2024-02-15',
+        dueDate: '2024-03-10',
+        assignments: [
+          { userId: 'user_3', allocatedHours: 35 },
+        ],
+        priority: 'high',
+        tags: ['database', 'optimization', 'backend'],
+        category: 'Infraestrutura',
+        project: 'Plataforma Principal',
+      },
+    ];
 
-const initialMockTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Website Redesign',
-    description: 'Redesign the company website to improve user experience and implement new branding guidelines.',
-    status: 'in_progress',
-    createdBy: '1',
-    createdAt: '2023-05-01T10:00:00Z',
-    startDate: '2023-05-01T10:00:00Z',
-    dueDate: '2023-06-01T18:00:00Z',
-    assignments: [
-      { userId: '2', allocatedHours: 20 },
-      { userId: '3', allocatedHours: 15 }
-    ],
-    priority: 'high',
-    tags: ['design', 'frontend']
-  },
-  {
-    id: '2',
-    title: 'Database Optimization',
-    description: 'Optimize database queries to improve application performance and reduce server load.',
-    status: 'pending',
-    createdBy: '1',
-    createdAt: '2023-05-05T14:30:00Z',
-    startDate: '2023-05-05T14:30:00Z',
-    dueDate: '2023-05-20T18:00:00Z',
-    assignments: [
-      { userId: '4', allocatedHours: 10 }
-    ],
-    priority: 'medium',
-    tags: ['backend', 'performance']
-  },
-  {
-    id: '3',
-    title: 'Mobile App Development',
-    description: 'Create a mobile application for iOS and Android platforms with core functionality.',
-    status: 'pending',
-    createdBy: '1',
-    createdAt: '2023-05-10T09:15:00Z',
-    startDate: '2023-05-10T09:15:00Z',
-    dueDate: '2023-07-15T18:00:00Z',
-    assignments: [
-      { userId: '2', allocatedHours: 40 },
-      { userId: '3', allocatedHours: 40 },
-      { userId: '4', allocatedHours: 20 }
-    ],
-    priority: 'high',
-    tags: ['mobile', 'development']
-  },
-  {
-    id: '4',
-    title: 'Content Creation',
-    description: 'Create content for the new marketing campaign including blog posts and social media materials.',
-    status: 'completed',
-    createdBy: '1',
-    createdAt: '2023-04-20T11:00:00Z',
-    startDate: '2023-04-20T11:00:00Z',
-    dueDate: '2023-05-10T18:00:00Z',
-    assignments: [
-      { userId: '3', allocatedHours: 25 }
-    ],
-    priority: 'low',
-    tags: ['marketing', 'content']
-  }
-];
+// Mock data for time entries
+let mockTimeEntries: TimeEntry[] = localStorage.getItem('mockTimeEntries')
+  ? JSON.parse(localStorage.getItem('mockTimeEntries') as string)
+  : [
+      {
+        id: 'time_1',
+        taskId: 'task_1',
+        userId: 'user_2',
+        hours: 7.5,
+        date: '2024-02-01',
+        notes: 'Traballando na estrutura principal da interface.',
+        category: 'Desenvolvemento',
+        project: 'Novo Produto',
+        activity: 'Implementación',
+        timeFormat: '07:30',
+      },
+      {
+        id: 'time_2',
+        taskId: 'task_1',
+        userId: 'user_2',
+        hours: 8,
+        date: '2024-02-02',
+        notes: 'Axustes de deseño e probas de responsividade.',
+        category: 'Desenvolvemento',
+        project: 'Novo Produto',
+        activity: 'Testes',
+        timeFormat: '08:00',
+      },
+      {
+        id: 'time_3',
+        taskId: 'task_2',
+        userId: 'user_2',
+        hours: 6,
+        date: '2024-02-01',
+        notes: 'Creación de endpoints para autenticación.',
+        category: 'Desenvolvemento',
+        project: 'Plataforma Principal',
+        activity: 'Implementación',
+        timeFormat: '06:00',
+      },
+      {
+        id: 'time_4',
+        taskId: 'task_2',
+        userId: 'user_3',
+        hours: 6.5,
+        date: '2024-02-02',
+        notes: 'Implementación de middleware de seguridade.',
+        category: 'Desenvolvemento',
+        project: 'Plataforma Principal',
+        activity: 'Seguridade',
+        timeFormat: '06:30',
+      },
+      {
+        id: 'time_5',
+        taskId: 'task_4',
+        userId: 'user_2',
+        hours: 5,
+        date: '2024-02-08',
+        notes: 'Recollida de feedback inicial dos usuarios.',
+        category: 'Testes',
+        project: 'Novo Produto',
+        activity: 'Testes de Usabilidade',
+        timeFormat: '05:00',
+      },
+    ];
 
-const initialMockTimeEntries: TimeEntry[] = [
-  {
-    id: '1',
-    taskId: '1',
-    userId: '2',
-    hours: 4,
-    date: '2023-05-05',
-    notes: 'Started working on header designs'
-  },
-  {
-    id: '2',
-    taskId: '1',
-    userId: '2',
-    hours: 3,
-    date: '2023-05-06',
-    notes: 'Continued with main page layout'
-  },
-  {
-    id: '3',
-    taskId: '1',
-    userId: '3',
-    hours: 5,
-    date: '2023-05-05',
-    notes: 'Implemented responsive design patterns'
-  },
-  {
-    id: '4',
-    taskId: '2',
-    userId: '4',
-    hours: 2,
-    date: '2023-05-10',
-    notes: 'Analyzed current query structure'
-  },
-  {
-    id: '5',
-    taskId: '4',
-    userId: '3',
-    hours: 6,
-    date: '2023-05-01',
-    notes: 'Created blog post drafts'
-  }
-];
-
-// Load data from localStorage or use initial data if not available
-const loadData = <T>(key: string, initialData: T[]): T[] => {
-  try {
-    const storedData = localStorage.getItem(key);
-    return storedData ? JSON.parse(storedData) : initialData;
-  } catch (error) {
-    console.error(`Error loading data for ${key}:`, error);
-    return initialData;
-  }
+// Save mock data to localStorage
+const saveUsers = () => {
+  localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
 };
 
-// Save data to localStorage
-const saveData = <T>(key: string, data: T[]): void => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.error(`Error saving data for ${key}:`, error);
-  }
+const saveTasks = () => {
+  localStorage.setItem('mockTasks', JSON.stringify(mockTasks));
 };
 
-// Initialize data
-export let mockUsers: User[] = loadData('users', initialMockUsers);
-export let mockTasks: Task[] = loadData('tasks', initialMockTasks);
-export let mockTimeEntries: TimeEntry[] = loadData('timeEntries', initialMockTimeEntries);
+const saveTimeEntries = () => {
+  localStorage.setItem('mockTimeEntries', JSON.stringify(mockTimeEntries));
+};
 
-// Helper functions
-export function getUserById(id: string): User | undefined {
-  return mockUsers.find(user => user.id === id);
-}
+// User functions
+export const getUsers = (): User[] => {
+  return [...mockUsers];
+};
 
-export function getTaskById(id: string): Task | undefined {
-  return mockTasks.find(task => task.id === id);
-}
+export const getUserById = (id: string): User | undefined => {
+  return mockUsers.find((user) => user.id === id);
+};
 
-export function getNextTaskId(): number {
-  const ids = mockTasks.map(task => parseInt(task.id));
-  return Math.max(...ids, 0) + 1;
-}
+export const addUser = (user: User): void => {
+  mockUsers.push(user);
+  saveUsers();
+};
 
-export function getTimeEntriesByTaskId(taskId: string): TimeEntry[] {
-  return mockTimeEntries.filter(entry => entry.taskId === taskId);
-}
+export const updateUser = (user: User): void => {
+  mockUsers = mockUsers.map((u) => (u.id === user.id ? user : u));
+  saveUsers();
+};
 
-export function getTimeEntriesByUserId(userId: string): TimeEntry[] {
-  return mockTimeEntries.filter(entry => entry.userId === userId);
-}
+// Task functions
+export const getTasks = (): Task[] => {
+  return [...mockTasks];
+};
 
-export function getTasksByUserId(userId: string): Task[] {
-  return mockTasks.filter(task => 
-    task.assignments.some(assignment => assignment.userId === userId)
+export const getTaskById = (id: string): Task | undefined => {
+  return mockTasks.find((task) => task.id === id);
+};
+
+export const addTask = (task: Task): void => {
+  mockTasks.push(task);
+  saveTasks();
+};
+
+export const updateTask = (task: Task): void => {
+  mockTasks = mockTasks.map((t) => (t.id === task.id ? task : t));
+  saveTasks();
+};
+
+export const getTasksByUserId = (userId: string): Task[] => {
+  return mockTasks.filter((task) =>
+    task.assignments.some((assignment) => assignment.userId === userId)
   );
-}
+};
 
-export function getTotalHoursByTask(taskId: string): number {
-  return mockTimeEntries
-    .filter(entry => entry.taskId === taskId)
-    .reduce((sum, entry) => sum + entry.hours, 0);
-}
+// Time entry functions
+export const getTimeEntries = (): TimeEntry[] => {
+  return [...mockTimeEntries];
+};
 
-export function getTotalHoursAllocatedByTask(taskId: string): number {
-  const task = getTaskById(taskId);
-  if (!task) return 0;
-  
-  return task.assignments.reduce((sum, assignment) => sum + assignment.allocatedHours, 0);
-}
+export const getTimeEntryById = (id: string): TimeEntry | undefined => {
+  return mockTimeEntries.find((entry) => entry.id === id);
+};
 
-// Functions to add, update, and delete data
-export function addUser(user: User): User {
-  // Ensure unique ID
-  if (!user.id) {
-    const ids = mockUsers.map(u => parseInt(u.id));
-    user.id = String(Math.max(...ids, 0) + 1);
+export const addTimeEntryOld = (entry: TimeEntry): void => {
+  mockTimeEntries.push(entry);
+  saveTimeEntries();
+};
+
+export const updateTimeEntry = (entry: TimeEntry): void => {
+  mockTimeEntries = mockTimeEntries.map((t) => (t.id === entry.id ? entry : t));
+  saveTimeEntries();
+};
+
+export const getTimeEntriesByUserId = (userId: string): TimeEntry[] => {
+  return mockTimeEntries.filter((entry) => entry.userId === userId);
+};
+
+// Holidays
+let mockHolidays: Holiday[] = localStorage.getItem('mockHolidays')
+  ? JSON.parse(localStorage.getItem('mockHolidays') as string)
+  : [
+      { date: '2024-01-01', name: 'Ano Novo' },
+      { date: '2024-01-06', name: 'Día de Reis' },
+      { date: '2024-04-19', name: 'Venres Santo' },
+      { date: '2024-05-01', name: 'Día do Traballo' },
+      { date: '2024-05-17', name: 'Día das Letras Galegas' },
+      { date: '2024-07-25', name: 'Día de Santiago' },
+      { date: '2024-08-15', name: 'Asunción da Virxe' },
+      { date: '2024-10-12', name: 'Día da Hispanidade' },
+      { date: '2024-11-01', name: 'Día de Todos os Santos' },
+      { date: '2024-12-06', name: 'Día da Constitución' },
+      { date: '2024-12-08', name: 'Inmaculada Concepción' },
+      { date: '2024-12-25', name: 'Nadal' },
+    ];
+
+// Vacation and sick leave days
+let mockVacationDays: VacationDay[] = localStorage.getItem('mockVacationDays')
+  ? JSON.parse(localStorage.getItem('mockVacationDays') as string)
+  : [
+      { userId: 'user_2', date: '2024-08-01', type: 'vacation' },
+      { userId: 'user_2', date: '2024-08-02', type: 'vacation' },
+      { userId: 'user_2', date: '2024-08-05', type: 'vacation' },
+      { userId: 'user_2', date: '2024-08-06', type: 'vacation' },
+      { userId: 'user_2', date: '2024-08-07', type: 'vacation' },
+      { userId: 'user_3', date: '2024-07-15', type: 'vacation' },
+      { userId: 'user_3', date: '2024-07-16', type: 'vacation' },
+      { userId: 'user_3', date: '2024-07-17', type: 'vacation' },
+      { userId: 'user_3', date: '2024-07-18', type: 'vacation' },
+      { userId: 'user_3', date: '2024-07-19', type: 'vacation' },
+      { userId: 'user_3', date: '2024-03-10', type: 'sick_leave' },
+      { userId: 'user_3', date: '2024-03-11', type: 'sick_leave' },
+      { userId: 'user_3', date: '2024-03-12', type: 'sick_leave' },
+    ];
+
+// Work schedule configuration
+const defaultWorkSchedule: WorkSchedule = {
+  regularHours: {
+    mondayToThursday: 8.5,
+    friday: 6,
+  },
+  reducedHours: {
+    dailyHours: 7,
+  },
+  reducedPeriods: [
+    {
+      start: '07-01', // July 1st
+      end: '08-31', // August 31st
+    },
+  ],
+};
+
+let mockWorkSchedule: WorkSchedule = localStorage.getItem('mockWorkSchedule')
+  ? JSON.parse(localStorage.getItem('mockWorkSchedule') as string)
+  : defaultWorkSchedule;
+
+// Save updated mock data to localStorage
+const saveHolidays = () => {
+  localStorage.setItem('mockHolidays', JSON.stringify(mockHolidays));
+};
+
+const saveVacationDays = () => {
+  localStorage.setItem('mockVacationDays', JSON.stringify(mockVacationDays));
+};
+
+const saveWorkSchedule = () => {
+  localStorage.setItem('mockWorkSchedule', JSON.stringify(mockWorkSchedule));
+};
+
+// Holiday functions
+export const getHolidays = (): Holiday[] => {
+  return [...mockHolidays];
+};
+
+export const addHoliday = (holiday: Holiday): void => {
+  // Check if holiday already exists
+  const existingIndex = mockHolidays.findIndex((h) => h.date === holiday.date);
+  if (existingIndex >= 0) {
+    mockHolidays[existingIndex] = holiday;
+  } else {
+    mockHolidays.push(holiday);
   }
-  mockUsers = [...mockUsers, user];
-  saveData('users', mockUsers);
-  return user;
-}
+  saveHolidays();
+};
 
-export function updateUser(updatedUser: User): User {
-  mockUsers = mockUsers.map(user => 
-    user.id === updatedUser.id ? updatedUser : user
-  );
-  saveData('users', mockUsers);
-  return updatedUser;
-}
+export const removeHoliday = (holiday: Holiday): void => {
+  mockHolidays = mockHolidays.filter((h) => h.date !== holiday.date);
+  saveHolidays();
+};
 
-export function deleteUser(userId: string): void {
-  mockUsers = mockUsers.filter(user => user.id !== userId);
-  saveData('users', mockUsers);
-}
-
-export function addTask(task: Task): Task {
-  // Ensure unique ID
-  if (!task.id) {
-    task.id = String(getNextTaskId());
+// Vacation day functions
+export const getVacationDays = (userId?: string): VacationDay[] => {
+  if (userId) {
+    return mockVacationDays.filter((v) => v.userId === userId);
   }
-  mockTasks = [...mockTasks, task];
-  saveData('tasks', mockTasks);
-  return task;
-}
+  return [...mockVacationDays];
+};
 
-export function updateTask(updatedTask: Task): Task {
-  mockTasks = mockTasks.map(task => 
-    task.id === updatedTask.id ? updatedTask : task
+export const addVacationDay = (vacationDay: VacationDay): void => {
+  // Check if vacation day already exists
+  const existingIndex = mockVacationDays.findIndex(
+    (v) =>
+      v.date === vacationDay.date &&
+      v.userId === vacationDay.userId &&
+      v.type === vacationDay.type
   );
-  saveData('tasks', mockTasks);
-  return updatedTask;
-}
 
-export function deleteTask(taskId: string): void {
-  mockTasks = mockTasks.filter(task => task.id !== taskId);
-  saveData('tasks', mockTasks);
-  
-  // Delete associated time entries
-  mockTimeEntries = mockTimeEntries.filter(entry => entry.taskId !== taskId);
-  saveData('timeEntries', mockTimeEntries);
-}
-
-export function addTimeEntry(entry: TimeEntry): TimeEntry {
-  // Ensure unique ID
-  if (!entry.id) {
-    const ids = mockTimeEntries.map(e => parseInt(e.id));
-    entry.id = String(Math.max(...ids, 0) + 1);
+  if (existingIndex >= 0) {
+    mockVacationDays[existingIndex] = vacationDay;
+  } else {
+    mockVacationDays.push(vacationDay);
   }
-  mockTimeEntries = [...mockTimeEntries, entry];
-  saveData('timeEntries', mockTimeEntries);
-  return entry;
-}
+  saveVacationDays();
+};
 
-export function updateTimeEntry(updatedEntry: TimeEntry): TimeEntry {
-  mockTimeEntries = mockTimeEntries.map(entry => 
-    entry.id === updatedEntry.id ? updatedEntry : entry
+export const removeVacationDay = (vacationDay: VacationDay): void => {
+  mockVacationDays = mockVacationDays.filter(
+    (v) =>
+      !(
+        v.date === vacationDay.date &&
+        v.userId === vacationDay.userId &&
+        v.type === vacationDay.type
+      )
   );
-  saveData('timeEntries', mockTimeEntries);
-  return updatedEntry;
-}
+  saveVacationDays();
+};
 
-export function deleteTimeEntry(entryId: string): void {
-  mockTimeEntries = mockTimeEntries.filter(entry => entry.id !== entryId);
-  saveData('timeEntries', mockTimeEntries);
-}
+// Work schedule functions
+export const getWorkSchedule = (): WorkSchedule => {
+  return { ...mockWorkSchedule };
+};
+
+export const updateWorkSchedule = (schedule: WorkSchedule): void => {
+  mockWorkSchedule = { ...schedule };
+  saveWorkSchedule();
+};
+
+// Add to the existing time entry functions
+export const addTimeEntry = (entry: TimeEntry): void => {
+  mockTimeEntries.unshift(entry);
+  saveTimeEntries();
+};
+
+// Add more functions as needed
+
+// Now add to existing export
+export {
+  mockUsers,
+  mockTasks,
+  mockTimeEntries,
+  getTasksByUserId,
+  getTimeEntriesByUserId,
+  mockHolidays,
+  mockVacationDays,
+  mockWorkSchedule
+};
