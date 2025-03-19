@@ -5,9 +5,7 @@
 /* Xunta Sans Font */
 @font-face {
   font-family: 'Xunta Sans';
-  src: url('/fonts/XuntaSans-Regular.woff') format('woff'),
-       url('/fonts/XuntaSans-Regular.ttf') format('truetype'),
-       url('/fonts/XuntaSans-Regular.otf') format('opentype');
+  src: url('/fonts/XuntaSans-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -15,9 +13,7 @@
 
 @font-face {
   font-family: 'Xunta Sans';
-  src: url('/fonts/XuntaSans-Bold.woff') format('woff'),
-       url('/fonts/XuntaSans-Bold.ttf') format('truetype'),
-       url('/fonts/XuntaSans-Bold.otf') format('opentype');
+  src: url('/fonts/XuntaSans-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
