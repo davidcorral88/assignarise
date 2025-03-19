@@ -33,8 +33,8 @@ const Index = () => {
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col space-y-10 items-center text-center">
             <div className="space-y-4 animate-fade-in">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-                Xestiona as túas tarefas con precisión e elegancia
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
+                Rexistro de Tarefas do Plan de Transporte Público de Galicia
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
                 Unha aplicación intuitiva para a xestión de tarefas, deseñada para xerentes e traballadores.
