@@ -52,8 +52,10 @@ const Login = () => {
           <div className="flex justify-center">
             <Clock className="h-12 w-12 text-primary" />
           </div>
-          <h1 className="mt-6 text-3xl font-bold" style={{ color: '#007bc4' }}>Control de Tarefas do Plan de Transporte Público de Galicia</h1>
-          <p className="mt-2 text-muted-foreground">Sistema de xestión de tarefas</p>
+          <h1 className="mt-6 text-3xl font-bold" style={{ color: '#007bc4' }}>Control de Tarefas</h1>
+          <p className="mt-2 text-muted-foreground">
+            Control de Tarefas da Asistencia de Xestión e Seguemento do Plan de Transporte Público de Galicia (ATSXPTPG)
+          </p>
         </div>
         
         <Card className="shadow-xl">
