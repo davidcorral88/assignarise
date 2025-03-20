@@ -370,7 +370,7 @@ const TaskList = () => {
                       </Badge>
                     )}
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="p-0" align="start">
+                  <DropdownMenuSubContent className="p-0">
                     <div className="p-2">
                       <div className="mb-2">
                         <div className="mb-1 text-sm font-medium">Desde</div>
@@ -448,7 +448,7 @@ const TaskList = () => {
                       </Badge>
                     )}
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="p-0" align="start">
+                  <DropdownMenuSubContent className="p-0">
                     <div className="p-2">
                       <div className="mb-2">
                         <div className="mb-1 text-sm font-medium">Desde</div>
