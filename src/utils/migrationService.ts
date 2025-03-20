@@ -27,6 +27,8 @@ export const testPostgreSQLConnection = async (): Promise<boolean> => {
       return true;
     } else {
       console.error('Error en la respuesta del servidor:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Detalle del error:', errorText);
       return false;
     }
   } catch (error) {
@@ -46,6 +48,9 @@ export const testPostgreSQLConnection = async (): Promise<boolean> => {
   }
 };
 
+// Función auxiliar para esperar entre solicitudes para evitar sobrecarga
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const migrateToPostgreSQL = async (): Promise<{success: boolean, message: string}> => {
   try {
     // Paso 1: Extraer todos los datos del localStorage
@@ -59,15 +64,16 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
     
     // Estadísticas para el reporte final
     const stats = {
-      users: { total: mockUsers.length, success: 0, errors: 0 },
-      tasks: { total: mockTasks.length, success: 0, errors: 0 },
-      timeEntries: { total: mockTimeEntries.length, success: 0, errors: 0 },
-      holidays: { total: mockHolidays.length, success: 0, errors: 0 },
-      vacationDays: { total: mockVacationDays.length, success: 0, errors: 0 },
-      workdaySchedules: { total: mockWorkdaySchedules.length, success: 0, errors: 0 }
+      users: { total: mockUsers.length, success: 0, errors: 0, details: [] as string[] },
+      tasks: { total: mockTasks.length, success: 0, errors: 0, details: [] as string[] },
+      timeEntries: { total: mockTimeEntries.length, success: 0, errors: 0, details: [] as string[] },
+      holidays: { total: mockHolidays.length, success: 0, errors: 0, details: [] as string[] },
+      vacationDays: { total: mockVacationDays.length, success: 0, errors: 0, details: [] as string[] },
+      workdaySchedules: { total: mockWorkdaySchedules.length, success: 0, errors: 0, details: [] as string[] }
     };
     
     // Paso 2: Migrar usuarios
+    console.log("Iniciando migración de usuarios...");
     for (const user of mockUsers) {
       try {
         const response = await fetch(`${API_URL}/users`, {
@@ -79,16 +85,24 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
         if (response.ok) {
           stats.users.success++;
         } else {
+          const errorText = await response.text();
           stats.users.errors++;
-          console.error(`Error al migrar usuario ${user.id}:`, await response.text());
+          const errorDetail = `Error al migrar usuario ${user.id}: ${response.status} - ${errorText}`;
+          stats.users.details.push(errorDetail);
+          console.error(errorDetail);
         }
+        // Pequeña pausa para evitar sobrecargar el servidor
+        await sleep(100);
       } catch (error) {
         stats.users.errors++;
-        console.error(`Error al migrar usuario ${user.id}:`, error);
+        const errorDetail = `Error al migrar usuario ${user.id}: ${error instanceof Error ? error.message : String(error)}`;
+        stats.users.details.push(errorDetail);
+        console.error(errorDetail);
       }
     }
     
     // Paso 3: Migrar tareas
+    console.log("Iniciando migración de tareas...");
     for (const task of mockTasks) {
       try {
         // Primero insertamos la tarea principal
@@ -107,38 +121,55 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
           
           // Luego insertamos las etiquetas
           for (const tag of tags) {
-            await fetch(`${API_URL}/task-tags`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ taskId: task.id, tag })
-            });
+            try {
+              await fetch(`${API_URL}/task-tags`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ taskId: task.id, tag })
+              });
+            } catch (error) {
+              console.error(`Error al migrar etiqueta ${tag} para tarea ${task.id}:`, error);
+            }
+            await sleep(50);
           }
           
           // Y las asignaciones
           if (task.assignments && task.assignments.length > 0) {
             for (const assignment of task.assignments) {
-              await fetch(`${API_URL}/task-assignments`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                  taskId: task.id, 
-                  userId: assignment.userId,
-                  allocatedHours: assignment.allocatedHours
-                })
-              });
+              try {
+                await fetch(`${API_URL}/task-assignments`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    taskId: task.id, 
+                    userId: assignment.userId,
+                    allocatedHours: assignment.allocatedHours
+                  })
+                });
+              } catch (error) {
+                console.error(`Error al migrar asignación para tarea ${task.id}:`, error);
+              }
+              await sleep(50);
             }
           }
         } else {
+          const errorText = await taskResponse.text();
           stats.tasks.errors++;
-          console.error(`Error al migrar tarea ${task.id}:`, await taskResponse.text());
+          const errorDetail = `Error al migrar tarea ${task.id}: ${taskResponse.status} - ${errorText}`;
+          stats.tasks.details.push(errorDetail);
+          console.error(errorDetail);
         }
+        await sleep(100);
       } catch (error) {
         stats.tasks.errors++;
-        console.error(`Error al migrar tarea:`, error);
+        const errorDetail = `Error al migrar tarea ${task.id}: ${error instanceof Error ? error.message : String(error)}`;
+        stats.tasks.details.push(errorDetail);
+        console.error(errorDetail);
       }
     }
     
     // Paso 4: Migrar registros de tiempo
+    console.log("Iniciando migración de registros de tiempo...");
     for (const entry of mockTimeEntries) {
       try {
         const entryResponse = await fetch(`${API_URL}/time-entries`, {
@@ -150,16 +181,23 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
         if (entryResponse.ok) {
           stats.timeEntries.success++;
         } else {
+          const errorText = await entryResponse.text();
           stats.timeEntries.errors++;
-          console.error(`Error al migrar registro de tiempo ${entry.id}:`, await entryResponse.text());
+          const errorDetail = `Error al migrar registro de tiempo ${entry.id}: ${entryResponse.status} - ${errorText}`;
+          stats.timeEntries.details.push(errorDetail);
+          console.error(errorDetail);
         }
+        await sleep(100);
       } catch (error) {
         stats.timeEntries.errors++;
-        console.error(`Error al migrar registro de tiempo:`, error);
+        const errorDetail = `Error al migrar registro de tiempo ${entry.id}: ${error instanceof Error ? error.message : String(error)}`;
+        stats.timeEntries.details.push(errorDetail);
+        console.error(errorDetail);
       }
     }
     
     // Paso 5: Migrar festivos
+    console.log("Iniciando migración de festivos...");
     for (const holiday of mockHolidays) {
       try {
         const holidayResponse = await fetch(`${API_URL}/holidays`, {
@@ -171,16 +209,23 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
         if (holidayResponse.ok) {
           stats.holidays.success++;
         } else {
+          const errorText = await holidayResponse.text();
           stats.holidays.errors++;
-          console.error(`Error al migrar festivo ${holiday.date}:`, await holidayResponse.text());
+          const errorDetail = `Error al migrar festivo ${holiday.date}: ${holidayResponse.status} - ${errorText}`;
+          stats.holidays.details.push(errorDetail);
+          console.error(errorDetail);
         }
+        await sleep(100);
       } catch (error) {
         stats.holidays.errors++;
-        console.error(`Error al migrar festivo:`, error);
+        const errorDetail = `Error al migrar festivo ${holiday.date}: ${error instanceof Error ? error.message : String(error)}`;
+        stats.holidays.details.push(errorDetail);
+        console.error(errorDetail);
       }
     }
     
     // Paso 6: Migrar días de vacaciones
+    console.log("Iniciando migración de días de vacaciones...");
     for (const vacationDay of mockVacationDays) {
       try {
         const vacationResponse = await fetch(`${API_URL}/vacation-days`, {
@@ -192,16 +237,23 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
         if (vacationResponse.ok) {
           stats.vacationDays.success++;
         } else {
+          const errorText = await vacationResponse.text();
           stats.vacationDays.errors++;
-          console.error(`Error al migrar día de vacación:`, await vacationResponse.text());
+          const errorDetail = `Error al migrar día de vacación para ${vacationDay.userId} en ${vacationDay.date}: ${vacationResponse.status} - ${errorText}`;
+          stats.vacationDays.details.push(errorDetail);
+          console.error(errorDetail);
         }
+        await sleep(100);
       } catch (error) {
         stats.vacationDays.errors++;
-        console.error(`Error al migrar día de vacación:`, error);
+        const errorDetail = `Error al migrar día de vacación: ${error instanceof Error ? error.message : String(error)}`;
+        stats.vacationDays.details.push(errorDetail);
+        console.error(errorDetail);
       }
     }
     
     // Paso 7: Migrar horarios de trabajo
+    console.log("Iniciando migración de horarios de trabajo...");
     for (const schedule of mockWorkdaySchedules) {
       try {
         const scheduleResponse = await fetch(`${API_URL}/workday-schedules`, {
@@ -213,16 +265,23 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
         if (scheduleResponse.ok) {
           stats.workdaySchedules.success++;
         } else {
+          const errorText = await scheduleResponse.text();
           stats.workdaySchedules.errors++;
-          console.error(`Error al migrar horario ${schedule.id}:`, await scheduleResponse.text());
+          const errorDetail = `Error al migrar horario ${schedule.id}: ${scheduleResponse.status} - ${errorText}`;
+          stats.workdaySchedules.details.push(errorDetail);
+          console.error(errorDetail);
         }
+        await sleep(100);
       } catch (error) {
         stats.workdaySchedules.errors++;
-        console.error(`Error al migrar horario:`, error);
+        const errorDetail = `Error al migrar horario: ${error instanceof Error ? error.message : String(error)}`;
+        stats.workdaySchedules.details.push(errorDetail);
+        console.error(errorDetail);
       }
     }
     
     // Paso 8: Migrar configuración general de horarios
+    console.log("Iniciando migración de configuración general de horarios...");
     try {
       await fetch(`${API_URL}/work-schedule`, {
         method: 'POST',
@@ -238,6 +297,30 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
     const totalSuccess = Object.values(stats).reduce((sum, stat) => sum + stat.success, 0);
     const totalErrors = Object.values(stats).reduce((sum, stat) => sum + stat.errors, 0);
     
+    // Generar reporte detallado
+    const errorDetails = Object.entries(stats)
+      .filter(([_, stat]) => stat.details.length > 0)
+      .map(([type, stat]) => {
+        return `\n${type} (${stat.errors} errores):\n  - ${stat.details.join('\n  - ')}`;
+      })
+      .join('\n');
+    
+    // Guardar reporte en localStorage para diagnóstico
+    localStorage.setItem('migrationReport', JSON.stringify({
+      date: new Date().toISOString(),
+      stats,
+      totalItems,
+      totalSuccess,
+      totalErrors
+    }));
+    
+    console.log("Reporte de migración:", {
+      totalItems,
+      totalSuccess,
+      totalErrors,
+      details: errorDetails
+    });
+    
     // Activar PostgreSQL independientemente del resultado
     setUseAPI(true);
     localStorage.setItem('useAPI', 'true');
@@ -250,7 +333,7 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
     } else {
       return {
         success: false,
-        message: `Migración completada con errores. Migrados: ${totalSuccess}, Errores: ${totalErrors} de ${totalItems} elementos.`
+        message: `Migración completada con errores. Migrados: ${totalSuccess}, Errores: ${totalErrors} de ${totalItems} elementos. Ver consola para detalles.`
       };
     }
   } catch (error) {
