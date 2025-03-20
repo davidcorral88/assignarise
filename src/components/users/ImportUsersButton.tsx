@@ -1,10 +1,10 @@
+
 import React, { useState } from 'react';
 import { Upload, AlertTriangle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { addUser, getUserById } from '@/utils/mockData';
 import { User } from '@/utils/types';
 import { toast } from '@/components/ui/use-toast';
-import * as XLSX from 'xlsx';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ interface ImportUsersButtonProps {
 
 const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [excelData, setExcelData] = useState<any[]>([]);
+  const [jsonData, setJsonData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   
@@ -32,33 +32,34 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
     
     // Check file type
     const fileType = file.name.split('.').pop()?.toLowerCase();
-    if (fileType !== 'xlsx' && fileType !== 'xls') {
-      setErrors(['El archivo debe ser de tipo Excel (.xlsx o .xls)']);
+    if (fileType !== 'json') {
+      setErrors(['El archivo debe ser de tipo JSON (.json)']);
       return;
     }
     
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const binaryString = event.target?.result;
-        const workbook = XLSX.read(binaryString, { type: 'binary' });
-        const worksheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[worksheetName];
-        const data = XLSX.utils.sheet_to_json(worksheet);
+        const jsonContent = event.target?.result as string;
+        const data = JSON.parse(jsonContent);
         
-        setExcelData(data);
-        setIsDialogOpen(true);
+        if (Array.isArray(data)) {
+          setJsonData(data);
+          setIsDialogOpen(true);
+        } else {
+          setErrors(['El archivo JSON debe contener un array de usuarios']);
+        }
       } catch (error) {
-        setErrors(['Error al procesar el archivo Excel. Compruebe el formato.']);
+        setErrors(['Error al procesar el archivo JSON. Compruebe el formato.']);
       }
     };
     
-    reader.readAsBinaryString(file);
+    reader.readAsText(file);
     // Reset input value so the same file can be selected again
     e.target.value = '';
   };
 
-  const validateExcelData = (data: any[]) => {
+  const validateJsonData = (data: any[]) => {
     const validationErrors: string[] = [];
     
     // Check if required headers exist
@@ -100,7 +101,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
   };
 
   const processImport = async () => {
-    const validationErrors = validateExcelData(excelData);
+    const validationErrors = validateJsonData(jsonData);
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
       return;
@@ -113,21 +114,21 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
     };
 
     // Process each row of data
-    for (const row of excelData) {
+    for (const item of jsonData) {
       try {
         const newUser: User = {
-          id: row.id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          name: row.name,
-          email: row.email,
-          role: row.role,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(row.name)}&background=0D8ABC&color=fff`,
-          organism: row.organism,
-          phone: row.phone,
-          emailATSXPTPG: row.emailATSXPTPG
+          id: item.id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: item.name,
+          email: item.email,
+          role: item.role,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=0D8ABC&color=fff`,
+          organism: item.organism,
+          phone: item.phone,
+          emailATSXPTPG: item.emailATSXPTPG
         };
         
         // Check if user with this email already exists
-        const existingUser = getUserById(row.id);
+        const existingUser = getUserById(item.id);
         if (existingUser) {
           importResults.errors++;
           continue;
@@ -166,13 +167,13 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
       <div className="relative">
         <input
           type="file"
-          accept=".xlsx, .xls"
+          accept=".json"
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           onChange={handleFileUpload}
         />
         <Button variant="outline" className="w-full">
           <Upload className="mr-2 h-4 w-4" />
-          Importar Excel
+          Importar JSON
         </Button>
       </div>
       
@@ -197,7 +198,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
           <DialogHeader>
             <DialogTitle>Importar usuarios</DialogTitle>
             <DialogDescription>
-              Se encontraron {excelData.length} registros en el archivo Excel.
+              Se encontraron {jsonData.length} registros en el archivo JSON.
               ¿Desea continuar con la importación?
             </DialogDescription>
           </DialogHeader>
@@ -213,7 +214,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
                 </tr>
               </thead>
               <tbody>
-                {excelData.slice(0, 10).map((row, index) => (
+                {jsonData.slice(0, 10).map((row, index) => (
                   <tr key={index} className="border-t">
                     <td className="p-2">{row.name}</td>
                     <td className="p-2">{row.phone || '-'}</td>
@@ -223,9 +224,9 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
                 ))}
               </tbody>
             </table>
-            {excelData.length > 10 && (
+            {jsonData.length > 10 && (
               <div className="p-2 text-center text-muted-foreground">
-                Y {excelData.length - 10} más...
+                Y {jsonData.length - 10} más...
               </div>
             )}
           </div>
