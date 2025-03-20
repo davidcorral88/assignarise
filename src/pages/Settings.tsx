@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -9,11 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
-import { DatabaseBackup, FileUp, RefreshCw, HardDrive, AlertCircle, CheckCircle2, Ban } from 'lucide-react';
+import { DatabaseBackup, FileUp, RefreshCw, HardDrive, AlertCircle, CheckCircle2, Ban, Database } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { resetDatabase, downloadDatabaseBackup, importDatabaseFromJSON, getStorageUsage } from '@/utils/mockData';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthContext';
+import PostgreSQLMigration from '@/components/settings/PostgreSQLMigration';
 
 const Settings = () => {
   const { currentUser } = useAuth();
@@ -96,6 +96,7 @@ const Settings = () => {
         <Tabs defaultValue="database" className="w-full">
           <TabsList>
             <TabsTrigger value="database">Base de datos</TabsTrigger>
+            <TabsTrigger value="postgresql">PostgreSQL</TabsTrigger>
             <TabsTrigger value="general">Xeral</TabsTrigger>
           </TabsList>
           
@@ -251,6 +252,78 @@ const Settings = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Se precisas capacidades avanzadas ou almacenamento compartido, contacta co administrador 
                   para implementar unha base de datos externa.
+                </p>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="postgresql" className="space-y-4 pt-4">
+            <PostgreSQLMigration />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Database className="mr-2 h-5 w-5" />
+                  Ventajas de PostgreSQL
+                </CardTitle>
+                <CardDescription>
+                  PostgreSQL ofrece numerosas ventajas sobre el almacenamiento local del navegador.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-md">
+                    <Badge variant="outline" className="mb-2">Almacenamiento</Badge>
+                    <h3 className="font-medium mb-1">Sin límites prácticos</h3>
+                    <p className="text-sm text-muted-foreground">
+                      PostgreSQL puede manejar grandes volúmenes de datos, superando las limitaciones del localStorage.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-md">
+                    <Badge variant="outline" className="mb-2">Multiusuario</Badge>
+                    <h3 className="font-medium mb-1">Acceso concurrente</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Permite que múltiples usuarios trabajen simultáneamente con los mismos datos.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-md">
+                    <Badge variant="outline" className="mb-2">Seguridad</Badge>
+                    <h3 className="font-medium mb-1">Control de acceso</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Proporciona robustos mecanismos de seguridad y control de acceso a los datos.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-md">
+                    <Badge variant="outline" className="mb-2">Respaldo</Badge>
+                    <h3 className="font-medium mb-1">Copias de seguridad</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Permite programar copias de seguridad automáticas para proteger los datos.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-md">
+                    <Badge variant="outline" className="mb-2">Escalabilidad</Badge>
+                    <h3 className="font-medium mb-1">Crecimiento</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Escala con su organización a medida que crece, sin necesidad de migrar a otra tecnología.
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-md">
+                    <Badge variant="outline" className="mb-2">Estándar</Badge>
+                    <h3 className="font-medium mb-1">SQL completo</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Implementa el estándar SQL con extensiones avanzadas para consultas complejas.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex-col items-start">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Para aprovechar todas estas ventajas, configure un servidor PostgreSQL y use el asistente de migración.
                 </p>
               </CardFooter>
             </Card>
