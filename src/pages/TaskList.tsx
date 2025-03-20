@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -12,7 +13,8 @@ import {
   Circle,
   Edit,
   Eye,
-  Trash2
+  Trash2,
+  Hash
 } from 'lucide-react';
 import { 
   Table, 
@@ -68,7 +70,8 @@ const TaskList = () => {
       result = result.filter(
         task => 
           task.title.toLowerCase().includes(query) || 
-          task.description.toLowerCase().includes(query)
+          task.description.toLowerCase().includes(query) ||
+          task.id.toLowerCase().includes(query)
       );
     }
     
@@ -142,7 +145,7 @@ const TaskList = () => {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Buscar tarefas..."
+              placeholder="Buscar tarefas por nome ou ID..."
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -183,6 +186,7 @@ const TaskList = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ID</TableHead>
                 <TableHead>Título</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Prioridade</TableHead>
@@ -195,6 +199,12 @@ const TaskList = () => {
               {filteredTasks.length > 0 ? (
                 filteredTasks.map((task) => (
                   <TableRow key={task.id}>
+                    <TableCell className="font-mono text-xs">
+                      <div className="flex items-center">
+                        <Hash className="h-3 w-3 mr-1 text-muted-foreground" />
+                        {task.id}
+                      </div>
+                    </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center">
                         {getStatusIcon(task.status)}
@@ -248,7 +258,7 @@ const TaskList = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
                       <Clock className="h-10 w-10 text-muted-foreground/50 mb-4" />
                       <p className="text-sm text-muted-foreground">Non se atoparon tarefas</p>
