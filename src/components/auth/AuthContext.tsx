@@ -1,8 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../../utils/types';
-import { mockUsers } from '../../utils/mockData';
 import { toast } from '@/components/ui/use-toast';
+import { getUserByEmail } from '@/utils/dataService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -30,11 +30,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // In a real app, this would be an API call
       // Simulating authentication delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      const user = mockUsers.find(u => u.email === email);
+      // Get user from database or localStorage via adapter
+      const user = await getUserByEmail(email);
       
       if (!user) {
         throw new Error('Usuario non atopado');
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // In a real app, we would validate the password here
-      // For demo purposes, any password is accepted for the mock users
+      // For demo purposes, any password is accepted for the users
       
       setCurrentUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));

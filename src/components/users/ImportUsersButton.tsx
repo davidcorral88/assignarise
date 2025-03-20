@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, AlertTriangle, Check, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { addUser, getUserById } from '@/utils/mockData';
+import { addUser, getUserById } from '@/utils/dataService';
 import { User } from '@/utils/types';
 import { toast } from '@/components/ui/use-toast';
 import {
@@ -16,6 +16,7 @@ import {
 import { testPostgreSQLConnection } from '@/utils/migrationService';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { getUseAPI } from '@/utils/dataService';
 
 interface ImportUsersButtonProps {
   onImportComplete: () => void;
@@ -26,7 +27,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
   const [jsonData, setJsonData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const [usePostgreSQL, setUsePostgreSQL] = useState(false);
+  // Ya no necesitamos un estado separado aquí, usamos directamente el de dataService
   const [isPostgreSQLAvailable, setIsPostgreSQLAvailable] = useState(false);
   
   useEffect(() => {
@@ -142,35 +143,13 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
           emailATSXPTPG: item.emailATSXPTPG
         };
         
-        if (usePostgreSQL) {
-          // Importar a PostgreSQL
-          try {
-            const response = await fetch('/api/users', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newUser)
-            });
-            
-            if (response.ok) {
-              importResults.success++;
-            } else {
-              importResults.errors++;
-            }
-          } catch (error) {
-            console.error("Error al importar usuario a PostgreSQL:", error);
-            importResults.errors++;
-          }
-        } else {
-          // Importar a localStorage
-          // Check if user with this email already exists
-          const existingUser = getUserById(item.id);
-          if (existingUser) {
-            importResults.errors++;
-            continue;
-          }
-          
-          addUser(newUser);
+        try {
+          // Usamos el método addUser del adaptador que sabe si usar API o localStorage
+          await addUser(newUser);
           importResults.success++;
+        } catch (error) {
+          console.error("Error al importar usuario:", error);
+          importResults.errors++;
         }
       } catch (error) {
         importResults.errors++;
@@ -181,10 +160,12 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
     setIsLoading(false);
     setIsDialogOpen(false);
     
+    const storageType = getUseAPI() ? 'PostgreSQL' : 'localStorage';
+    
     if (importResults.errors === 0) {
       toast({
         title: "Importación completada",
-        description: `Se importaron ${importResults.success} usuarios correctamente${usePostgreSQL ? ' a PostgreSQL' : ''}.`,
+        description: `Se importaron ${importResults.success} usuarios correctamente a ${storageType}.`,
       });
     } else {
       toast({
@@ -243,13 +224,18 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
             <div className="flex items-center space-x-2 mb-4">
               <Switch
                 id="use-postgresql"
-                checked={usePostgreSQL}
-                onCheckedChange={setUsePostgreSQL}
+                checked={getUseAPI()}
+                disabled={true}
               />
               <Label htmlFor="use-postgresql" className="flex items-center cursor-pointer">
                 <Database className="h-4 w-4 mr-2" />
-                Importar directamente a PostgreSQL
+                {getUseAPI() 
+                  ? "Importando a PostgreSQL (configuración actual)" 
+                  : "Importando a localStorage (configuración actual)"}
               </Label>
+              <p className="text-xs text-muted-foreground ml-8">
+                Para cambiar el destino, vaya a Configuración &gt; PostgreSQL
+              </p>
             </div>
           )}
           

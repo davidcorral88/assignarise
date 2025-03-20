@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
 import { Layout } from '../components/layout/Layout';
 import { 
   Calendar as CalendarIcon,
-  Save,
   Check,
   Loader2,
   Heart,
@@ -15,25 +15,19 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
+import { Calendar } from '@/components/ui/calendar';
 import { 
   getVacationDays, 
   addVacationDay, 
   removeVacationDay 
-} from '../utils/mockData';
+} from '../utils/dataService';
 import { VacationDay } from '../utils/types';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -42,21 +36,65 @@ import { es } from 'date-fns/locale';
 const UserVacations = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
-  const [vacationDays, setVacationDays] = useState<VacationDay[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedType, setSelectedType] = useState<'vacation' | 'sick_leave'>('vacation');
-  const [submitting, setSubmitting] = useState(false);
   
-  useEffect(() => {
+  // Redirect if not logged in
+  React.useEffect(() => {
     if (!currentUser) {
       navigate('/login');
-      return;
     }
-    
-    // Load initial data
-    setVacationDays(getVacationDays(currentUser.id));
   }, [currentUser, navigate]);
+  
+  // Query for vacation days
+  const { data: vacationDays = [] } = useQuery({
+    queryKey: ['vacationDays', currentUser?.id],
+    queryFn: async () => currentUser ? await getVacationDays(currentUser.id) : [],
+    enabled: !!currentUser
+  });
+  
+  // Mutation for adding vacation day
+  const addVacationMutation = useMutation({
+    mutationFn: addVacationDay,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vacationDays', currentUser?.id] });
+      setSelectedDate(undefined);
+      
+      toast({
+        title: 'Día engadido',
+        description: `Día de ${selectedType === 'vacation' ? 'vacacións' : 'baixa médica'} engadido correctamente.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Ocorreu un erro ao engadir o día',
+        variant: 'destructive',
+      });
+    }
+  });
+  
+  // Mutation for removing vacation day
+  const removeVacationMutation = useMutation({
+    mutationFn: removeVacationDay,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vacationDays', currentUser?.id] });
+      
+      toast({
+        title: 'Día eliminado',
+        description: 'Día eliminado correctamente.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Ocorreu un erro ao eliminar o día',
+        variant: 'destructive',
+      });
+    }
+  });
   
   const handleAddVacationDay = () => {
     if (!selectedDate) {
@@ -68,10 +106,17 @@ const UserVacations = () => {
       return;
     }
     
-    setSubmitting(true);
+    if (!currentUser) {
+      toast({
+        title: 'Erro',
+        description: 'Usuario non identificado',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     const newVacationDay: VacationDay = {
-      userId: currentUser?.id || '',
+      userId: currentUser.id,
       date: format(selectedDate, 'yyyy-MM-dd'),
       type: selectedType
     };
@@ -87,31 +132,14 @@ const UserVacations = () => {
         description: 'Esta data xa está rexistrada co mesmo tipo de ausencia.',
         variant: 'destructive',
       });
-      setSubmitting(false);
       return;
     }
     
-    addVacationDay(newVacationDay);
-    
-    setVacationDays([...vacationDays, newVacationDay]);
-    setSelectedDate(undefined);
-    
-    toast({
-      title: 'Día engadido',
-      description: `Día de ${selectedType === 'vacation' ? 'vacacións' : 'baixa médica'} engadido correctamente.`,
-    });
-    
-    setSubmitting(false);
+    addVacationMutation.mutate(newVacationDay);
   };
   
   const handleRemoveVacationDay = (day: VacationDay) => {
-    removeVacationDay(day);
-    setVacationDays(vacationDays.filter(v => v.date !== day.date || v.type !== day.type));
-    
-    toast({
-      title: 'Día eliminado',
-      description: `Día de ${day.type === 'vacation' ? 'vacacións' : 'baixa médica'} eliminado correctamente.`,
-    });
+    removeVacationMutation.mutate(day);
   };
   
   // Function to render dates in calendar
@@ -136,6 +164,10 @@ const UserVacations = () => {
     
     return {};
   };
+  
+  if (!currentUser) {
+    return null; // Will redirect to login
+  }
   
   return (
     <Layout>
@@ -214,9 +246,9 @@ const UserVacations = () => {
               <Button 
                 className="w-full mt-2" 
                 onClick={handleAddVacationDay}
-                disabled={submitting || !selectedDate}
+                disabled={addVacationMutation.isPending || !selectedDate}
               >
-                {submitting ? (
+                {addVacationMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Engadindo...
@@ -260,6 +292,7 @@ const UserVacations = () => {
                               variant="ghost" 
                               size="icon"
                               onClick={() => handleRemoveVacationDay(vacation)}
+                              disabled={removeVacationMutation.isPending}
                             >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
@@ -291,6 +324,7 @@ const UserVacations = () => {
                               variant="ghost" 
                               size="icon"
                               onClick={() => handleRemoveVacationDay(sickLeave)}
+                              disabled={removeVacationMutation.isPending}
                             >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>

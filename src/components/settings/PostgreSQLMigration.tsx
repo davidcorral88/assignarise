@@ -1,12 +1,15 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { migrateToPostgreSQL, testPostgreSQLConnection } from '@/utils/migrationService';
+import { getUseAPI, setUseAPI } from '@/utils/dataService';
 
 const PostgreSQLMigration: React.FC = () => {
   const [isMigrating, setIsMigrating] = useState(false);
@@ -14,6 +17,17 @@ const PostgreSQLMigration: React.FC = () => {
   const [migrationProgress, setMigrationProgress] = useState(0);
   const [apiUrl, setApiUrl] = useState('http://localhost:3000/api');
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [usePostgresStorage, setUsePostgresStorage] = useState(getUseAPI);
+  
+  useEffect(() => {
+    // Check if postgres is already active
+    setUsePostgresStorage(getUseAPI());
+    
+    // If it's active, we test the connection on component mount
+    if (getUseAPI()) {
+      handleTestConnection();
+    }
+  }, []);
   
   const handleTestConnection = async () => {
     setIsTestingConnection(true);
@@ -80,6 +94,9 @@ const PostgreSQLMigration: React.FC = () => {
           title: "Migración completada",
           description: result.message,
         });
+        // Activar el uso de PostgreSQL automáticamente después de una migración exitosa
+        setUseAPI(true);
+        setUsePostgresStorage(true);
       } else {
         toast({
           title: "Migración con errores",
@@ -97,6 +114,21 @@ const PostgreSQLMigration: React.FC = () => {
     } finally {
       setIsMigrating(false);
     }
+  };
+  
+  const handleToggleStorage = (checked: boolean) => {
+    // Solo permitir activar PostgreSQL si la conexión está establecida
+    if (checked && connectionStatus !== 'connected') {
+      toast({
+        title: "Conexión no establecida",
+        description: "Primero debe verificar la conexión con PostgreSQL",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setUsePostgresStorage(checked);
+    setUseAPI(checked);
   };
   
   return (
@@ -155,6 +187,20 @@ const PostgreSQLMigration: React.FC = () => {
             </div>
           )}
         </div>
+        
+        {connectionStatus === 'connected' && (
+          <div className="flex items-center space-x-2 pt-4 border-t">
+            <Switch
+              id="use-postgresql"
+              checked={usePostgresStorage}
+              onCheckedChange={handleToggleStorage}
+              disabled={isMigrating}
+            />
+            <Label htmlFor="use-postgresql" className="font-medium">
+              Usar PostgreSQL como almacenamiento principal
+            </Label>
+          </div>
+        )}
         
         {connectionStatus === 'connected' && (
           <>

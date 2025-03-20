@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Layout } from '../components/layout/Layout';
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -10,14 +11,14 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { getTasks, getTimeEntriesByUserId, addTimeEntryOld } from '../utils/mockData';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { getTasks, getTimeEntriesByUserId, addTimeEntry } from '../utils/dataService';
 import { TimeEntry, Task } from '../utils/types';
 import { useAuth } from '../components/auth/AuthContext';
 
 const CalendarView = () => {
   const { currentUser } = useAuth();
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
@@ -26,14 +27,47 @@ const CalendarView = () => {
   const [category, setCategory] = useState<string>('');
   const [project, setProject] = useState<string>('');
   const [activity, setActivity] = useState<string>('');
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>(
-    currentUser ? getTimeEntriesByUserId(currentUser.id) : []
-  );
 
-  const tasks = getTasks().filter(task => 
-    task.assignments.some(assignment => assignment.userId === currentUser?.id)
-  );
+  // Fetch tasks for the current user
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks', currentUser?.id],
+    queryFn: async () => currentUser ? await getTasks().then(tasks => 
+      tasks.filter(task => task.assignments.some(assignment => assignment.userId === currentUser?.id))
+    ) : [],
+    enabled: !!currentUser
+  });
+
+  // Fetch time entries for the current user
+  const { data: timeEntries = [] } = useQuery({
+    queryKey: ['timeEntries', currentUser?.id],
+    queryFn: async () => currentUser ? await getTimeEntriesByUserId(currentUser.id) : [],
+    enabled: !!currentUser
+  });
+
+  // Mutation for adding new time entry
+  const addTimeEntryMutation = useMutation({
+    mutationFn: addTimeEntry,
+    onSuccess: () => {
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['timeEntries', currentUser?.id] });
+      
+      toast({
+        title: 'Horas rexistradas',
+        description: 'Rexistráronse as túas horas correctamente.',
+      });
+      
+      // Close dialog and reset form
+      setIsDialogOpen(false);
+      resetForm();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Produciuse un erro ao rexistrar as horas',
+        variant: 'destructive',
+      });
+    }
+  });
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -54,8 +88,6 @@ const CalendarView = () => {
       return;
     }
     
-    setSubmitting(true);
-    
     // Parse hours (hh:mm) to number
     const [hoursVal, minutesVal] = hours.split(':').map(Number);
     const hoursNumber = hoursVal + (minutesVal / 60);
@@ -74,21 +106,8 @@ const CalendarView = () => {
       timeFormat: hours
     };
     
-    // Add to db
-    addTimeEntryOld(newEntry);
-    
-    // Update state
-    setTimeEntries([...timeEntries, newEntry]);
-    
-    toast({
-      title: 'Horas rexistradas',
-      description: 'Rexistráronse as túas horas correctamente.',
-    });
-    
-    // Close dialog and reset form
-    setIsDialogOpen(false);
-    setSubmitting(false);
-    resetForm();
+    // Add to db using mutation
+    addTimeEntryMutation.mutate(newEntry);
   };
 
   const resetForm = () => {
@@ -198,8 +217,8 @@ const CalendarView = () => {
                 <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Gardando...' : 'Gardar'}
+                <Button type="submit" disabled={addTimeEntryMutation.isPending}>
+                  {addTimeEntryMutation.isPending ? 'Gardando...' : 'Gardar'}
                 </Button>
               </DialogFooter>
             </form>

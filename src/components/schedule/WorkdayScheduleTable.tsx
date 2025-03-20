@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Calendar as CalendarIcon, Save, Edit, Trash, Plus } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,14 +23,14 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { WorkdaySchedule } from '@/utils/types';
 import { 
   getWorkdaySchedules, 
   addWorkdaySchedule, 
   updateWorkdaySchedule, 
   deleteWorkdaySchedule 
-} from '@/utils/mockData';
+} from '@/utils/dataService';
 
 const formatDateFromMMDD = (mmdd: string): string => {
   // Convertir MM-DD a Date y formatear a string legible
@@ -39,22 +40,60 @@ const formatDateFromMMDD = (mmdd: string): string => {
 };
 
 const WorkdayScheduleTable: React.FC = () => {
-  const { toast } = useToast();
-  const [schedules, setSchedules] = useState<WorkdaySchedule[]>([]);
+  const queryClient = useQueryClient();
   const [editingSchedule, setEditingSchedule] = useState<WorkdaySchedule | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   // Store original id for updates
   const [originalId, setOriginalId] = useState<string | null>(null);
   
-  useEffect(() => {
-    loadSchedules();
-  }, []);
+  // Query para obtener los horarios
+  const { data: schedules = [] } = useQuery({
+    queryKey: ['workdaySchedules'],
+    queryFn: getWorkdaySchedules
+  });
   
-  const loadSchedules = () => {
-    const data = getWorkdaySchedules();
-    setSchedules(data);
-  };
+  // Mutation para añadir horario
+  const addScheduleMutation = useMutation({
+    mutationFn: addWorkdaySchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
+      toast({
+        title: "Engadido",
+        description: "O novo horario foi engadido correctamente.",
+      });
+      setIsDialogOpen(false);
+      setEditingSchedule(null);
+      setOriginalId(null);
+    }
+  });
+  
+  // Mutation para actualizar horario
+  const updateScheduleMutation = useMutation({
+    mutationFn: updateWorkdaySchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
+      toast({
+        title: "Actualizado",
+        description: "O horario foi actualizado correctamente.",
+      });
+      setIsDialogOpen(false);
+      setEditingSchedule(null);
+      setOriginalId(null);
+    }
+  });
+  
+  // Mutation para eliminar horario
+  const deleteScheduleMutation = useMutation({
+    mutationFn: deleteWorkdaySchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
+      toast({
+        title: "Eliminado",
+        description: "O horario foi eliminado correctamente.",
+      });
+    }
+  });
   
   const handleEdit = (schedule: WorkdaySchedule) => {
     setEditingSchedule({ ...schedule });
@@ -80,12 +119,7 @@ const WorkdayScheduleTable: React.FC = () => {
   };
   
   const handleDelete = (id: string) => {
-    deleteWorkdaySchedule(id);
-    setSchedules(schedules.filter(s => s.id !== id));
-    toast({
-      title: "Eliminado",
-      description: "O horario foi eliminado correctamente.",
-    });
+    deleteScheduleMutation.mutate(id);
   };
   
   const handleDateSelect = (field: 'startDate' | 'endDate', date: Date | undefined) => {
@@ -113,32 +147,20 @@ const WorkdayScheduleTable: React.FC = () => {
     if (originalId) {
       // Update existing schedule
       const updatedSchedule = { ...editingSchedule, id: originalId };
-      updateWorkdaySchedule(updatedSchedule);
-      setSchedules(schedules.map(s => s.id === originalId ? updatedSchedule : s));
-      toast({
-        title: "Actualizado",
-        description: "O horario foi actualizado correctamente.",
-      });
+      updateScheduleMutation.mutate(updatedSchedule);
     } else {
       // Add new schedule
-      addWorkdaySchedule(editingSchedule);
-      loadSchedules(); // Reload to get the generated ID
-      toast({
-        title: "Engadido",
-        description: "O novo horario foi engadido correctamente.",
-      });
+      addScheduleMutation.mutate(editingSchedule);
     }
-    
-    setIsDialogOpen(false);
-    setEditingSchedule(null);
-    setOriginalId(null);
   };
+  
+  const isPending = addScheduleMutation.isPending || updateScheduleMutation.isPending || deleteScheduleMutation.isPending;
   
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Horarios de traballo</h3>
-        <Button onClick={handleAddNew} className="flex items-center">
+        <Button onClick={handleAddNew} className="flex items-center" disabled={isPending}>
           <Plus className="mr-2 h-4 w-4" />
           Engadir horario
         </Button>
@@ -175,6 +197,7 @@ const WorkdayScheduleTable: React.FC = () => {
                     variant="ghost" 
                     size="icon" 
                     onClick={() => handleEdit(schedule)}
+                    disabled={isPending}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -182,6 +205,7 @@ const WorkdayScheduleTable: React.FC = () => {
                     variant="ghost" 
                     size="icon"
                     onClick={() => handleDelete(schedule.id)}
+                    disabled={isPending}
                   >
                     <Trash className="h-4 w-4 text-red-500" />
                   </Button>
@@ -365,11 +389,22 @@ const WorkdayScheduleTable: React.FC = () => {
             </div>
             
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDialogOpen(false)}
+                disabled={addScheduleMutation.isPending || updateScheduleMutation.isPending}
+              >
                 Cancelar
               </Button>
-              <Button onClick={handleSave}>
-                <Save className="mr-2 h-4 w-4" />
+              <Button 
+                onClick={handleSave}
+                disabled={addScheduleMutation.isPending || updateScheduleMutation.isPending}
+              >
+                {(addScheduleMutation.isPending || updateScheduleMutation.isPending) ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white mr-2" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
                 Gardar
               </Button>
             </DialogFooter>
