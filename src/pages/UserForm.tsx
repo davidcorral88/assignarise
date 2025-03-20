@@ -17,7 +17,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { mockUsers, getUserById, addUser, updateUser } from '../utils/mockData';
+import { getUserById, addUser, updateUser, getNextUserId } from '../utils/dataService';
 import { User, UserRole } from '../utils/types';
 import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,6 +40,7 @@ const UserForm = () => {
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [nextId, setNextId] = useState<string>('');
   
   useEffect(() => {
     // Only managers can access this page
@@ -47,22 +48,35 @@ const UserForm = () => {
       navigate('/dashboard');
     }
     
-    if (isEditing && id) {
-      const user = getUserById(id);
-      if (user) {
-        setName(user.name);
-        setEmail(user.email);
-        setRole(user.role);
-        setPhone(user.phone || '');
-        setEmailATSXPTPG(user.emailATSXPTPG || '');
-        setOrganism(user.organism || '');
-        setActive(user.active !== false); // If active is undefined, treat as true
+    const loadData = async () => {
+      if (isEditing && id) {
+        const user = await getUserById(id);
+        if (user) {
+          setName(user.name);
+          setEmail(user.email);
+          setRole(user.role);
+          setPhone(user.phone || '');
+          setEmailATSXPTPG(user.emailATSXPTPG || '');
+          setOrganism(user.organism || '');
+          setActive(user.active !== false); // If active is undefined, treat as true
+        }
+      } else {
+        // Get next available ID for new users
+        try {
+          const nextUserId = await getNextUserId();
+          setNextId(String(nextUserId));
+        } catch (error) {
+          console.error("Error getting next user ID:", error);
+          setNextId('');
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    
+    loadData();
   }, [id, isEditing, currentUser, navigate]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name.trim() || !email.trim()) {
@@ -97,36 +111,46 @@ const UserForm = () => {
     
     setSubmitting(true);
     
-    // Create the user object
-    const user: User = {
-      id: isEditing && id ? id : String(mockUsers.length + 1),
-      name,
-      email,
-      role,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`,
-      phone: phone || undefined,
-      emailATSXPTPG: emailATSXPTPG || undefined,
-      organism: organism as 'Xunta' | 'iPlan' | undefined,
-      active: active
-    };
-    
-    // Save the user
-    if (isEditing) {
-      updateUser(user);
-    } else {
-      addUser(user);
-    }
-    
-    toast({
-      title: isEditing ? 'Usuario actualizado' : 'Usuario creado',
-      description: isEditing ? 'O usuario foi actualizado correctamente.' : 'O usuario foi creado correctamente.',
-    });
-    
-    // Navigate back to users list
-    setTimeout(() => {
-      navigate('/users');
+    try {
+      // Create the user object
+      const user: User = {
+        id: isEditing && id ? id : nextId || String(Date.now()),
+        name,
+        email,
+        role,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`,
+        phone: phone || undefined,
+        emailATSXPTPG: emailATSXPTPG || undefined,
+        organism: organism as 'Xunta' | 'iPlan' | undefined,
+        active: active
+      };
+      
+      // Save the user
+      if (isEditing) {
+        await updateUser(user);
+      } else {
+        await addUser(user);
+      }
+      
+      toast({
+        title: isEditing ? 'Usuario actualizado' : 'Usuario creado',
+        description: isEditing ? 'O usuario foi actualizado correctamente.' : 'O usuario foi creado correctamente.',
+      });
+      
+      // Navigate back to users list
+      setTimeout(() => {
+        navigate('/users');
+        setSubmitting(false);
+      }, 800);
+    } catch (error) {
+      console.error('Error al guardar usuario:', error);
+      toast({
+        title: 'Error',
+        description: 'Ocurrió un error al guardar el usuario. Consulte la consola para más detalles.',
+        variant: 'destructive',
+      });
       setSubmitting(false);
-    }, 800);
+    }
   };
   
   if (loading) {

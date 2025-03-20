@@ -1,32 +1,58 @@
-
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
 import { API_URL } from './dbConfig';
 
-// Configuración para la conexión a PostgreSQL
-// const API_URL = 'http://localhost:5433/api';
-// Nota: La autenticación se maneja en el backend, no exponemos credenciales en el frontend
-
 // Función genérica para manejar errores de fetch
 const handleFetchError = (error: any, message: string): never => {
   console.error(`${message}:`, error);
+  
+  // Mostrar más detalles del error en la consola para depuración
+  if (error.response) {
+    console.error('Detalles de respuesta:', {
+      status: error.response.status,
+      statusText: error.response.statusText,
+      data: error.response.data
+    });
+  }
+  
   toast({
     title: 'Error de conexión',
-    description: message,
+    description: `${message}. Compruebe la consola para más detalles.`,
     variant: 'destructive',
   });
   throw error;
 };
 
+// Función genérica para realizar solicitudes HTTP con manejo de errores
+const fetchWithErrorHandling = async (url: string, options: RequestInit = {}, errorMessage: string) => {
+  try {
+    console.log(`Realizando ${options.method || 'GET'} a: ${url}`);
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    
+    if (!response.ok) {
+      const responseText = await response.text();
+      console.error(`Error HTTP ${response.status}: ${responseText}`);
+      throw new Error(`${response.status} ${response.statusText}: ${responseText}`);
+    }
+    
+    if (response.status !== 204) { // No Content
+      return await response.json();
+    }
+    return null;
+  } catch (error) {
+    return handleFetchError(error, errorMessage);
+  }
+};
+
 // Funciones para usuarios
 export const getUsers = async (): Promise<User[]> => {
-  try {
-    const response = await fetch(`${API_URL}/users`);
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    return handleFetchError(error, 'Error al obtener usuarios');
-  }
+  return fetchWithErrorHandling(`${API_URL}/users`, {}, 'Error al obtener usuarios');
 };
 
 export const getUserById = async (id: string): Promise<User | undefined> => {
@@ -36,56 +62,51 @@ export const getUserById = async (id: string): Promise<User | undefined> => {
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     return await response.json();
   } catch (error) {
-    return handleFetchError(error, `Error al obtener usuario ${id}`);
+    console.error(`Error al obtener usuario ${id}:`, error);
+    return undefined;
   }
 };
 
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
   try {
-    const response = await fetch(`${API_URL}/users/by-email/${email}`);
+    const response = await fetch(`${API_URL}/users/by-email/${encodeURIComponent(email)}`);
     if (response.status === 404) return undefined;
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     return await response.json();
   } catch (error) {
-    return handleFetchError(error, `Error al obtener usuario por email ${email}`);
+    console.error(`Error al obtener usuario por email ${email}:`, error);
+    return undefined;
   }
 };
 
 export const addUser = async (user: User): Promise<void> => {
-  try {
-    const response = await fetch(`${API_URL}/users`, {
+  await fetchWithErrorHandling(
+    `${API_URL}/users`,
+    {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user)
-    });
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-  } catch (error) {
-    handleFetchError(error, 'Error al crear usuario');
-  }
+    },
+    'Error al crear usuario'
+  );
 };
 
 export const updateUser = async (user: User): Promise<void> => {
-  try {
-    const response = await fetch(`${API_URL}/users/${user.id}`, {
+  await fetchWithErrorHandling(
+    `${API_URL}/users/${user.id}`,
+    {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user)
-    });
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-  } catch (error) {
-    handleFetchError(error, `Error al actualizar usuario ${user.id}`);
-  }
+    },
+    `Error al actualizar usuario ${user.id}`
+  );
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
-  try {
-    const response = await fetch(`${API_URL}/users/${id}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-  } catch (error) {
-    handleFetchError(error, `Error al eliminar usuario ${id}`);
-  }
+  await fetchWithErrorHandling(
+    `${API_URL}/users/${id}`,
+    { method: 'DELETE' },
+    `Error al eliminar usuario ${id}`
+  );
 };
 
 // Funciones para tareas
@@ -390,6 +411,33 @@ export const getTotalHoursAllocatedByTask = async (taskId: string): Promise<numb
     return result.allocatedHours || 0;
   } catch (error) {
     return handleFetchError(error, `Error al calcular horas asignadas para la tarea ${taskId}`);
+  }
+};
+
+// Nueva función para obtener el siguiente ID de usuario
+export const getNextUserId = async (): Promise<number> => {
+  try {
+    const response = await fetch(`${API_URL}/users/next-id`);
+    if (!response.ok) {
+      // Si el endpoint específico falla, intentamos obtener todos los usuarios
+      // y calcular el siguiente ID
+      const usersResponse = await fetch(`${API_URL}/users`);
+      if (!usersResponse.ok) throw new Error(`Error HTTP: ${usersResponse.status}`);
+      
+      const users = await usersResponse.json();
+      const maxId = users.reduce((max: number, user: User) => {
+        const userId = parseInt(user.id);
+        return isNaN(userId) ? max : Math.max(max, userId);
+      }, 0);
+      
+      return maxId + 1;
+    }
+    
+    const result = await response.json();
+    return result.nextId || 1;
+  } catch (error) {
+    console.error('Error al obtener siguiente ID de usuario:', error);
+    return Date.now(); // Fallback usando timestamp como ID único
   }
 };
 

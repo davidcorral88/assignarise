@@ -1,4 +1,3 @@
-
 import * as apiService from './apiService';
 import * as mockData from './mockData';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
@@ -24,38 +23,119 @@ export const getUseAPI = () => useAPI;
 
 // Funciones para usuarios
 export const getUsers = async (): Promise<User[]> => {
-  return useAPI ? await apiService.getUsers() : mockData.getUsers();
+  try {
+    return useAPI ? await apiService.getUsers() : mockData.getUsers();
+  } catch (error) {
+    console.error('Error en getUsers:', error);
+    // Si falla la API, intentamos con localStorage como fallback
+    if (useAPI) {
+      toast({
+        title: 'Error de conexión',
+        description: 'No se pudo conectar con PostgreSQL. Usando datos locales temporalmente.',
+        variant: 'destructive',
+      });
+      return mockData.getUsers();
+    }
+    throw error;
+  }
 };
 
 export const getUserById = async (id: string): Promise<User | undefined> => {
-  return useAPI ? await apiService.getUserById(id) : mockData.getUserById(id);
+  try {
+    return useAPI ? await apiService.getUserById(id) : mockData.getUserById(id);
+  } catch (error) {
+    console.error(`Error en getUserById(${id}):`, error);
+    if (useAPI) {
+      return mockData.getUserById(id);
+    }
+    throw error;
+  }
 };
 
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
-  return useAPI ? await apiService.getUserByEmail(email) : mockData.getUserByEmail(email);
+  try {
+    return useAPI ? await apiService.getUserByEmail(email) : mockData.getUserByEmail(email);
+  } catch (error) {
+    console.error(`Error en getUserByEmail(${email}):`, error);
+    if (useAPI) {
+      return mockData.getUserByEmail(email);
+    }
+    throw error;
+  }
 };
 
 export const addUser = async (user: User): Promise<void> => {
-  if (useAPI) {
-    await apiService.addUser(user);
-  } else {
-    mockData.addUser(user);
+  try {
+    if (useAPI) {
+      await apiService.addUser(user);
+    } else {
+      mockData.addUser(user);
+    }
+  } catch (error) {
+    console.error('Error en addUser:', error);
+    toast({
+      title: 'Error al crear usuario',
+      description: 'No se pudo guardar el usuario. Consulte la consola para más detalles.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 export const updateUser = async (user: User): Promise<void> => {
-  if (useAPI) {
-    await apiService.updateUser(user);
-  } else {
-    mockData.updateUser(user);
+  try {
+    if (useAPI) {
+      await apiService.updateUser(user);
+    } else {
+      mockData.updateUser(user);
+    }
+  } catch (error) {
+    console.error('Error en updateUser:', error);
+    toast({
+      title: 'Error al actualizar usuario',
+      description: 'No se pudo actualizar el usuario. Consulte la consola para más detalles.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
-  if (useAPI) {
-    await apiService.deleteUser(id);
-  } else {
-    mockData.deleteUser(id);
+  try {
+    if (useAPI) {
+      await apiService.deleteUser(id);
+    } else {
+      mockData.deleteUser(id);
+    }
+  } catch (error) {
+    console.error(`Error en deleteUser(${id}):`, error);
+    toast({
+      title: 'Error al eliminar usuario',
+      description: 'No se pudo eliminar el usuario. Consulte la consola para más detalles.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
+};
+
+// Nueva función para obtener el siguiente ID de usuario
+export const getNextUserId = async (): Promise<number> => {
+  try {
+    if (useAPI) {
+      // Si la API tiene un endpoint para esto, úsalo
+      return await apiService.getNextUserId();
+    } else {
+      // De lo contrario, obtener todos los usuarios y encontrar el próximo ID
+      const users = mockData.getUsers();
+      const maxId = users.reduce((max, user) => {
+        const userId = parseInt(user.id);
+        return isNaN(userId) ? max : Math.max(max, userId);
+      }, 0);
+      return maxId + 1;
+    }
+  } catch (error) {
+    console.error('Error al obtener próximo ID de usuario:', error);
+    return Date.now(); // Fallback usando timestamp
   }
 };
 
