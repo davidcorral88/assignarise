@@ -1,5 +1,5 @@
 
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -13,10 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getTasks, getTimeEntriesByUserId, addTimeEntryOld } from '../utils/mockData';
 import { TimeEntry, Task } from '../utils/types';
-import { AuthContext } from '../components/auth/AuthContext';
+import { useAuth } from '../components/auth/AuthContext';
 
 const CalendarView = () => {
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser } = useAuth();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
