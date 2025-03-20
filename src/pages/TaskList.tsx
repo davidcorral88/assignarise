@@ -71,7 +71,7 @@ const TaskList = () => {
         task => 
           task.title.toLowerCase().includes(query) || 
           task.description.toLowerCase().includes(query) ||
-          task.id.toLowerCase().includes(query)
+          task.id.includes(query) // Búsqueda por ID numérico
       );
     }
     

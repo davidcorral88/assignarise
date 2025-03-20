@@ -273,10 +273,11 @@ const TaskForm = () => {
                       <div className="flex">
                         <Input
                           id="id"
+                          type="number"
                           value={taskId}
                           onChange={(e) => setTaskId(parseInt(e.target.value))}
-                          readOnly
-                          className="bg-gray-100"
+                          className={isEditing ? "bg-gray-100" : ""}
+                          readOnly={isEditing}
                         />
                       </div>
                     </div>
@@ -287,6 +288,7 @@ const TaskForm = () => {
                         <div className="flex space-x-2">
                           <Input
                             id="searchId"
+                            type="number"
                             value={searchTaskId}
                             onChange={(e) => setSearchTaskId(e.target.value)}
                             placeholder="Introducir ID da tarefa"
@@ -355,7 +357,6 @@ const TaskForm = () => {
                 </CardContent>
               </Card>
               
-              {/* Card for tags */}
               <Card>
                 <CardHeader>
                   <CardTitle style={{ color: '#007bc4' }}>Etiquetas</CardTitle>
@@ -409,7 +410,6 @@ const TaskForm = () => {
                 </CardContent>
               </Card>
               
-              {/* Card for assignments */}
               <Card>
                 <CardHeader>
                   <CardTitle style={{ color: '#007bc4' }}>Asignacións</CardTitle>
@@ -447,7 +447,6 @@ const TaskForm = () => {
                     })}
                   </div>
                   
-                  {/* Assignment form */}
                   <div className="p-4 border rounded-md">
                     <h3 className="font-medium mb-3">Asignar usuario</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

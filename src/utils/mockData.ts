@@ -35,10 +35,10 @@ const initialUsers: User[] = [
   },
 ];
 
-// Datos iniciales para tareas
+// Datos iniciales para tareas con IDs numéricos
 const initialTasks: Task[] = [
   {
-    id: 'task_1',
+    id: '1',
     title: 'Desenvolver interface de usuario',
     description: 'Implementar a interface de usuario para a nova aplicación web.',
     status: 'in_progress',
@@ -55,7 +55,7 @@ const initialTasks: Task[] = [
     project: 'Novo Produto',
   },
   {
-    id: 'task_2',
+    id: '2',
     title: 'Crear API de autenticación',
     description: 'Desenvolver unha API segura para autenticación de usuarios.',
     status: 'completed',
@@ -73,7 +73,7 @@ const initialTasks: Task[] = [
     project: 'Plataforma Principal',
   },
   {
-    id: 'task_3',
+    id: '3',
     title: 'Redactar documentación técnica',
     description: 'Elaborar documentación técnica detallada para a nova API.',
     status: 'pending',
@@ -90,7 +90,7 @@ const initialTasks: Task[] = [
     project: 'Plataforma Principal',
   },
   {
-    id: 'task_4',
+    id: '4',
     title: 'Testes de usabilidade da interface',
     description: 'Realizar testes de usabilidade para identificar melloras na interface.',
     status: 'in_progress',
@@ -107,7 +107,7 @@ const initialTasks: Task[] = [
     project: 'Novo Produto',
   },
   {
-    id: 'task_5',
+    id: '5',
     title: 'Optimización de base de datos',
     description: 'Mellorar o rendemento da base de datos para consultas máis rápidas.',
     status: 'pending',
@@ -125,11 +125,11 @@ const initialTasks: Task[] = [
   },
 ];
 
-// Datos iniciales para registros de tiempo
+// Datos iniciales para registros de tiempo (actualizar referencias a taskId)
 const initialTimeEntries: TimeEntry[] = [
   {
     id: 'time_1',
-    taskId: 'task_1',
+    taskId: '1',
     userId: 'user_2',
     hours: 7.5,
     date: '2024-02-01',
@@ -141,7 +141,7 @@ const initialTimeEntries: TimeEntry[] = [
   },
   {
     id: 'time_2',
-    taskId: 'task_1',
+    taskId: '1',
     userId: 'user_2',
     hours: 8,
     date: '2024-02-02',
@@ -153,7 +153,7 @@ const initialTimeEntries: TimeEntry[] = [
   },
   {
     id: 'time_3',
-    taskId: 'task_2',
+    taskId: '2',
     userId: 'user_2',
     hours: 6,
     date: '2024-02-01',
@@ -165,7 +165,7 @@ const initialTimeEntries: TimeEntry[] = [
   },
   {
     id: 'time_4',
-    taskId: 'task_2',
+    taskId: '2',
     userId: 'user_3',
     hours: 6.5,
     date: '2024-02-02',
@@ -177,7 +177,7 @@ const initialTimeEntries: TimeEntry[] = [
   },
   {
     id: 'time_5',
-    taskId: 'task_4',
+    taskId: '4',
     userId: 'user_2',
     hours: 5,
     date: '2024-02-08',
@@ -436,8 +436,11 @@ export const getTotalHoursAllocatedByTask = (taskId: string): number => {
   return task.assignments.reduce((sum, assignment) => sum + assignment.allocatedHours, 0);
 };
 
+// Update the getNextTaskId function to return a numeric ID
 export const getNextTaskId = (): number => {
-  const taskIds = mockTasks.map(task => parseInt(task.id.replace('task_', '')));
+  if (mockTasks.length === 0) return 1;
+  
+  const taskIds = mockTasks.map(task => parseInt(task.id));
   const maxId = Math.max(...taskIds, 0);
   return maxId + 1;
 };
