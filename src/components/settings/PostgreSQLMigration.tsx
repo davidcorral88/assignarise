@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,10 +25,8 @@ const PostgreSQLMigration: React.FC = () => {
     // Check if postgres is already active
     setUsePostgresStorage(getUseAPI());
     
-    // If it's active, we test the connection on component mount
-    if (getUseAPI()) {
-      handleTestConnection();
-    }
+    // Intentamos conectar nada más cargar el componente
+    handleTestConnection();
   }, []);
   
   const handleTestConnection = async () => {
@@ -52,6 +49,11 @@ const PostgreSQLMigration: React.FC = () => {
           title: "Conexión exitosa",
           description: "Se ha establecido conexión con la base de datos PostgreSQL",
         });
+        
+        // Si la conexión es exitosa, activamos automáticamente el uso de PostgreSQL
+        setUseAPI(true);
+        setUsePostgresStorage(true);
+        
       } else {
         const errorMsg = "No se pudo conectar con la base de datos PostgreSQL. Revise la consola para más detalles.";
         setLastConnectionError(errorMsg);
@@ -146,6 +148,15 @@ const PostgreSQLMigration: React.FC = () => {
     
     setUsePostgresStorage(checked);
     setUseAPI(checked);
+    
+    localStorage.setItem('useAPI', checked.toString());
+    
+    toast({
+      title: checked ? "PostgreSQL activado" : "Almacenamiento local activado",
+      description: checked 
+        ? "La aplicación está usando la base de datos PostgreSQL" 
+        : "La aplicación está usando el almacenamiento local",
+    });
   };
   
   return (

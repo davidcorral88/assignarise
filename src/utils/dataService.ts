@@ -1,10 +1,11 @@
+
 import * as apiService from './apiService';
 import * as mockData from './mockData';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
 
-// Indicador para determinar si se usa la API o localStorage
-let useAPI = localStorage.getItem('useAPI') === 'true';
+// Forzar el uso de la API PostgreSQL en producción
+let useAPI = true;
 
 export const setUseAPI = (value: boolean) => {
   useAPI = value;
@@ -24,58 +25,54 @@ export const getUseAPI = () => useAPI;
 // Funciones para usuarios
 export const getUsers = async (): Promise<User[]> => {
   try {
-    return useAPI ? await apiService.getUsers() : mockData.getUsers();
+    return await apiService.getUsers();
   } catch (error) {
     console.error('Error en getUsers:', error);
-    // Si falla la API, intentamos con localStorage como fallback
-    if (useAPI) {
-      toast({
-        title: 'Error de conexión',
-        description: 'No se pudo conectar con PostgreSQL. Usando datos locales temporalmente.',
-        variant: 'destructive',
-      });
-      return mockData.getUsers();
-    }
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudo conectar con PostgreSQL. Verifique la conexión con la base de datos.',
+      variant: 'destructive',
+    });
     throw error;
   }
 };
 
 export const getUserById = async (id: string): Promise<User | undefined> => {
   try {
-    return useAPI ? await apiService.getUserById(id) : mockData.getUserById(id);
+    return await apiService.getUserById(id);
   } catch (error) {
     console.error(`Error en getUserById(${id}):`, error);
-    if (useAPI) {
-      return mockData.getUserById(id);
-    }
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudo obtener el usuario desde PostgreSQL.',
+      variant: 'destructive',
+    });
     throw error;
   }
 };
 
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
   try {
-    return useAPI ? await apiService.getUserByEmail(email) : mockData.getUserByEmail(email);
+    return await apiService.getUserByEmail(email);
   } catch (error) {
     console.error(`Error en getUserByEmail(${email}):`, error);
-    if (useAPI) {
-      return mockData.getUserByEmail(email);
-    }
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudo verificar el email desde PostgreSQL.',
+      variant: 'destructive',
+    });
     throw error;
   }
 };
 
 export const addUser = async (user: User): Promise<void> => {
   try {
-    if (useAPI) {
-      await apiService.addUser(user);
-    } else {
-      mockData.addUser(user);
-    }
+    await apiService.addUser(user);
   } catch (error) {
     console.error('Error en addUser:', error);
     toast({
       title: 'Error al crear usuario',
-      description: 'No se pudo guardar el usuario. Consulte la consola para más detalles.',
+      description: 'No se pudo guardar el usuario en PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -84,16 +81,12 @@ export const addUser = async (user: User): Promise<void> => {
 
 export const updateUser = async (user: User): Promise<void> => {
   try {
-    if (useAPI) {
-      await apiService.updateUser(user);
-    } else {
-      mockData.updateUser(user);
-    }
+    await apiService.updateUser(user);
   } catch (error) {
     console.error('Error en updateUser:', error);
     toast({
       title: 'Error al actualizar usuario',
-      description: 'No se pudo actualizar el usuario. Consulte la consola para más detalles.',
+      description: 'No se pudo actualizar el usuario en PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -102,16 +95,12 @@ export const updateUser = async (user: User): Promise<void> => {
 
 export const deleteUser = async (id: string): Promise<void> => {
   try {
-    if (useAPI) {
-      await apiService.deleteUser(id);
-    } else {
-      mockData.deleteUser(id);
-    }
+    await apiService.deleteUser(id);
   } catch (error) {
     console.error(`Error en deleteUser(${id}):`, error);
     toast({
       title: 'Error al eliminar usuario',
-      description: 'No se pudo eliminar el usuario. Consulte la consola para más detalles.',
+      description: 'No se pudo eliminar el usuario en PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -121,204 +110,410 @@ export const deleteUser = async (id: string): Promise<void> => {
 // Nueva función para obtener el siguiente ID de usuario
 export const getNextUserId = async (): Promise<number> => {
   try {
-    if (useAPI) {
-      // Si la API tiene un endpoint para esto, úsalo
-      return await apiService.getNextUserId();
-    } else {
-      // De lo contrario, obtener todos los usuarios y encontrar el próximo ID
-      const users = mockData.getUsers();
-      const maxId = users.reduce((max, user) => {
-        const userId = parseInt(user.id);
-        return isNaN(userId) ? max : Math.max(max, userId);
-      }, 0);
-      return maxId + 1;
-    }
+    return await apiService.getNextUserId();
   } catch (error) {
     console.error('Error al obtener próximo ID de usuario:', error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudo obtener el siguiente ID desde PostgreSQL.',
+      variant: 'destructive',
+    });
     return Date.now(); // Fallback usando timestamp
   }
 };
 
 // Funciones para tareas
 export const getTasks = async (): Promise<Task[]> => {
-  return useAPI ? await apiService.getTasks() : mockData.getTasks();
+  try {
+    return await apiService.getTasks();
+  } catch (error) {
+    console.error('Error en getTasks:', error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudieron obtener las tareas desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const getTaskById = async (id: string): Promise<Task | undefined> => {
-  return useAPI ? await apiService.getTaskById(id) : mockData.getTaskById(id);
+  try {
+    return await apiService.getTaskById(id);
+  } catch (error) {
+    console.error(`Error en getTaskById(${id}):`, error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudo obtener la tarea desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
-  return useAPI ? await apiService.getTasksByUserId(userId) : mockData.getTasksByUserId(userId);
+  try {
+    return await apiService.getTasksByUserId(userId);
+  } catch (error) {
+    console.error(`Error en getTasksByUserId(${userId}):`, error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudieron obtener las tareas por usuario desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const addTask = async (task: Task): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.addTask(task);
-  } else {
-    mockData.addTask(task);
+  } catch (error) {
+    console.error('Error en addTask:', error);
+    toast({
+      title: 'Error al crear tarea',
+      description: 'No se pudo guardar la tarea en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 export const updateTask = async (task: Task): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.updateTask(task);
-  } else {
-    mockData.updateTask(task);
+  } catch (error) {
+    console.error('Error en updateTask:', error);
+    toast({
+      title: 'Error al actualizar tarea',
+      description: 'No se pudo actualizar la tarea en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 // Registros de tiempo
 export const getTimeEntries = async (): Promise<TimeEntry[]> => {
-  return useAPI ? await apiService.getTimeEntries() : mockData.getTimeEntries();
+  try {
+    return await apiService.getTimeEntries();
+  } catch (error) {
+    console.error('Error en getTimeEntries:', error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudieron obtener los registros de tiempo desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const getTimeEntryById = async (id: string): Promise<TimeEntry | undefined> => {
-  return useAPI ? await apiService.getTimeEntryById(id) : mockData.getTimeEntryById(id);
+  try {
+    return await apiService.getTimeEntryById(id);
+  } catch (error) {
+    console.error(`Error en getTimeEntryById(${id}):`, error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudo obtener el registro de tiempo desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const getTimeEntriesByUserId = async (userId: string): Promise<TimeEntry[]> => {
-  return useAPI ? await apiService.getTimeEntriesByUserId(userId) : mockData.getTimeEntriesByUserId(userId);
+  try {
+    return await apiService.getTimeEntriesByUserId(userId);
+  } catch (error) {
+    console.error(`Error en getTimeEntriesByUserId(${userId}):`, error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudieron obtener los registros de tiempo por usuario desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const getTimeEntriesByTaskId = async (taskId: string): Promise<TimeEntry[]> => {
-  return useAPI ? await apiService.getTimeEntriesByTaskId(taskId) : mockData.getTimeEntriesByTaskId(taskId);
+  try {
+    return await apiService.getTimeEntriesByTaskId(taskId);
+  } catch (error) {
+    console.error(`Error en getTimeEntriesByTaskId(${taskId}):`, error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudieron obtener los registros de tiempo por tarea desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const addTimeEntry = async (entry: TimeEntry): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.addTimeEntry(entry);
-  } else {
-    mockData.addTimeEntryOld(entry);
+  } catch (error) {
+    console.error('Error en addTimeEntry:', error);
+    toast({
+      title: 'Error al registrar tiempo',
+      description: 'No se pudo guardar el registro de tiempo en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 export const updateTimeEntry = async (entry: TimeEntry): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.updateTimeEntry(entry);
-  } else {
-    mockData.updateTimeEntry(entry);
+  } catch (error) {
+    console.error('Error en updateTimeEntry:', error);
+    toast({
+      title: 'Error al actualizar registro',
+      description: 'No se pudo actualizar el registro de tiempo en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 // Días festivos
 export const getHolidays = async (): Promise<Holiday[]> => {
-  return useAPI ? await apiService.getHolidays() : mockData.getHolidays();
+  try {
+    return await apiService.getHolidays();
+  } catch (error) {
+    console.error('Error en getHolidays:', error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudieron obtener los días festivos desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const addHoliday = async (holiday: Holiday): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.addHoliday(holiday);
-  } else {
-    mockData.addHoliday(holiday);
+  } catch (error) {
+    console.error('Error en addHoliday:', error);
+    toast({
+      title: 'Error al añadir festivo',
+      description: 'No se pudo guardar el día festivo en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 export const removeHoliday = async (holiday: Holiday): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.removeHoliday(holiday);
-  } else {
-    mockData.removeHoliday(holiday);
+  } catch (error) {
+    console.error('Error en removeHoliday:', error);
+    toast({
+      title: 'Error al eliminar festivo',
+      description: 'No se pudo eliminar el día festivo en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 // Días de vacaciones
 export const getVacationDays = async (userId?: string): Promise<VacationDay[]> => {
-  return useAPI ? await apiService.getVacationDays(userId) : mockData.getVacationDays(userId);
+  try {
+    return await apiService.getVacationDays(userId);
+  } catch (error) {
+    console.error('Error en getVacationDays:', error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudieron obtener los días de vacaciones desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const addVacationDay = async (vacationDay: VacationDay): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.addVacationDay(vacationDay);
-  } else {
-    mockData.addVacationDay(vacationDay);
+  } catch (error) {
+    console.error('Error en addVacationDay:', error);
+    toast({
+      title: 'Error al añadir vacaciones',
+      description: 'No se pudo guardar el día de vacaciones en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 export const removeVacationDay = async (vacationDay: VacationDay): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.removeVacationDay(vacationDay);
-  } else {
-    mockData.removeVacationDay(vacationDay);
+  } catch (error) {
+    console.error('Error en removeVacationDay:', error);
+    toast({
+      title: 'Error al eliminar vacaciones',
+      description: 'No se pudo eliminar el día de vacaciones en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 // Horarios de trabajo
 export const getWorkdaySchedules = async (): Promise<WorkdaySchedule[]> => {
-  return useAPI ? await apiService.getWorkdaySchedules() : mockData.getWorkdaySchedules();
+  try {
+    return await apiService.getWorkdaySchedules();
+  } catch (error) {
+    console.error('Error en getWorkdaySchedules:', error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudieron obtener los horarios desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const getWorkdayScheduleById = async (id: string): Promise<WorkdaySchedule | undefined> => {
-  return useAPI ? await apiService.getWorkdayScheduleById(id) : mockData.getWorkdayScheduleById(id);
+  try {
+    return await apiService.getWorkdayScheduleById(id);
+  } catch (error) {
+    console.error(`Error en getWorkdayScheduleById(${id}):`, error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudo obtener el horario desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const addWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.addWorkdaySchedule(schedule);
-  } else {
-    mockData.addWorkdaySchedule(schedule);
+  } catch (error) {
+    console.error('Error en addWorkdaySchedule:', error);
+    toast({
+      title: 'Error al añadir horario',
+      description: 'No se pudo guardar el horario en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 export const updateWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.updateWorkdaySchedule(schedule);
-  } else {
-    mockData.updateWorkdaySchedule(schedule);
+  } catch (error) {
+    console.error('Error en updateWorkdaySchedule:', error);
+    toast({
+      title: 'Error al actualizar horario',
+      description: 'No se pudo actualizar el horario en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 export const deleteWorkdaySchedule = async (id: string): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.deleteWorkdaySchedule(id);
-  } else {
-    mockData.deleteWorkdaySchedule(id);
+  } catch (error) {
+    console.error(`Error en deleteWorkdaySchedule(${id}):`, error);
+    toast({
+      title: 'Error al eliminar horario',
+      description: 'No se pudo eliminar el horario en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 // Configuración de horarios
 export const getWorkSchedule = async (): Promise<WorkSchedule> => {
-  return useAPI ? await apiService.getWorkSchedule() : mockData.getWorkSchedule();
+  try {
+    return await apiService.getWorkSchedule();
+  } catch (error) {
+    console.error('Error en getWorkSchedule:', error);
+    toast({
+      title: 'Error de conexión',
+      description: 'No se pudo obtener la configuración de horarios desde PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const updateWorkSchedule = async (schedule: WorkSchedule): Promise<void> => {
-  if (useAPI) {
+  try {
     await apiService.updateWorkSchedule(schedule);
-  } else {
-    mockData.updateWorkSchedule(schedule);
+  } catch (error) {
+    console.error('Error en updateWorkSchedule:', error);
+    toast({
+      title: 'Error al actualizar configuración',
+      description: 'No se pudo actualizar la configuración de horarios en PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
   }
 };
 
 // Funciones auxiliares para estadísticas y cálculos
 export const getTotalHoursByTask = async (taskId: string): Promise<number> => {
-  return useAPI 
-    ? await apiService.getTotalHoursByTask(taskId) 
-    : mockData.getTotalHoursByTask(taskId);
+  try {
+    return await apiService.getTotalHoursByTask(taskId);
+  } catch (error) {
+    console.error(`Error en getTotalHoursByTask(${taskId}):`, error);
+    toast({
+      title: 'Error de cálculo',
+      description: 'No se pudieron calcular las horas totales por tarea.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const getTotalHoursAllocatedByTask = async (taskId: string): Promise<number> => {
-  return useAPI 
-    ? await apiService.getTotalHoursAllocatedByTask(taskId) 
-    : mockData.getTotalHoursAllocatedByTask(taskId);
+  try {
+    return await apiService.getTotalHoursAllocatedByTask(taskId);
+  } catch (error) {
+    console.error(`Error en getTotalHoursAllocatedByTask(${taskId}):`, error);
+    toast({
+      title: 'Error de cálculo',
+      description: 'No se pudieron calcular las horas asignadas a la tarea.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const getNextTaskId = async (): Promise<number> => {
-  return useAPI 
-    ? await apiService.getNextTaskId() 
-    : mockData.getNextTaskId();
-};
-
-// Funciones específicas de desarrollo/depuración
-export const resetDatabase = (): void => {
-  if (!useAPI) {
-    mockData.resetDatabase();
-  } else {
+  try {
+    return await apiService.getNextTaskId();
+  } catch (error) {
+    console.error('Error en getNextTaskId:', error);
     toast({
-      title: 'Operación no disponible',
-      description: 'El restablecimiento de la base de datos no está disponible cuando se usa PostgreSQL',
+      title: 'Error de secuencia',
+      description: 'No se pudo obtener el próximo ID de tarea.',
       variant: 'destructive',
     });
+    return Date.now();
   }
+};
+
+// Esta función ya no es relevante en modo PostgreSQL
+export const resetDatabase = (): void => {
+  toast({
+    title: 'Operación no disponible',
+    description: 'El restablecimiento de la base de datos no está disponible en modo PostgreSQL.',
+    variant: 'destructive',
+  });
 };
 
 // Re-exportar funciones para mantener compatibilidad

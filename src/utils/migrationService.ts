@@ -1,6 +1,8 @@
+
 import { toast } from '@/components/ui/use-toast';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule } from '@/utils/types';
 import { API_URL } from './dbConfig';
+import { setUseAPI } from './dataService';
 
 // Verificar conexión con la base de datos PostgreSQL con más detalles de debugging
 export const testPostgreSQLConnection = async (): Promise<boolean> => {
@@ -8,7 +10,6 @@ export const testPostgreSQLConnection = async (): Promise<boolean> => {
     console.log(`Verificando conexión con: ${API_URL}/users`);
     
     // Intentamos directamente con el endpoint de usuarios
-    // ya que sabemos que funciona según lo que indicó el usuario
     const response = await fetch(`${API_URL}/users`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
@@ -18,6 +19,11 @@ export const testPostgreSQLConnection = async (): Promise<boolean> => {
       console.log('Conexión exitosa con PostgreSQL');
       const users = await response.json();
       console.log(`Se han recuperado ${users.length} usuarios de la base de datos`);
+      
+      // Activar automáticamente PostgreSQL si la conexión es exitosa
+      setUseAPI(true);
+      localStorage.setItem('useAPI', 'true');
+      
       return true;
     } else {
       console.error('Error en la respuesta del servidor:', response.status, response.statusText);
@@ -232,6 +238,10 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
     const totalSuccess = Object.values(stats).reduce((sum, stat) => sum + stat.success, 0);
     const totalErrors = Object.values(stats).reduce((sum, stat) => sum + stat.errors, 0);
     
+    // Activar PostgreSQL independientemente del resultado
+    setUseAPI(true);
+    localStorage.setItem('useAPI', 'true');
+    
     if (totalErrors === 0) {
       return {
         success: true,
@@ -250,4 +260,26 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
       message: `Error durante la migración: ${error instanceof Error ? error.message : 'Error desconocido'}`
     };
   }
+};
+
+// Eliminar datos del localStorage después de la migración
+export const clearLocalStorage = (): void => {
+  const keysToRemove = [
+    'mockUsers', 
+    'mockTasks', 
+    'mockTimeEntries', 
+    'mockHolidays', 
+    'mockVacationDays', 
+    'mockWorkdaySchedules', 
+    'mockWorkSchedule'
+  ];
+  
+  keysToRemove.forEach(key => {
+    localStorage.removeItem(key);
+  });
+  
+  toast({
+    title: "Datos locales eliminados",
+    description: "Se han eliminado todos los datos de ejemplo del almacenamiento local"
+  });
 };

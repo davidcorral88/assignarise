@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Simulating authentication delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Get user from database or localStorage via adapter
+      // Get user from PostgreSQL via adapter
       const user = await getUserByEmail(email);
       
       if (!user) {
