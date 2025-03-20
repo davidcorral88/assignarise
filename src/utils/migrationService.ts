@@ -1,4 +1,3 @@
-
 import { toast } from '@/components/ui/use-toast';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule } from '@/utils/types';
 import { API_URL } from './dbConfig';
@@ -219,11 +218,12 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
   }
 };
 
-// Verificar conexión con la base de datos PostgreSQL
+// Verificar conexión con la base de datos PostgreSQL con más detalles de debugging
 export const testPostgreSQLConnection = async (): Promise<boolean> => {
   try {
     console.log(`Verificando conexión con: ${API_URL}/health-check`);
     
+    // Primero intentamos con el endpoint health-check
     const response = await fetch(`${API_URL}/health-check`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
@@ -234,10 +234,41 @@ export const testPostgreSQLConnection = async (): Promise<boolean> => {
       return true;
     } else {
       console.error('Error en la respuesta del servidor:', response.status, response.statusText);
+      
+      // Intentamos una segunda verificación con el endpoint de usuarios
+      // ya que algunos servidores pueden no tener un endpoint health-check
+      try {
+        console.log('Intentando verificar conexión alternativa con:', `${API_URL}/users`);
+        const altResponse = await fetch(`${API_URL}/users`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (altResponse.ok) {
+          console.log('Conexión alternativa exitosa con PostgreSQL');
+          return true;
+        } else {
+          console.error('Error en la respuesta alternativa:', altResponse.status, altResponse.statusText);
+        }
+      } catch (altError) {
+        console.error('Error en la verificación alternativa:', altError);
+      }
+      
       return false;
     }
   } catch (error) {
     console.error('Error al verificar conexión con PostgreSQL:', error);
+    
+    // Información adicional de depuración sobre el entorno
+    console.log('Información de configuración:');
+    console.log('- API URL:', API_URL);
+    console.log('- Navegador:', navigator.userAgent);
+    
+    // Verificamos si podría ser un problema de CORS
+    if (error instanceof TypeError && error.message.includes('NetworkError')) {
+      console.error('Posible error de CORS - Verificar configuración del servidor');
+    }
+    
     return false;
   }
 };

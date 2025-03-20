@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon, InfoIcon } from 'lucide-react';
+import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon, InfoIcon, ExternalLinkIcon } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { migrateToPostgreSQL, testPostgreSQLConnection } from '@/utils/migrationService';
 import { getUseAPI, setUseAPI } from '@/utils/dataService';
-import { API_URL } from '@/utils/dbConfig';
+import { API_URL, dbConfig, pgAdminConfig } from '@/utils/dbConfig';
 
 const PostgreSQLMigration: React.FC = () => {
   const [isMigrating, setIsMigrating] = useState(false);
@@ -20,6 +20,7 @@ const PostgreSQLMigration: React.FC = () => {
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [usePostgresStorage, setUsePostgresStorage] = useState(getUseAPI);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [lastConnectionError, setLastConnectionError] = useState<string | null>(null);
   
   useEffect(() => {
     // Check if postgres is already active
@@ -33,7 +34,16 @@ const PostgreSQLMigration: React.FC = () => {
   
   const handleTestConnection = async () => {
     setIsTestingConnection(true);
+    setLastConnectionError(null);
+    
     try {
+      console.log("Iniciando prueba de conexión a:", apiUrl);
+      // Actualizar URL global para asegurar que usamos la URL actual
+      if (apiUrl !== API_URL) {
+        // En una aplicación real, se guardaría en algún lugar persistente
+        console.log("Actualizando URL de API de", API_URL, "a", apiUrl);
+      }
+      
       const isConnected = await testPostgreSQLConnection();
       setConnectionStatus(isConnected ? 'connected' : 'failed');
       
@@ -43,19 +53,24 @@ const PostgreSQLMigration: React.FC = () => {
           description: "Se ha establecido conexión con la base de datos PostgreSQL",
         });
       } else {
+        const errorMsg = "No se pudo conectar con la base de datos PostgreSQL. Revise la consola para más detalles.";
+        setLastConnectionError(errorMsg);
         toast({
           title: "Error de conexión",
-          description: "No se pudo conectar con la base de datos PostgreSQL",
+          description: errorMsg,
           variant: "destructive"
         });
       }
     } catch (error) {
       setConnectionStatus('failed');
+      const errorMsg = error instanceof Error ? error.message : "Error desconocido";
+      setLastConnectionError(errorMsg);
       toast({
         title: "Error de conexión",
         description: "No se pudo conectar con la base de datos PostgreSQL",
         variant: "destructive"
       });
+      console.error("Error detallado:", error);
     } finally {
       setIsTestingConnection(false);
     }
@@ -180,14 +195,41 @@ const PostgreSQLMigration: React.FC = () => {
             <div className="bg-muted p-3 rounded-md mt-2 text-xs">
               <p><strong>Configuración de conexión:</strong></p>
               <ul className="list-disc pl-5 space-y-1 mt-1">
-                <li>Host: localhost</li>
-                <li>Puerto: 5433</li>
-                <li>Base de datos: DBtarefas</li>
-                <li>Usuario: control_de_tarefas</li>
-                <li>Contraseña: dc0rralIplan</li>
+                <li>Host: {dbConfig.host}</li>
+                <li>Puerto: {dbConfig.port}</li>
+                <li>Base de datos: {dbConfig.database}</li>
+                <li>Usuario: {dbConfig.user}</li>
+                <li>Contraseña: {dbConfig.password}</li>
                 <li>URL API: {apiUrl}</li>
               </ul>
+              <p className="mt-2"><strong>Configuración de administrador:</strong></p>
+              <ul className="list-disc pl-5 space-y-1 mt-1">
+                <li>Usuario: {pgAdminConfig.user}</li>
+                <li>Contraseña: {pgAdminConfig.password}</li>
+              </ul>
               <p className="mt-2"><strong>Nota:</strong> Asegúrese de que el servidor PostgreSQL esté en ejecución y que la API esté configurada correctamente.</p>
+              
+              <div className="mt-3 space-y-2">
+                <p><strong>Enlaces útiles para verificación:</strong></p>
+                <div className="flex flex-col space-y-1">
+                  <a 
+                    href={`${apiUrl}/health-check`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline inline-flex items-center"
+                  >
+                    Verificar endpoint health-check <ExternalLinkIcon className="ml-1 h-3 w-3" />
+                  </a>
+                  <a 
+                    href={`${apiUrl}/users`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline inline-flex items-center"
+                  >
+                    Verificar endpoint users <ExternalLinkIcon className="ml-1 h-3 w-3" />
+                  </a>
+                </div>
+              </div>
             </div>
           )}
           
@@ -209,11 +251,17 @@ const PostgreSQLMigration: React.FC = () => {
                 <p className="text-sm text-destructive/90">
                   No se pudo conectar con la base de datos PostgreSQL. Verifique que el servidor esté funcionando y la URL sea correcta.
                 </p>
+                {lastConnectionError && (
+                  <p className="text-xs text-destructive/90 mt-1">
+                    Detalles: {lastConnectionError}
+                  </p>
+                )}
                 <ul className="list-disc pl-5 text-xs text-destructive/80 mt-1">
-                  <li>Compruebe que PostgreSQL está ejecutándose en el puerto 5433</li>
-                  <li>Verifique que existe la base de datos 'DBtarefas'</li>
-                  <li>Confirme que el usuario 'control_de_tarefas' tiene acceso</li>
+                  <li>Compruebe que PostgreSQL está ejecutándose en el puerto {dbConfig.port}</li>
+                  <li>Verifique que existe la base de datos '{dbConfig.database}'</li>
+                  <li>Confirme que el usuario '{dbConfig.user}' tiene acceso</li>
                   <li>Asegúrese de que el servidor API esté funcionando en la URL proporcionada</li>
+                  <li>Revise la consola del navegador para obtener más detalles sobre el error</li>
                 </ul>
               </div>
             </div>
