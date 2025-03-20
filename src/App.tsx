@@ -19,6 +19,7 @@ import WorkScheduleConfig from "./pages/WorkScheduleConfig";
 import UserVacations from "./pages/UserVacations";
 import UserConfig from "./pages/UserConfig";
 import Settings from "./pages/Settings";
+import Calendars from "./pages/Calendars";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/users/:id/edit" element={<UserForm />} />
             <Route path="/time-tracking" element={<TimeTracking />} />
             <Route path="/calendar" element={<CalendarView />} />
+            <Route path="/calendars" element={<Calendars />} />
             <Route path="/work-schedule" element={<WorkScheduleConfig />} />
             <Route path="/vacations" element={<UserVacations />} />
             <Route path="/config" element={<UserConfig />} />

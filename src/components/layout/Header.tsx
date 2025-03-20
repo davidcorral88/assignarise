@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   Settings,
-  BarChart3
+  BarChart3,
+  Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -67,6 +68,12 @@ export const Header: React.FC = () => {
       icon: <Users className="mr-2 h-4 w-4" />,
       label: 'Usuarios',
       show: currentUser?.role === 'manager'
+    },
+    {
+      to: '/calendars',
+      icon: <Calendar className="mr-2 h-4 w-4" />,
+      label: 'Calendarios',
+      show: true
     },
     {
       to: '/time-tracking',
