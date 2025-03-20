@@ -2,8 +2,9 @@
 import { toast } from '@/components/ui/use-toast';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule } from '@/utils/types';
 
-// Definir la URL de la API PostgreSQL - esto debe coincidir con la configuración del backend
-const API_URL = 'http://localhost:3000/api'; // Cambiar esto a la URL real del backend
+// Definir la URL de la API PostgreSQL con las credenciales correctas
+const API_URL = 'http://localhost:5433/api'; 
+// Los detalles de autenticación (usuario, contraseña, etc.) deben manejarse en el servidor
 
 export const migrateToPostgreSQL = async (): Promise<{success: boolean, message: string}> => {
   try {

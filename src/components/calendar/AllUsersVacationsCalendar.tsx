@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   Card, 
   CardContent
@@ -12,22 +13,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-import { getUsers } from '@/utils/mockData';
+import { getUsers } from '@/utils/dataService';
 import { User } from '@/utils/types';
 import UserVacationsCalendar from './UserVacationsCalendar';
 
 const AllUsersVacationsCalendar: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
   
-  useEffect(() => {
-    const allUsers = getUsers();
-    setUsers(allUsers);
-    
-    if (allUsers.length > 0) {
-      setSelectedUserId(allUsers[0].id);
+  // Usar React Query para obtener usuarios
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: getUsers
+  });
+  
+  // Establecer el primer usuario como seleccionado cuando se cargan los datos
+  React.useEffect(() => {
+    if (users.length > 0 && !selectedUserId) {
+      setSelectedUserId(users[0].id);
     }
-  }, []);
+  }, [users, selectedUserId]);
   
   return (
     <div className="space-y-6">

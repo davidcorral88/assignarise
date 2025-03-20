@@ -1,232 +1,223 @@
 
-import React, { useState, useEffect } from 'react';
-import { Calendar } from '@/components/ui/calendar';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  Card,
-  CardContent,
-  CardFooter
+  Calendar, 
+  CalendarProps 
+} from '@/components/ui/calendar';
+import { 
+  Card, 
+  CardContent
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { addHoliday, removeHoliday, getHolidays } from '@/utils/mockData';
+import { toast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
+import { format, parse, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Calendar as CalendarIcon, Plus, Trash2 } from 'lucide-react';
+import { getHolidays, addHoliday, removeHoliday } from '@/utils/dataService';
 import { Holiday } from '@/utils/types';
-import { format } from 'date-fns';
-import { useToast } from '@/components/ui/use-toast';
-import { Info, Plus, Trash2 } from 'lucide-react';
 
 interface HolidaysCalendarProps {
   isEditable: boolean;
 }
 
 const HolidaysCalendar: React.FC<HolidaysCalendarProps> = ({ isEditable }) => {
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const queryClient = useQueryClient();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [holidayName, setHolidayName] = useState<string>('');
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [holidayToDelete, setHolidayToDelete] = useState<Holiday | null>(null);
-  const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState<boolean>(false);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    loadHolidays();
-  }, []);
-
-  const loadHolidays = () => {
-    const allHolidays = getHolidays();
-    setHolidays(allHolidays);
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!isEditable || !date) return;
-
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    const existingHoliday = holidays.find(h => h.date === formattedDate);
-
-    if (existingHoliday) {
-      setHolidayToDelete(existingHoliday);
-      setIsDeletionDialogOpen(true);
-    } else {
-      setSelectedDate(date);
+  
+  // Obtener festivos con React Query
+  const { data: holidays = [] } = useQuery({
+    queryKey: ['holidays'],
+    queryFn: getHolidays
+  });
+  
+  // Mutación para añadir festivo
+  const addHolidayMutation = useMutation({
+    mutationFn: addHoliday,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holidays'] });
       setHolidayName('');
-      setIsDialogOpen(true);
+      toast({
+        title: 'Festivo engadido',
+        description: 'O día festivo foi engadido correctamente.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Erro ao engadir o festivo',
+        variant: 'destructive',
+      });
     }
-  };
-
+  });
+  
+  // Mutación para eliminar festivo
+  const removeHolidayMutation = useMutation({
+    mutationFn: removeHoliday,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['holidays'] });
+      toast({
+        title: 'Festivo eliminado',
+        description: 'O día festivo foi eliminado correctamente.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro',
+        description: error instanceof Error ? error.message : 'Erro ao eliminar o festivo',
+        variant: 'destructive',
+      });
+    }
+  });
+  
   const handleAddHoliday = () => {
-    if (!selectedDate || !holidayName.trim()) return;
-
-    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+    if (!selectedDate) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, selecciona unha data',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!holidayName.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, introduce un nome para o festivo',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     const newHoliday: Holiday = {
-      date: formattedDate,
+      date: format(selectedDate, 'yyyy-MM-dd'),
       name: holidayName.trim()
     };
-
-    addHoliday(newHoliday);
-    loadHolidays();
-    setIsDialogOpen(false);
-    toast({
-      title: 'Festivo engadido',
-      description: `Festivo "${holidayName}" engadido para o día ${format(selectedDate, 'dd/MM/yyyy')}`,
-    });
-  };
-
-  const handleRemoveHoliday = () => {
-    if (!holidayToDelete) return;
-
-    removeHoliday(holidayToDelete);
-    loadHolidays();
-    setIsDeletionDialogOpen(false);
-    toast({
-      title: 'Festivo eliminado',
-      description: `Festivo "${holidayToDelete.name}" eliminado do día ${format(new Date(holidayToDelete.date), 'dd/MM/yyyy')}`,
-    });
-  };
-
-  // Function to determine which days are holidays for highlighting
-  const isHoliday = (date: Date) => {
-    const formattedDate = format(date, 'yyyy-MM-dd');
-    return holidays.some(holiday => holiday.date === formattedDate);
+    
+    // Verificar si ya existe
+    const exists = holidays.some(h => h.date === newHoliday.date);
+    if (exists) {
+      toast({
+        title: 'Festivo xa existe',
+        description: 'Xa existe un festivo para esta data',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    addHolidayMutation.mutate(newHoliday);
   };
   
-  // Custom styling for holidays
-  const modifiersStyles = {
-    holiday: {
-      backgroundColor: '#ffcccb',
-      color: '#950000',
-      fontWeight: 'bold',
-    },
+  const handleRemoveHoliday = (holiday: Holiday) => {
+    removeHolidayMutation.mutate(holiday);
   };
-
-  // Add custom modifier for holiday dates
-  const modifiers = {
-    holiday: (date: Date) => isHoliday(date),
+  
+  // Función para renderizar festivos en el calendario
+  const handleCalendarRender = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const isHoliday = holidays.some(h => h.date === dateStr);
+    
+    if (isHoliday) {
+      return {
+        className: cn('bg-red-100 hover:bg-red-200 text-red-800')
+      };
+    }
+    
+    return {};
   };
-
+  
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-start">
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium">Calendario de Festivos</h3>
-          <p className="text-sm text-muted-foreground">
-            {isEditable 
-              ? 'Fai clic nun día para engadir ou eliminar un festivo.'
-              : 'Os días en cor vermella son festivos.'}
-          </p>
-        </div>
-        {isEditable && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => {
-              setSelectedDate(new Date());
-              setHolidayName('');
-              setIsDialogOpen(true);
+    <div className={cn("space-y-6", isEditable ? "" : "pointer-events-none")}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={setSelectedDate}
+            locale={es}
+            className="rounded-md border shadow bg-white"
+            modifiers={{
+              holiday: holidays.map(h => parseISO(h.date))
             }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Engadir Festivo
-          </Button>
-        )}
-      </div>
-      
-      <div className="border rounded-md">
-        <Calendar
-          mode="single"
-          onSelect={handleDateSelect}
-          modifiers={modifiers}
-          modifiersStyles={modifiersStyles as any}
-          className="p-3 pointer-events-auto"
-        />
-      </div>
-      
-      <div className="space-y-4 mt-6">
-        <h3 className="text-lg font-medium">Lista de Festivos</h3>
-        {holidays.length > 0 ? (
-          <ul className="space-y-2">
-            {holidays
-              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-              .map((holiday) => (
-                <li key={holiday.date} className="flex items-center justify-between p-3 border rounded-md">
-                  <div className="flex items-center">
-                    <span className="font-medium mr-2">{format(new Date(holiday.date), 'dd/MM/yyyy')}</span>
-                    <span>{holiday.name}</span>
-                  </div>
-                  {isEditable && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => {
-                        setHolidayToDelete(holiday);
-                        setIsDeletionDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
-                </li>
-              ))}
-          </ul>
-        ) : (
-          <div className="flex items-center justify-center p-4 border rounded-md">
-            <Info className="mr-2 h-5 w-5 text-muted-foreground" />
-            <p className="text-muted-foreground">Non hai festivos definidos</p>
-          </div>
-        )}
-      </div>
-      
-      {/* Dialog for adding a holiday */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Engadir Festivo</DialogTitle>
-            <DialogDescription>
-              Introduce o nome do festivo para o día {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+            modifiersClassNames={{
+              holiday: 'bg-red-100 text-red-800 hover:bg-red-200'
+            }}
+            components={{
+              DayContent: ({ date }) => (
+                <div className="relative flex h-8 w-8 items-center justify-center p-0">
+                  {date.getDate()}
+                </div>
+              )
+            }}
+            disabled={!isEditable}
+          />
+          
+          {isEditable && (
+            <div className="mt-4 space-y-2">
               <Label htmlFor="holidayName">Nome do festivo</Label>
-              <Input
-                id="holidayName"
-                placeholder="Ex: Día da Constitución"
-                value={holidayName}
-                onChange={(e) => setHolidayName(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="holidayName"
+                  value={holidayName}
+                  onChange={(e) => setHolidayName(e.target.value)}
+                  placeholder="Ex: Día Nacional de Galicia"
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={handleAddHoliday}
+                  disabled={addHolidayMutation.isPending}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Engadir
+                </Button>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleAddHoliday}>Engadir</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Dialog for removing a holiday */}
-      <Dialog open={isDeletionDialogOpen} onOpenChange={setIsDeletionDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Eliminar Festivo</DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro de que queres eliminar o festivo "{holidayToDelete?.name}" 
-              do día {holidayToDelete ? format(new Date(holidayToDelete.date), 'dd/MM/yyyy') : ''}?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeletionDialogOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleRemoveHoliday}>Eliminar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+        </div>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-medium mb-4">Festivos programados</h3>
+            
+            {holidays.length > 0 ? (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                {holidays
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map(holiday => (
+                    <div 
+                      key={holiday.date} 
+                      className="flex items-center justify-between p-3 rounded-md border"
+                    >
+                      <div>
+                        <span className="font-medium">
+                          {format(parseISO(holiday.date), 'dd/MM/yyyy')}
+                        </span>
+                        <span className="mx-2">-</span>
+                        <span>{holiday.name}</span>
+                      </div>
+                      {isEditable && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleRemoveHoliday(holiday)}
+                          disabled={removeHolidayMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Non hai festivos programados.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

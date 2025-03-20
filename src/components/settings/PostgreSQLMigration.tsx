@@ -15,7 +15,7 @@ const PostgreSQLMigration: React.FC = () => {
   const [isMigrating, setIsMigrating] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'failed'>('unknown');
   const [migrationProgress, setMigrationProgress] = useState(0);
-  const [apiUrl, setApiUrl] = useState('http://localhost:3000/api');
+  const [apiUrl, setApiUrl] = useState('http://localhost:5433/api');
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [usePostgresStorage, setUsePostgresStorage] = useState(getUseAPI);
   
@@ -152,7 +152,7 @@ const PostgreSQLMigration: React.FC = () => {
               id="api-url"
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
-              placeholder="http://localhost:3000/api"
+              placeholder="http://localhost:5433/api"
               disabled={isMigrating}
               className="flex-1"
             />

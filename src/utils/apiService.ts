@@ -2,7 +2,9 @@
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
 
-const API_URL = '/api';
+// Configuración para la conexión a PostgreSQL
+const API_URL = 'http://localhost:5433/api';
+// Nota: La autenticación se maneja en el backend, no exponemos credenciales en el frontend
 
 // Función genérica para manejar errores de fetch
 const handleFetchError = (error: any, message: string): never => {
