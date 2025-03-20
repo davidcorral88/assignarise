@@ -8,6 +8,7 @@ import {
   DailyHoursData,
   WorkdaySchedule,
 } from './types';
+import { saveToStorage, getFromStorage } from './storageService';
 
 // Datos iniciales para usuarios
 const initialUsers: User[] = [
@@ -265,67 +266,53 @@ const initialWorkSchedule: WorkSchedule = {
 };
 
 // Mock data for users
-let mockUsers: User[] = localStorage.getItem('mockUsers')
-  ? JSON.parse(localStorage.getItem('mockUsers') as string)
-  : initialUsers;
+let mockUsers: User[] = getFromStorage('mockUsers', initialUsers);
 
 // Mock data for tasks
-let mockTasks: Task[] = localStorage.getItem('mockTasks')
-  ? JSON.parse(localStorage.getItem('mockTasks') as string)
-  : initialTasks;
+let mockTasks: Task[] = getFromStorage('mockTasks', initialTasks);
 
 // Mock data for time entries
-let mockTimeEntries: TimeEntry[] = localStorage.getItem('mockTimeEntries')
-  ? JSON.parse(localStorage.getItem('mockTimeEntries') as string)
-  : initialTimeEntries;
+let mockTimeEntries: TimeEntry[] = getFromStorage('mockTimeEntries', initialTimeEntries);
 
 // Mock data for holidays
-let mockHolidays: Holiday[] = localStorage.getItem('mockHolidays')
-  ? JSON.parse(localStorage.getItem('mockHolidays') as string)
-  : initialHolidays;
+let mockHolidays: Holiday[] = getFromStorage('mockHolidays', initialHolidays);
 
 // Mock data for vacation days
-let mockVacationDays: VacationDay[] = localStorage.getItem('mockVacationDays')
-  ? JSON.parse(localStorage.getItem('mockVacationDays') as string)
-  : initialVacationDays;
+let mockVacationDays: VacationDay[] = getFromStorage('mockVacationDays', initialVacationDays);
 
 // Mock data for workday schedules
-let mockWorkdaySchedules: WorkdaySchedule[] = localStorage.getItem('mockWorkdaySchedules')
-  ? JSON.parse(localStorage.getItem('mockWorkdaySchedules') as string)
-  : initialWorkdaySchedules;
+let mockWorkdaySchedules: WorkdaySchedule[] = getFromStorage('mockWorkdaySchedules', initialWorkdaySchedules);
 
 // Mock data for work schedule configuration
-let mockWorkSchedule: WorkSchedule = localStorage.getItem('mockWorkSchedule')
-  ? JSON.parse(localStorage.getItem('mockWorkSchedule') as string)
-  : initialWorkSchedule;
+let mockWorkSchedule: WorkSchedule = getFromStorage('mockWorkSchedule', initialWorkSchedule);
 
 // Save mock data to localStorage
 const saveUsers = () => {
-  localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+  saveToStorage('mockUsers', mockUsers);
 };
 
 const saveTasks = () => {
-  localStorage.setItem('mockTasks', JSON.stringify(mockTasks));
+  saveToStorage('mockTasks', mockTasks);
 };
 
 const saveTimeEntries = () => {
-  localStorage.setItem('mockTimeEntries', JSON.stringify(mockTimeEntries));
+  saveToStorage('mockTimeEntries', mockTimeEntries);
 };
 
 const saveHolidays = () => {
-  localStorage.setItem('mockHolidays', JSON.stringify(mockHolidays));
+  saveToStorage('mockHolidays', mockHolidays);
 };
 
 const saveVacationDays = () => {
-  localStorage.setItem('mockVacationDays', JSON.stringify(mockVacationDays));
+  saveToStorage('mockVacationDays', mockVacationDays);
 };
 
 const saveWorkdaySchedules = () => {
-  localStorage.setItem('mockWorkdaySchedules', JSON.stringify(mockWorkdaySchedules));
+  saveToStorage('mockWorkdaySchedules', mockWorkdaySchedules);
 };
 
 const saveWorkSchedule = () => {
-  localStorage.setItem('mockWorkSchedule', JSON.stringify(mockWorkSchedule));
+  saveToStorage('mockWorkSchedule', mockWorkSchedule);
 };
 
 // Función para restablecer la base de datos
@@ -564,3 +551,10 @@ export {
   mockWorkSchedule,
   mockWorkdaySchedules
 };
+
+// Exportar funciones del servicio de almacenamiento para utilizar en Settings
+export { 
+  downloadDatabaseBackup, 
+  importDatabaseFromJSON,
+  getStorageUsage 
+} from './storageService';
