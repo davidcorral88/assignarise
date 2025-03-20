@@ -21,6 +21,8 @@ import { User, UserRole } from '../utils/types';
 import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+type OrganismType = 'Xunta' | 'iPlan' | '';
+
 const UserForm = () => {
   const { id } = useParams<{ id: string }>();
   const { currentUser } = useAuth();
@@ -32,7 +34,7 @@ const UserForm = () => {
   const [role, setRole] = useState<UserRole>('worker');
   const [phone, setPhone] = useState('');
   const [emailATSXPTPG, setEmailATSXPTPG] = useState('');
-  const [organism, setOrganism] = useState<'Xunta' | 'iPlan' | ''>('');
+  const [organism, setOrganism] = useState<OrganismType>('');
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -238,7 +240,10 @@ const UserForm = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="organism">Organismo</Label>
-                    <Select value={organism} onValueChange={setOrganism}>
+                    <Select 
+                      value={organism} 
+                      onValueChange={(value: OrganismType) => setOrganism(value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona un organismo" />
                       </SelectTrigger>
