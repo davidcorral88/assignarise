@@ -13,7 +13,9 @@ import {
   Pencil,
   Trash2,
   AlertCircle,
-  Phone
+  Phone,
+  Check,
+  X
 } from 'lucide-react';
 import { 
   Table, 
@@ -26,6 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +49,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
-import { mockUsers, getUsers } from '../utils/mockData';
+import { mockUsers, getUsers, updateUser, getUserById } from '../utils/mockData';
 import { User } from '../utils/types';
 import ImportUsersButton from '../components/users/ImportUsersButton';
 
@@ -118,6 +121,27 @@ const UserList = () => {
     setSelectedUser(null);
   };
   
+  const handleToggleActive = (userId: string, currentActive?: boolean) => {
+    const user = getUserById(userId);
+    if (user) {
+      const updatedUser = {
+        ...user,
+        active: currentActive === undefined ? true : !currentActive
+      };
+      updateUser(updatedUser);
+      
+      // Update local state
+      setUsers(prevUsers => 
+        prevUsers.map(u => u.id === userId ? updatedUser : u)
+      );
+      
+      toast({
+        title: updatedUser.active ? "Usuario activado" : "Usuario desactivado",
+        description: `${user.name} foi ${updatedUser.active ? 'activado' : 'desactivado'} correctamente.`,
+      });
+    }
+  };
+  
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -161,6 +185,7 @@ const UserList = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Email ATSXPTPG</TableHead>
                 <TableHead>Rol</TableHead>
+                <TableHead>Activo</TableHead>
                 <TableHead className="text-right">Accións</TableHead>
               </TableRow>
             </TableHeader>
@@ -206,6 +231,20 @@ const UserList = () => {
                         </Badge>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Checkbox 
+                          checked={user.active !== false}
+                          onCheckedChange={() => handleToggleActive(user.id, user.active)}
+                          aria-label={user.active !== false ? "Usuario activo" : "Usuario inactivo"}
+                        />
+                        {user.active !== false ? (
+                          <span className="ml-2 text-xs text-green-600">Activo</span>
+                        ) : (
+                          <span className="ml-2 text-xs text-red-600">Inactivo</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -222,6 +261,22 @@ const UserList = () => {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
+                            onClick={() => handleToggleActive(user.id, user.active)}
+                          >
+                            {user.active !== false ? (
+                              <>
+                                <X className="mr-2 h-4 w-4 text-red-500" />
+                                <span className="text-red-500">Desactivar</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="mr-2 h-4 w-4 text-green-500" />
+                                <span className="text-green-500">Activar</span>
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
                             className="text-red-500"
                             onClick={() => handleDeleteUser(user)}
                           >
@@ -235,7 +290,7 @@ const UserList = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
                       <Users className="h-10 w-10 text-muted-foreground/50 mb-4" />
                       <p className="text-sm text-muted-foreground">Non se atoparon usuarios</p>

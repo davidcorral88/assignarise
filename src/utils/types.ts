@@ -1,4 +1,3 @@
-
 export type UserRole = 'manager' | 'worker';
 
 export interface User {
@@ -10,6 +9,7 @@ export interface User {
   organism?: 'Xunta' | 'iPlan';
   phone?: string;
   emailATSXPTPG?: string;
+  active?: boolean;
 }
 
 export interface TaskAssignment {

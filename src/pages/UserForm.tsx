@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Select, 
   SelectContent, 
@@ -35,6 +36,7 @@ const UserForm = () => {
   const [phone, setPhone] = useState('');
   const [emailATSXPTPG, setEmailATSXPTPG] = useState('');
   const [organism, setOrganism] = useState<OrganismType>('');
+  const [active, setActive] = useState(true);
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -54,6 +56,7 @@ const UserForm = () => {
         setPhone(user.phone || '');
         setEmailATSXPTPG(user.emailATSXPTPG || '');
         setOrganism(user.organism || '');
+        setActive(user.active !== false); // If active is undefined, treat as true
       }
     }
     setLoading(false);
@@ -103,7 +106,8 @@ const UserForm = () => {
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`,
       phone: phone || undefined,
       emailATSXPTPG: emailATSXPTPG || undefined,
-      organism: organism as 'Xunta' | 'iPlan' | undefined
+      organism: organism as 'Xunta' | 'iPlan' | undefined,
+      active: active
     };
     
     // Save the user
@@ -212,6 +216,22 @@ const UserForm = () => {
                         </Label>
                       </div>
                     </RadioGroup>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="active" 
+                        checked={active} 
+                        onCheckedChange={(checked) => setActive(checked === true)}
+                      />
+                      <Label htmlFor="active" className="font-medium cursor-pointer">
+                        Usuario activo
+                      </Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground pl-6">
+                      Os usuarios inactivos non poderán acceder á aplicación
+                    </p>
                   </div>
                 </TabsContent>
                 
