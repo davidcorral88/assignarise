@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -13,8 +12,9 @@ import {
   Circle,
   Edit,
   Eye,
-  Trash2,
-  Hash
+  Hash,
+  Calendar,
+  User as UserIcon
 } from 'lucide-react';
 import { 
   Table, 
@@ -34,7 +34,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger
 } from '@/components/ui/dropdown-menu';
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { 
   mockTasks, 
   mockUsers, 
@@ -42,7 +51,9 @@ import {
   getUserById 
 } from '../utils/mockData';
 import { Task } from '../utils/types';
-import { format } from 'date-fns';
+import { format, isAfter, isBefore, parseISO } from 'date-fns';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 const TaskList = () => {
   const { currentUser } = useAuth();
@@ -51,6 +62,13 @@ const TaskList = () => {
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [creatorFilter, setCreatorFilter] = useState<string | null>(null);
+  const [startDateFilter, setStartDateFilter] = useState<Date | undefined>(undefined);
+  const [endDateFilter, setEndDateFilter] = useState<Date | undefined>(undefined);
+  const [dueDateStartFilter, setDueDateStartFilter] = useState<Date | undefined>(undefined);
+  const [dueDateEndFilter, setDueDateEndFilter] = useState<Date | undefined>(undefined);
+  const [dateFilterType, setDateFilterType] = useState<'creation' | 'due'>('creation');
   
   useEffect(() => {
     if (currentUser) {
@@ -71,16 +89,68 @@ const TaskList = () => {
         task => 
           task.title.toLowerCase().includes(query) || 
           task.description.toLowerCase().includes(query) ||
-          task.id.includes(query) // Búsqueda por ID numérico
+          task.id.includes(query)
       );
     }
     
     if (statusFilter) {
       result = result.filter(task => task.status === statusFilter);
     }
+
+    if (priorityFilter) {
+      result = result.filter(task => task.priority === priorityFilter);
+    }
+
+    if (creatorFilter) {
+      result = result.filter(task => task.createdBy === creatorFilter);
+    }
+
+    if (startDateFilter || endDateFilter) {
+      result = result.filter(task => {
+        const taskDate = parseISO(task.createdAt);
+        let matches = true;
+
+        if (startDateFilter) {
+          const startOfDay = new Date(startDateFilter);
+          startOfDay.setHours(0, 0, 0, 0);
+          matches = matches && isAfter(taskDate, startOfDay);
+        }
+
+        if (endDateFilter) {
+          const endOfDay = new Date(endDateFilter);
+          endOfDay.setHours(23, 59, 59, 999);
+          matches = matches && isBefore(taskDate, endOfDay);
+        }
+
+        return matches;
+      });
+    }
+
+    if (dueDateStartFilter || dueDateEndFilter) {
+      result = result.filter(task => {
+        if (!task.dueDate) return false;
+        
+        const taskDueDate = parseISO(task.dueDate);
+        let matches = true;
+
+        if (dueDateStartFilter) {
+          const startOfDay = new Date(dueDateStartFilter);
+          startOfDay.setHours(0, 0, 0, 0);
+          matches = matches && isAfter(taskDueDate, startOfDay);
+        }
+
+        if (dueDateEndFilter) {
+          const endOfDay = new Date(dueDateEndFilter);
+          endOfDay.setHours(23, 59, 59, 999);
+          matches = matches && isBefore(taskDueDate, endOfDay);
+        }
+
+        return matches;
+      });
+    }
     
     setFilteredTasks(result);
-  }, [tasks, searchQuery, statusFilter]);
+  }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
   
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -120,6 +190,26 @@ const TaskList = () => {
         return <Badge variant="outline">{priority}</Badge>;
     }
   };
+
+  const resetFilters = () => {
+    setStatusFilter(null);
+    setPriorityFilter(null);
+    setCreatorFilter(null);
+    setStartDateFilter(undefined);
+    setEndDateFilter(undefined);
+    setDueDateStartFilter(undefined);
+    setDueDateEndFilter(undefined);
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (statusFilter) count++;
+    if (priorityFilter) count++;
+    if (creatorFilter) count++;
+    if (startDateFilter || endDateFilter) count++;
+    if (dueDateStartFilter || dueDateEndFilter) count++;
+    return count;
+  };
   
   return (
     <Layout>
@@ -157,27 +247,277 @@ const TaskList = () => {
               <Button variant="outline" className="ml-auto">
                 <Filter className="mr-2 h-4 w-4" />
                 Filtrar
+                {getActiveFiltersCount() > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {getActiveFiltersCount()}
+                  </Badge>
+                )}
                 <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Filtrar por estado</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel>Filtrar tarefas</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setStatusFilter(null)}>
-                Todos
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('pending')}>
-                <Circle className="mr-2 h-4 w-4 text-gray-400" />
-                Pendente
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('in_progress')}>
-                <Clock className="mr-2 h-4 w-4 text-amber-500" />
-                En progreso
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('completed')}>
-                <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                Completada
-              </DropdownMenuItem>
+              
+              <DropdownMenuGroup>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Circle className="mr-2 h-4 w-4" />
+                    <span>Estado</span>
+                    {statusFilter && <Badge variant="outline" className="ml-auto">{getStatusText(statusFilter)}</Badge>}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setStatusFilter(null)}>
+                      Todos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter('pending')}>
+                      <Circle className="mr-2 h-4 w-4 text-gray-400" />
+                      Pendente
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter('in_progress')}>
+                      <Clock className="mr-2 h-4 w-4 text-amber-500" />
+                      En progreso
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter('completed')}>
+                      <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+                      Completada
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuGroup>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <span className="flex items-center">
+                      {priorityFilter === 'high' && <Badge variant="outline" className="mr-2 bg-red-100 text-red-800 border-red-200">Alta</Badge>}
+                      {priorityFilter === 'medium' && <Badge variant="outline" className="mr-2 bg-amber-100 text-amber-800 border-amber-200">Media</Badge>}
+                      {priorityFilter === 'low' && <Badge variant="outline" className="mr-2 bg-green-100 text-green-800 border-green-200">Baixa</Badge>}
+                      Prioridade
+                    </span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setPriorityFilter(null)}>
+                      Todas
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPriorityFilter('high')}>
+                      <Badge variant="outline" className="mr-2 bg-red-100 text-red-800 border-red-200">Alta</Badge>
+                      Alta prioridade
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPriorityFilter('medium')}>
+                      <Badge variant="outline" className="mr-2 bg-amber-100 text-amber-800 border-amber-200">Media</Badge>
+                      Media prioridade
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPriorityFilter('low')}>
+                      <Badge variant="outline" className="mr-2 bg-green-100 text-green-800 border-green-200">Baixa</Badge>
+                      Baixa prioridade
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuGroup>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    <span>Creador</span>
+                    {creatorFilter && (
+                      <Badge variant="outline" className="ml-auto">
+                        {getUserById(creatorFilter)?.name || 'Usuario'}
+                      </Badge>
+                    )}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setCreatorFilter(null)}>
+                      Todos os usuarios
+                    </DropdownMenuItem>
+                    {mockUsers.map(user => (
+                      <DropdownMenuItem key={user.id} onClick={() => setCreatorFilter(user.id)}>
+                        <div className="flex items-center">
+                          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
+                            {user.avatar ? (
+                              <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
+                            ) : (
+                              <span className="text-xs font-medium text-primary-foreground">
+                                {user.name.substring(0, 2)}
+                              </span>
+                            )}
+                          </div>
+                          {user.name}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuGroup>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <span>Data de creación</span>
+                    {(startDateFilter || endDateFilter) && (
+                      <Badge variant="outline" className="ml-auto">
+                        {startDateFilter && format(startDateFilter, "dd/MM/yy")}
+                        {startDateFilter && endDateFilter && ' - '}
+                        {endDateFilter && format(endDateFilter, "dd/MM/yy")}
+                      </Badge>
+                    )}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="p-0" align="start">
+                    <div className="p-2">
+                      <div className="mb-2">
+                        <div className="mb-1 text-sm font-medium">Desde</div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !startDateFilter && "text-muted-foreground"
+                              )}
+                            >
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {startDateFilter ? format(startDateFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <CalendarComponent
+                              mode="single"
+                              selected={startDateFilter}
+                              onSelect={setStartDateFilter}
+                              className="rounded-md border"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="mb-2">
+                        <div className="mb-1 text-sm font-medium">Hasta</div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !endDateFilter && "text-muted-foreground"
+                              )}
+                            >
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {endDateFilter ? format(endDateFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <CalendarComponent
+                              mode="single"
+                              selected={endDateFilter}
+                              onSelect={setEndDateFilter}
+                              className="rounded-md border"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <Button variant="outline" className="w-full mt-1" onClick={() => {
+                        setStartDateFilter(undefined);
+                        setEndDateFilter(undefined);
+                      }}>
+                        Borrar datas
+                      </Button>
+                    </div>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuGroup>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <span>Data de vencemento</span>
+                    {(dueDateStartFilter || dueDateEndFilter) && (
+                      <Badge variant="outline" className="ml-auto">
+                        {dueDateStartFilter && format(dueDateStartFilter, "dd/MM/yy")}
+                        {dueDateStartFilter && dueDateEndFilter && ' - '}
+                        {dueDateEndFilter && format(dueDateEndFilter, "dd/MM/yy")}
+                      </Badge>
+                    )}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="p-0" align="start">
+                    <div className="p-2">
+                      <div className="mb-2">
+                        <div className="mb-1 text-sm font-medium">Desde</div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !dueDateStartFilter && "text-muted-foreground"
+                              )}
+                            >
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {dueDateStartFilter ? format(dueDateStartFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <CalendarComponent
+                              mode="single"
+                              selected={dueDateStartFilter}
+                              onSelect={setDueDateStartFilter}
+                              className="rounded-md border"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="mb-2">
+                        <div className="mb-1 text-sm font-medium">Hasta</div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !dueDateEndFilter && "text-muted-foreground"
+                              )}
+                            >
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {dueDateEndFilter ? format(dueDateEndFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <CalendarComponent
+                              mode="single"
+                              selected={dueDateEndFilter}
+                              onSelect={setDueDateEndFilter}
+                              className="rounded-md border"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <Button variant="outline" className="w-full mt-1" onClick={() => {
+                        setDueDateStartFilter(undefined);
+                        setDueDateEndFilter(undefined);
+                      }}>
+                        Borrar datas
+                      </Button>
+                    </div>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+              
+              <div className="p-2">
+                <Button className="w-full" variant="outline" onClick={resetFilters}>
+                  Limpar filtros
+                </Button>
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -190,6 +530,7 @@ const TaskList = () => {
                 <TableHead>Título</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Prioridade</TableHead>
+                <TableHead>Creador</TableHead>
                 <TableHead>Asignados</TableHead>
                 <TableHead>Vencemento</TableHead>
                 <TableHead className="text-right">Accións</TableHead>
@@ -213,6 +554,26 @@ const TaskList = () => {
                     </TableCell>
                     <TableCell>{getStatusText(task.status)}</TableCell>
                     <TableCell>{getPriorityBadge(task.priority)}</TableCell>
+                    <TableCell>
+                      {task.createdBy && (
+                        <div className="flex items-center">
+                          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
+                            {getUserById(task.createdBy)?.avatar ? (
+                              <img 
+                                src={getUserById(task.createdBy)?.avatar} 
+                                alt={getUserById(task.createdBy)?.name} 
+                                className="h-full w-full rounded-full" 
+                              />
+                            ) : (
+                              <span className="text-xs font-medium text-primary-foreground">
+                                {getUserById(task.createdBy)?.name?.substring(0, 2) || '??'}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-sm">{getUserById(task.createdBy)?.name || 'Usuario descoñecido'}</span>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex -space-x-2">
                         {task.assignments.slice(0, 3).map((assignment) => {
@@ -258,7 +619,7 @@ const TaskList = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
                       <Clock className="h-10 w-10 text-muted-foreground/50 mb-4" />
                       <p className="text-sm text-muted-foreground">Non se atoparon tarefas</p>
