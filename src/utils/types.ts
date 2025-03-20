@@ -1,4 +1,3 @@
-
 export type UserRole = 'manager' | 'worker';
 
 export interface User {
@@ -7,6 +6,10 @@ export interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  organism?: 'Xunta' | 'iPlan'; // New field
+  phone?: string; // New field
+  emailATSXPTPG?: string; // New field
+  daci?: boolean; // New field for DACI boolean
 }
 
 export interface TaskAssignment {

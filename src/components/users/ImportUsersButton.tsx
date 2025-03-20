@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Upload, AlertTriangle, Check } from 'lucide-react';
+import { Upload, AlertTriangle, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { addUser, getUserById } from '@/utils/mockData';
 import { User } from '@/utils/types';
@@ -86,6 +86,15 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
       if (!row.role || (row.role !== 'worker' && row.role !== 'manager')) {
         validationErrors.push(`Fila ${i + 1}: Rol inválido (debe ser 'worker' o 'manager').`);
       }
+      if (row.organism && row.organism !== 'Xunta' && row.organism !== 'iPlan') {
+        validationErrors.push(`Fila ${i + 1}: Organismo inválido (debe ser 'Xunta' o 'iPlan').`);
+      }
+      if (row.emailATSXPTPG) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(row.emailATSXPTPG)) {
+          validationErrors.push(`Fila ${i + 1}: Email ATSXPTPG inválido.`);
+        }
+      }
     }
     
     return validationErrors;
@@ -108,18 +117,20 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
     for (const row of excelData) {
       try {
         const newUser: User = {
-          id: row.id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID if not provided
+          id: row.id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: row.name,
           email: row.email,
           role: row.role,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(row.name)}&background=0D8ABC&color=fff`
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(row.name)}&background=0D8ABC&color=fff`,
+          organism: row.organism,
+          phone: row.phone,
+          emailATSXPTPG: row.emailATSXPTPG,
+          daci: row.daci === true || row.daci === 'true' || row.daci === 1 || row.daci === '1'
         };
         
         // Check if user with this email already exists
         const existingUser = getUserById(row.id);
         if (existingUser) {
-          // If user exists, we could update it here
-          // For now, just count as error
           importResults.errors++;
           continue;
         }
@@ -200,6 +211,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
                   <th className="p-2 text-left">Nombre</th>
                   <th className="p-2 text-left">Email</th>
                   <th className="p-2 text-left">Rol</th>
+                  <th className="p-2 text-left">DACI</th>
                 </tr>
               </thead>
               <tbody>
@@ -208,6 +220,13 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
                     <td className="p-2">{row.name}</td>
                     <td className="p-2">{row.email}</td>
                     <td className="p-2">{row.role}</td>
+                    <td className="p-2">
+                      {row.daci === true || row.daci === 'true' || row.daci === 1 || row.daci === '1' ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <X className="h-4 w-4 text-gray-400" />
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
