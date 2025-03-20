@@ -178,7 +178,7 @@ const PostgreSQLMigration: React.FC = () => {
               id="api-url"
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
-              placeholder="http://localhost:5433/api"
+              placeholder="http://localhost:3000/api"
               disabled={isMigrating}
               className="flex-1"
             />
@@ -207,19 +207,11 @@ const PostgreSQLMigration: React.FC = () => {
                 <li>Usuario: {pgAdminConfig.user}</li>
                 <li>Contraseña: {pgAdminConfig.password}</li>
               </ul>
-              <p className="mt-2"><strong>Nota:</strong> Asegúrese de que el servidor PostgreSQL esté en ejecución y que la API esté configurada correctamente.</p>
+              <p className="mt-2"><strong>Nota:</strong> La API está corriendo en http://localhost:3000. Asegúrese de que el servidor esté en ejecución.</p>
               
               <div className="mt-3 space-y-2">
                 <p><strong>Enlaces útiles para verificación:</strong></p>
                 <div className="flex flex-col space-y-1">
-                  <a 
-                    href={`${apiUrl}/health-check`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline inline-flex items-center"
-                  >
-                    Verificar endpoint health-check <ExternalLinkIcon className="ml-1 h-3 w-3" />
-                  </a>
                   <a 
                     href={`${apiUrl}/users`} 
                     target="_blank" 
@@ -227,6 +219,14 @@ const PostgreSQLMigration: React.FC = () => {
                     className="text-blue-600 hover:underline inline-flex items-center"
                   >
                     Verificar endpoint users <ExternalLinkIcon className="ml-1 h-3 w-3" />
+                  </a>
+                  <a 
+                    href={`${apiUrl.replace(/\/api$/, '')}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline inline-flex items-center"
+                  >
+                    Verificar servidor API <ExternalLinkIcon className="ml-1 h-3 w-3" />
                   </a>
                 </div>
               </div>

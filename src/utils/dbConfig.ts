@@ -15,4 +15,4 @@ export const pgAdminConfig = {
 };
 
 // URL de la API que conecta con PostgreSQL
-export const API_URL = 'http://localhost:5433/api';
+export const API_URL = 'http://localhost:3000/api';
