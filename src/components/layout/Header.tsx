@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -9,7 +10,8 @@ import {
   User,
   Menu,
   X,
-  Settings
+  Settings,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,7 +52,7 @@ export const Header: React.FC = () => {
   const navLinks = [
     {
       to: '/dashboard',
-      icon: <Clock className="mr-2 h-4 w-4" />,
+      icon: <BarChart3 className="mr-2 h-4 w-4" />,
       label: 'Panel',
       show: true
     },
