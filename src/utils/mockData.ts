@@ -366,6 +366,10 @@ export const getUserById = (id: string): User | undefined => {
   return mockUsers.find((user) => user.id === id);
 };
 
+export const getUserByEmail = (email: string): User | undefined => {
+  return mockUsers.find((user) => user.email.toLowerCase() === email.toLowerCase());
+};
+
 export const addUser = (user: User): void => {
   mockUsers.push(user);
   saveUsers();
@@ -373,6 +377,11 @@ export const addUser = (user: User): void => {
 
 export const updateUser = (user: User): void => {
   mockUsers = mockUsers.map((u) => (u.id === user.id ? user : u));
+  saveUsers();
+};
+
+export const deleteUser = (id: string): void => {
+  mockUsers = mockUsers.filter((user) => user.id !== id);
   saveUsers();
 };
 

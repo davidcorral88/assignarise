@@ -11,7 +11,8 @@ import {
   Shield,
   User as UserIcon,
   Pencil,
-  Trash2
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 import { 
   Table, 
@@ -33,8 +34,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { mockUsers } from '../utils/mockData';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from '@/components/ui/use-toast';
+import { mockUsers, getUsers } from '../utils/mockData';
 import { User } from '../utils/types';
+import ImportUsersButton from '../components/users/ImportUsersButton';
 
 const UserList = () => {
   const { currentUser } = useAuth();
@@ -42,6 +55,13 @@ const UserList = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  const loadUsers = () => {
+    const loadedUsers = getUsers();
+    setUsers(loadedUsers);
+  };
   
   useEffect(() => {
     // Only managers can access this page
@@ -49,7 +69,7 @@ const UserList = () => {
       navigate('/dashboard');
     }
     
-    setUsers(mockUsers);
+    loadUsers();
   }, [currentUser, navigate]);
   
   useEffect(() => {
@@ -75,6 +95,28 @@ const UserList = () => {
       .toUpperCase();
   };
   
+  const handleDeleteUser = (user: User) => {
+    setSelectedUser(user);
+    setShowDeleteDialog(true);
+  };
+  
+  const confirmDelete = () => {
+    if (!selectedUser) return;
+    
+    // Mock delete - in a real app this would call an API
+    // For now, we'll just remove it from our local state
+    const updatedUsers = users.filter(user => user.id !== selectedUser.id);
+    setUsers(updatedUsers);
+    
+    toast({
+      title: "Usuario eliminado",
+      description: `${selectedUser.name} foi eliminado correctamente.`,
+    });
+    
+    setShowDeleteDialog(false);
+    setSelectedUser(null);
+  };
+  
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -85,13 +127,15 @@ const UserList = () => {
               Xestiona os usuarios do sistema
             </p>
           </div>
-          <Button 
-            className="mt-4 sm:mt-0" 
-            onClick={() => navigate('/users/new')}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Novo usuario
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
+            <ImportUsersButton onImportComplete={loadUsers} />
+            <Button 
+              onClick={() => navigate('/users/new')}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Novo usuario
+            </Button>
+          </div>
         </div>
         
         <div className="flex space-x-3">
@@ -159,7 +203,10 @@ const UserList = () => {
                             Editar
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-500">
+                          <DropdownMenuItem 
+                            className="text-red-500"
+                            onClick={() => handleDeleteUser(user)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Eliminar
                           </DropdownMenuItem>
@@ -182,6 +229,30 @@ const UserList = () => {
           </Table>
         </div>
       </div>
+      
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-destructive mr-2" />
+              Confirmar eliminación
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que deseas eliminar a <strong>{selectedUser?.name}</strong>?
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
