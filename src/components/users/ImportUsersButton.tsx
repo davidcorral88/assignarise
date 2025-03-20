@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Upload, AlertTriangle, Check, X } from 'lucide-react';
+import { Upload, AlertTriangle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { addUser, getUserById } from '@/utils/mockData';
 import { User } from '@/utils/types';
@@ -124,8 +123,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(row.name)}&background=0D8ABC&color=fff`,
           organism: row.organism,
           phone: row.phone,
-          emailATSXPTPG: row.emailATSXPTPG,
-          daci: row.daci === true || row.daci === 'true' || row.daci === 1 || row.daci === '1'
+          emailATSXPTPG: row.emailATSXPTPG
         };
         
         // Check if user with this email already exists
@@ -208,25 +206,19 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
             <table className="w-full text-sm">
               <thead className="bg-muted sticky top-0">
                 <tr>
-                  <th className="p-2 text-left">Nombre</th>
+                  <th className="p-2 text-left">Nome</th>
+                  <th className="p-2 text-left">Teléfono</th>
                   <th className="p-2 text-left">Email</th>
                   <th className="p-2 text-left">Rol</th>
-                  <th className="p-2 text-left">DACI</th>
                 </tr>
               </thead>
               <tbody>
                 {excelData.slice(0, 10).map((row, index) => (
                   <tr key={index} className="border-t">
                     <td className="p-2">{row.name}</td>
+                    <td className="p-2">{row.phone || '-'}</td>
                     <td className="p-2">{row.email}</td>
                     <td className="p-2">{row.role}</td>
-                    <td className="p-2">
-                      {row.daci === true || row.daci === 'true' || row.daci === 1 || row.daci === '1' ? (
-                        <Check className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <X className="h-4 w-4 text-gray-400" />
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>

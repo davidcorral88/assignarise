@@ -12,7 +12,8 @@ import {
   User as UserIcon,
   Pencil,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Phone
 } from 'lucide-react';
 import { 
   Table, 
@@ -151,12 +152,14 @@ const UserList = () => {
           </div>
         </div>
         
-        <div className="rounded-md border animate-scale-in">
+        <div className="rounded-md border animate-scale-in overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
+                <TableHead>Teléfono</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Email ATSXPTPG</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead className="text-right">Accións</TableHead>
               </TableRow>
@@ -174,7 +177,22 @@ const UserList = () => {
                         <span className="font-medium">{user.name}</span>
                       </div>
                     </TableCell>
+                    <TableCell>
+                      {user.phone ? (
+                        <div className="flex items-center">
+                          <Phone className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                          {user.phone}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Non dispoñible</span>
+                      )}
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      {user.emailATSXPTPG || (
+                        <span className="text-muted-foreground text-sm">Non dispoñible</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {user.role === 'manager' ? (
                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
@@ -217,7 +235,7 @@ const UserList = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
                       <Users className="h-10 w-10 text-muted-foreground/50 mb-4" />
                       <p className="text-sm text-muted-foreground">Non se atoparon usuarios</p>
