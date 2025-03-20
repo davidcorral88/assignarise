@@ -1,9 +1,10 @@
 
 import { toast } from '@/components/ui/use-toast';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule } from '@/utils/types';
+import { API_URL } from './dbConfig';
 
 // Definir la URL de la API PostgreSQL con las credenciales correctas
-const API_URL = 'http://localhost:5433/api'; 
+// const API_URL = 'http://localhost:5433/api'; 
 // Los detalles de autenticación (usuario, contraseña, etc.) deben manejarse en el servidor
 
 export const migrateToPostgreSQL = async (): Promise<{success: boolean, message: string}> => {
@@ -221,12 +222,20 @@ export const migrateToPostgreSQL = async (): Promise<{success: boolean, message:
 // Verificar conexión con la base de datos PostgreSQL
 export const testPostgreSQLConnection = async (): Promise<boolean> => {
   try {
+    console.log(`Verificando conexión con: ${API_URL}/health-check`);
+    
     const response = await fetch(`${API_URL}/health-check`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
     
-    return response.ok;
+    if (response.ok) {
+      console.log('Conexión exitosa con PostgreSQL');
+      return true;
+    } else {
+      console.error('Error en la respuesta del servidor:', response.status, response.statusText);
+      return false;
+    }
   } catch (error) {
     console.error('Error al verificar conexión con PostgreSQL:', error);
     return false;

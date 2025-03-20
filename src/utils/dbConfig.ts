@@ -8,5 +8,11 @@ export const dbConfig = {
   password: 'dc0rralIplan',
 };
 
-// Preferimos no exponer estas credenciales en el frontend
-// Esta configuración debe usarse en el backend
+// Configuración del usuario administrador de PostgreSQL
+export const pgAdminConfig = {
+  user: 'postgres',
+  password: 'iPlan'
+};
+
+// URL de la API que conecta con PostgreSQL
+export const API_URL = 'http://localhost:5433/api';

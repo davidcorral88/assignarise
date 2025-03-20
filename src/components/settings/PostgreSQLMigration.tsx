@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon } from 'lucide-react';
+import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon, InfoIcon } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -10,14 +10,16 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { migrateToPostgreSQL, testPostgreSQLConnection } from '@/utils/migrationService';
 import { getUseAPI, setUseAPI } from '@/utils/dataService';
+import { API_URL } from '@/utils/dbConfig';
 
 const PostgreSQLMigration: React.FC = () => {
   const [isMigrating, setIsMigrating] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'failed'>('unknown');
   const [migrationProgress, setMigrationProgress] = useState(0);
-  const [apiUrl, setApiUrl] = useState('http://localhost:5433/api');
+  const [apiUrl, setApiUrl] = useState(API_URL);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [usePostgresStorage, setUsePostgresStorage] = useState(getUseAPI);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
   
   useEffect(() => {
     // Check if postgres is already active
@@ -144,8 +146,17 @@ const PostgreSQLMigration: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="api-url" className="text-sm font-medium">
-            URL de la API PostgreSQL
+          <label htmlFor="api-url" className="text-sm font-medium flex justify-between">
+            <span>URL de la API PostgreSQL</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-2 text-xs"
+              onClick={() => setShowDebugInfo(!showDebugInfo)}
+            >
+              <InfoIcon className="h-3 w-3 mr-1" />
+              Info conexión
+            </Button>
           </label>
           <div className="flex gap-2">
             <Input
@@ -165,6 +176,21 @@ const PostgreSQLMigration: React.FC = () => {
             </Button>
           </div>
           
+          {showDebugInfo && (
+            <div className="bg-muted p-3 rounded-md mt-2 text-xs">
+              <p><strong>Configuración de conexión:</strong></p>
+              <ul className="list-disc pl-5 space-y-1 mt-1">
+                <li>Host: localhost</li>
+                <li>Puerto: 5433</li>
+                <li>Base de datos: DBtarefas</li>
+                <li>Usuario: control_de_tarefas</li>
+                <li>Contraseña: dc0rralIplan</li>
+                <li>URL API: {apiUrl}</li>
+              </ul>
+              <p className="mt-2"><strong>Nota:</strong> Asegúrese de que el servidor PostgreSQL esté en ejecución y que la API esté configurada correctamente.</p>
+            </div>
+          )}
+          
           {connectionStatus === 'connected' && (
             <div className="bg-green-100 p-3 rounded-md flex items-start mt-2">
               <CheckCircle2Icon className="mr-2 h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -183,6 +209,12 @@ const PostgreSQLMigration: React.FC = () => {
                 <p className="text-sm text-destructive/90">
                   No se pudo conectar con la base de datos PostgreSQL. Verifique que el servidor esté funcionando y la URL sea correcta.
                 </p>
+                <ul className="list-disc pl-5 text-xs text-destructive/80 mt-1">
+                  <li>Compruebe que PostgreSQL está ejecutándose en el puerto 5433</li>
+                  <li>Verifique que existe la base de datos 'DBtarefas'</li>
+                  <li>Confirme que el usuario 'control_de_tarefas' tiene acceso</li>
+                  <li>Asegúrese de que el servidor API esté funcionando en la URL proporcionada</li>
+                </ul>
               </div>
             </div>
           )}
