@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -23,27 +22,34 @@ import {
   addVacationDay, 
   removeVacationDay 
 } from '@/utils/mockData';
-import { format } from 'date-fns';
+import { format, addDays, isBefore, isAfter, parseISO, eachDayOfInterval } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { Holiday, VacationDay } from '@/utils/types';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuth } from '@/components/auth/AuthContext';
-import { Info, Briefcase, Stethoscope, Filter } from 'lucide-react';
+import { Info, Briefcase, Stethoscope } from 'lucide-react';
 
 interface UserVacationsCalendarProps {
   userId?: string;
 }
+
+type CalendarMode = 'single' | 'range';
 
 const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId }) => {
   const { currentUser } = useAuth();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [vacationDays, setVacationDays] = useState<VacationDay[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({ from: undefined, to: undefined });
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState<boolean>(false);
-  const [daysToShow, setDaysToShow] = useState<string[]>(["all", "vacation", "sick_leave"]);
+  const [daysToShow, setDaysToShow] = useState<string[]>(["vacation", "sick_leave"]);
   const [dayType, setDayType] = useState<'vacation' | 'sick_leave'>('vacation');
   const [vacationToDelete, setVacationToDelete] = useState<VacationDay | null>(null);
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>('range');
   
   const actualUserId = userId || currentUser?.id;
 
@@ -65,7 +71,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
       day.userId === actualUserId && 
       day.date === formattedDate && 
       day.type === 'vacation' &&
-      (daysToShow.includes('vacation') || daysToShow.includes('all'))
+      daysToShow.includes('vacation')
     );
   };
 
@@ -76,7 +82,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
       day.userId === actualUserId && 
       day.date === formattedDate && 
       day.type === 'sick_leave' &&
-      (daysToShow.includes('sick_leave') || daysToShow.includes('all'))
+      daysToShow.includes('sick_leave')
     );
   };
 
@@ -112,6 +118,23 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
   const handleDateSelect = (date: Date | undefined) => {
     if (!date || !actualUserId) return;
     
+    setSelectedDate(date);
+    checkAndOpenDialog(date);
+  };
+
+  const handleRangeSelect = (range: { from: Date | undefined; to: Date | undefined }) => {
+    if (!range.from || !actualUserId) return;
+    
+    setDateRange(range);
+    if (range.to) {
+      // We have a complete range, open the dialog
+      setIsDialogOpen(true);
+    }
+  };
+
+  const checkAndOpenDialog = (date: Date) => {
+    if (!actualUserId) return;
+    
     const formattedDate = format(date, 'yyyy-MM-dd');
     
     // Don't add vacation/sick days on holidays
@@ -133,31 +156,95 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
       setVacationToDelete(existingVacation);
       setIsDeletionDialogOpen(true);
     } else {
-      setSelectedDate(date);
       setDayType('vacation');
       setIsDialogOpen(true);
     }
   };
 
   const handleAddVacation = () => {
-    if (!selectedDate || !actualUserId) return;
+    if (!actualUserId) return;
     
-    const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+    // Handle single date
+    if (calendarMode === 'single' && selectedDate) {
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      
+      if (isHoliday(selectedDate)) {
+        toast({
+          title: "Data non dispoñible",
+          description: "Non podes marcar un día festivo como vacacións ou baixa",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const newVacation: VacationDay = {
+        userId: actualUserId,
+        date: formattedDate,
+        type: dayType
+      };
+      
+      addVacationDay(newVacation);
+      loadData();
+      
+      toast({
+        title: dayType === 'vacation' ? 'Vacacións engadidas' : 'Baixa médica engadida',
+        description: `${dayType === 'vacation' ? 'Día de vacacións' : 'Día de baixa médica'} engadido para o ${format(selectedDate, 'dd/MM/yyyy')}`
+      });
+    } 
+    // Handle date range
+    else if (calendarMode === 'range' && dateRange.from && dateRange.to) {
+      // Get all days in the range
+      const daysInRange = eachDayOfInterval({
+        start: dateRange.from,
+        end: dateRange.to
+      });
+      
+      let addedCount = 0;
+      
+      // Add each day in the range
+      daysInRange.forEach(day => {
+        if (!isHoliday(day)) {
+          const formattedDate = format(day, 'yyyy-MM-dd');
+          
+          // Check if day already exists
+          const exists = vacationDays.some(
+            v => v.userId === actualUserId && 
+            v.date === formattedDate &&
+            v.type === dayType
+          );
+          
+          if (!exists) {
+            const newVacation: VacationDay = {
+              userId: actualUserId,
+              date: formattedDate,
+              type: dayType
+            };
+            
+            addVacationDay(newVacation);
+            addedCount++;
+          }
+        }
+      });
+      
+      loadData();
+      
+      if (addedCount > 0) {
+        toast({
+          title: dayType === 'vacation' ? 'Vacacións engadidas' : 'Baixas médicas engadidas',
+          description: `${addedCount} ${dayType === 'vacation' ? 'días de vacacións' : 'días de baixa médica'} engadidos`
+        });
+      } else {
+        toast({
+          title: "Non se engadiron días",
+          description: "Os días seleccionados xa estaban rexistrados ou son festivos",
+        });
+      }
+    }
     
-    const newVacation: VacationDay = {
-      userId: actualUserId,
-      date: formattedDate,
-      type: dayType
-    };
-    
-    addVacationDay(newVacation);
-    loadData();
+    // Reset selections
+    setSelectedDate(undefined);
+    setDateRange({ from: undefined, to: undefined });
     setIsDialogOpen(false);
-    
-    toast({
-      title: dayType === 'vacation' ? 'Vacacións engadidas' : 'Baixa médica engadida',
-      description: `${dayType === 'vacation' ? 'Día de vacacións' : 'Día de baixa médica'} engadido para o ${format(selectedDate, 'dd/MM/yyyy')}`
-    });
   };
 
   const handleRemoveVacation = () => {
@@ -178,7 +265,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
     
     const filteredDays = vacationDays.filter(day => 
       day.userId === actualUserId && 
-      (daysToShow.includes(day.type) || daysToShow.includes('all'))
+      daysToShow.includes(day.type)
     );
     
     return filteredDays.sort((a, b) => 
@@ -190,20 +277,21 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
   const { toast } = useToast();
 
   const handleToggleChange = (value: string[]) => {
-    // If "all" is being added or removed, handle special logic
-    if (value.includes('all') && !daysToShow.includes('all')) {
-      // If "all" is being added, remove other options
-      setDaysToShow(['all']);
-    } else if (!value.includes('all') && daysToShow.includes('all')) {
-      // If "all" is being removed, add both other options
-      setDaysToShow(['vacation', 'sick_leave']);
-    } else if (value.length === 0) {
-      // Don't allow empty selection, default to "all"
-      setDaysToShow(['all']);
-    } else {
-      // For other changes, just update as normal
-      setDaysToShow(value);
+    // Don't allow empty selection
+    if (value.length === 0) {
+      // If trying to deselect the last option, keep it selected
+      return;
     }
+    
+    // For other changes, just update as normal
+    setDaysToShow(value);
+  };
+
+  const toggleCalendarMode = () => {
+    setCalendarMode(calendarMode === 'single' ? 'range' : 'single');
+    // Reset selections when changing mode
+    setSelectedDate(undefined);
+    setDateRange({ from: undefined, to: undefined });
   };
 
   return (
@@ -211,33 +299,47 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h3 className="text-lg font-medium">Calendario de Ausencias</h3>
-          <p className="text-sm text-muted-foreground">Fai clic nun día para marcar vacacións ou baixa médica</p>
+          <p className="text-sm text-muted-foreground">
+            {calendarMode === 'single' 
+              ? 'Fai clic nun día para marcar vacacións ou baixa médica'
+              : 'Selecciona un rango de días para marcar vacacións ou baixa médica'}
+          </p>
         </div>
         
-        <ToggleGroup 
-          type="multiple" 
-          value={daysToShow}
-          onValueChange={handleToggleChange}
-        >
-          <ToggleGroupItem value="all" aria-label="Mostrar todos">
-            <Filter className="h-4 w-4 mr-2" />
-            Todos
-          </ToggleGroupItem>
-          <ToggleGroupItem value="vacation" aria-label="Mostrar vacacións">
-            <Briefcase className="h-4 w-4 mr-2" />
-            Vacacións
-          </ToggleGroupItem>
-          <ToggleGroupItem value="sick_leave" aria-label="Mostrar baixas">
-            <Stethoscope className="h-4 w-4 mr-2" />
-            Baixa médica
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={toggleCalendarMode}
+            className="mb-2 sm:mb-0"
+          >
+            {calendarMode === 'single' 
+              ? 'Cambiar a selección de rango' 
+              : 'Cambiar a selección simple'}
+          </Button>
+          
+          <ToggleGroup 
+            type="multiple" 
+            value={daysToShow}
+            onValueChange={handleToggleChange}
+          >
+            <ToggleGroupItem value="vacation" aria-label="Mostrar vacacións">
+              <Briefcase className="h-4 w-4 mr-2" />
+              Vacacións
+            </ToggleGroupItem>
+            <ToggleGroupItem value="sick_leave" aria-label="Mostrar baixas">
+              <Stethoscope className="h-4 w-4 mr-2" />
+              Baixa médica
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
       </div>
       
       <div className="border rounded-md">
         <Calendar
-          mode="single"
-          onSelect={handleDateSelect}
+          mode={calendarMode}
+          selected={calendarMode === 'single' ? selectedDate : dateRange}
+          onSelect={calendarMode === 'single' ? handleDateSelect : handleRangeSelect}
           modifiers={modifiers}
           modifiersStyles={modifiersStyles as any}
           className="p-3 pointer-events-auto"
@@ -297,7 +399,10 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
           <DialogHeader>
             <DialogTitle>Marcar día de ausencia</DialogTitle>
             <DialogDescription>
-              Selecciona o tipo de ausencia para o día {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}.
+              {calendarMode === 'single' 
+                ? `Selecciona o tipo de ausencia para o día ${selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}.`
+                : `Selecciona o tipo de ausencia para o período do ${dateRange.from ? format(dateRange.from, 'dd/MM/yyyy') : ''} ao ${dateRange.to ? format(dateRange.to, 'dd/MM/yyyy') : ''}.`
+              }
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
