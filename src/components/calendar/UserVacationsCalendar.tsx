@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -336,14 +337,25 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
       </div>
       
       <div className="border rounded-md">
-        <Calendar
-          mode={calendarMode}
-          selected={calendarMode === 'single' ? selectedDate : dateRange}
-          onSelect={calendarMode === 'single' ? handleDateSelect : handleRangeSelect}
-          modifiers={modifiers}
-          modifiersStyles={modifiersStyles as any}
-          className="p-3 pointer-events-auto"
-        />
+        {calendarMode === 'single' ? (
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleDateSelect}
+            modifiers={modifiers}
+            modifiersStyles={modifiersStyles as any}
+            className="p-3 pointer-events-auto"
+          />
+        ) : (
+          <Calendar
+            mode="range"
+            selected={dateRange}
+            onSelect={handleRangeSelect}
+            modifiers={modifiers}
+            modifiersStyles={modifiersStyles as any}
+            className="p-3 pointer-events-auto"
+          />
+        )}
       </div>
       
       <div className="mt-6 space-y-4">
