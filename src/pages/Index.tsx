@@ -57,7 +57,7 @@ const Index = () => {
           <div className="flex flex-col space-y-10 items-center text-center">
             <div className="space-y-4 animate-fade-in">
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
-                Control de Tarefas do Plan de Transporte Público de Galicia
+                Control de Tarefas da Asistencia de Xestión e Seguemento do Plan de Transporte Público de Galicia (ATSXPTPG)
               </h1>
             </div>
             
