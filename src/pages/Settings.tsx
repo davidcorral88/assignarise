@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { DatabaseBackup, FileUp, RefreshCw, HardDrive, AlertCircle, CheckCircle2, Ban, Database, Trash2 } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { downloadDatabaseBackup, importDatabaseFromJSON, getStorageUsage } from '@/utils/dataService';
+import { downloadDatabaseBackup, importDatabaseFromJSON, getStorageUsage, resetDatabase } from '@/utils/dataService';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthContext';
 import PostgreSQLMigration from '@/components/settings/PostgreSQLMigration';
