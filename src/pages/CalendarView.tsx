@@ -74,7 +74,7 @@ const CalendarView = () => {
       timeFormat: hours
     };
     
-    // Add to db - updated function name
+    // Add to db
     addTimeEntryOld(newEntry);
     
     // Update state
@@ -103,7 +103,7 @@ const CalendarView = () => {
   return (
     <Layout>
       <div className="container mx-auto py-6">
-        <h1 className="text-2xl font-bold mb-6">Calendario de Rexistro de Horas</h1>
+        <h1 className="text-2xl font-bold mb-6" style={{ color: "#007bc4" }}>Calendario de Rexistro de Horas</h1>
         
         <Card>
           <CardHeader>

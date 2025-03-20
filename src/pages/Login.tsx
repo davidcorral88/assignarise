@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
-import { CheckSquare, Loader2 } from 'lucide-react';
+import { Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -50,9 +50,9 @@ const Login = () => {
       <div className="w-full max-w-md animate-scale-in">
         <div className="text-center mb-8">
           <div className="flex justify-center">
-            <CheckSquare className="h-12 w-12 text-primary" />
+            <Clock className="h-12 w-12 text-primary" />
           </div>
-          <h1 className="mt-6 text-3xl font-bold">Rexistro de Tarefas do Plan de Transporte Público de Galicia</h1>
+          <h1 className="mt-6 text-3xl font-bold" style={{ color: '#007bc4' }}>Control de Tarefas do Plan de Transporte Público de Galicia</h1>
           <p className="mt-2 text-muted-foreground">Sistema de xestión de tarefas</p>
         </div>
         

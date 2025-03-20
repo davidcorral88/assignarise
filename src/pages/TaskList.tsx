@@ -1,16 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
 import { Layout } from '../components/layout/Layout';
 import { 
-  CheckSquare, 
+  Clock, 
   PlusCircle, 
   Search, 
   Filter, 
   ChevronDown,
-  CheckCircle2,
-  Clock, 
+  CheckCircle2, 
   Circle,
   Edit,
   Eye,
@@ -55,10 +53,8 @@ const TaskList = () => {
   useEffect(() => {
     if (currentUser) {
       if (currentUser.role === 'worker') {
-        // Workers only see tasks assigned to them
         setTasks(getTasksByUserId(currentUser.id));
       } else {
-        // Managers see all tasks
         setTasks(mockTasks);
       }
     }
@@ -67,7 +63,6 @@ const TaskList = () => {
   useEffect(() => {
     let result = [...tasks];
     
-    // Apply search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -77,7 +72,6 @@ const TaskList = () => {
       );
     }
     
-    // Apply status filter
     if (statusFilter) {
       result = result.filter(task => task.status === statusFilter);
     }
@@ -256,7 +250,7 @@ const TaskList = () => {
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
-                      <CheckSquare className="h-10 w-10 text-muted-foreground/50 mb-4" />
+                      <Clock className="h-10 w-10 text-muted-foreground/50 mb-4" />
                       <p className="text-sm text-muted-foreground">Non se atoparon tarefas</p>
                     </div>
                   </TableCell>

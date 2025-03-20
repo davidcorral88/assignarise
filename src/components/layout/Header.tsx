@@ -1,11 +1,9 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { 
-  CheckSquare, 
-  Users, 
   Clock, 
+  Users, 
   ChevronDown, 
   LogOut, 
   User,
@@ -52,13 +50,13 @@ export const Header: React.FC = () => {
   const navLinks = [
     {
       to: '/dashboard',
-      icon: <CheckSquare className="mr-2 h-4 w-4" />,
+      icon: <Clock className="mr-2 h-4 w-4" />,
       label: 'Panel',
       show: true
     },
     {
       to: '/tasks',
-      icon: <CheckSquare className="mr-2 h-4 w-4" />,
+      icon: <Clock className="mr-2 h-4 w-4" />,
       label: 'Tarefas',
       show: true
     },
@@ -106,8 +104,8 @@ export const Header: React.FC = () => {
           </div>
 
           <Link to="/dashboard" className="flex items-center mr-8 font-semibold text-xl">
-            <CheckSquare className="h-6 w-6 mr-2 text-primary" />
-            <span className="animate-fade-in" style={{ color: "#007bc4" }}>Rexistro de Tarefas</span>
+            <Clock className="h-6 w-6 mr-2 text-primary" />
+            <span className="animate-fade-in" style={{ color: "#007bc4" }}>Control de Tarefas</span>
           </Link>
 
           {isMobile ? (

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -6,7 +5,6 @@ import { Layout } from '../components/layout/Layout';
 import { 
   Clock, 
   Calendar, 
-  CheckSquare, 
   PlusCircle,
   Timer,
   Save,
@@ -76,7 +74,6 @@ const TimeTracking = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   
-  // Form fields
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
   const [hours, setHours] = useState<number>(1);
   const [date, setDate] = useState<Date>(new Date());
@@ -84,7 +81,6 @@ const TimeTracking = () => {
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   
   useEffect(() => {
-    // Only workers can access this page
     if (currentUser?.role !== 'worker') {
       navigate('/dashboard');
     } else {
@@ -108,9 +104,7 @@ const TimeTracking = () => {
     
     setSubmitting(true);
     
-    // Simulate API call
     setTimeout(() => {
-      // In a real app, this would be an API call to save the time entry
       const newEntry: TimeEntry = {
         id: String(mockTimeEntries.length + 1),
         taskId: selectedTaskId,
@@ -120,7 +114,6 @@ const TimeTracking = () => {
         notes: notes.trim() || undefined
       };
       
-      // Update local state (in a real app, this would be fetched from the API)
       setTimeEntries([newEntry, ...timeEntries]);
       
       toast({
@@ -128,7 +121,6 @@ const TimeTracking = () => {
         description: 'Rexistráronse as túas horas correctamente.',
       });
       
-      // Reset form
       setSelectedTaskId('');
       setHours(1);
       setDate(new Date());
@@ -300,7 +292,7 @@ const TimeTracking = () => {
                         <TableRow key={entry.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center">
-                              <CheckSquare className="mr-2 h-4 w-4 text-primary" />
+                              <Clock className="mr-2 h-4 w-4 text-primary" />
                               <span>{task?.title || 'Tarefa non atopada'}</span>
                             </div>
                           </TableCell>
@@ -321,12 +313,10 @@ const TimeTracking = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Accións</DropdownMenuLabel>
-                                {task && (
-                                  <DropdownMenuItem onClick={() => navigate(`/tasks/${task.id}`)}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Ver tarefa
-                                  </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem onClick={() => navigate(`/tasks/${task.id}`)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Ver tarefa
+                                </DropdownMenuItem>
                                 <DropdownMenuItem>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Editar rexistro
@@ -391,7 +381,7 @@ const TimeTracking = () => {
                       <div className="flex-1">
                         <h3 className="font-medium text-lg mb-1">{task.title}</h3>
                         <div className="flex items-center text-sm text-muted-foreground">
-                          <CheckSquare className="mr-1.5 h-4 w-4" />
+                          <Clock className="mr-1.5 h-4 w-4" />
                           <span>Estado: {task.status === 'completed' ? 'Completada' : task.status === 'in_progress' ? 'En progreso' : 'Pendente'}</span>
                         </div>
                       </div>
@@ -424,7 +414,7 @@ const TimeTracking = () => {
               
               {userTasks.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <CheckSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <Clock className="h-12 w-12 text-muted-foreground/50 mb-4" />
                   <p className="text-muted-foreground mb-4">Non tes tarefas asignadas</p>
                 </div>
               )}

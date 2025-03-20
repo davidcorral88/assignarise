@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckSquare, ArrowRight } from 'lucide-react';
+import { Clock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/AuthContext';
 
@@ -31,8 +31,8 @@ const Index = () => {
           </div>
           
           <div className="ml-4 flex items-center">
-            <CheckSquare className="h-6 w-6 text-primary mr-2" />
-            <span className="font-semibold text-xl">Rexistro de Tarefas</span>
+            <Clock className="h-6 w-6 text-primary mr-2" />
+            <span className="font-semibold text-xl" style={{ color: "#007bc4" }}>Control de Tarefas</span>
           </div>
         </div>
         
@@ -57,7 +57,7 @@ const Index = () => {
           <div className="flex flex-col space-y-10 items-center text-center">
             <div className="space-y-4 animate-fade-in">
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
-                Rexistro de Tarefas do Plan de Transporte Público de Galicia
+                Control de Tarefas do Plan de Transporte Público de Galicia
               </h1>
             </div>
             
@@ -76,7 +76,7 @@ const Index = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 w-full animate-slide-in delay-200">
               <div className="bg-card rounded-lg p-6 shadow-sm border">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <CheckSquare className="h-6 w-6 text-primary" />
+                  <Clock className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Xestión de tarefas</h3>
                 <p className="text-muted-foreground">Crea, edita e supervisa todas as tarefas nun só lugar cunha interface intuitiva.</p>
