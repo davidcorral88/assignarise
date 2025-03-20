@@ -84,3 +84,15 @@ export interface DailyHoursData {
   isVacation?: boolean;
   isSickLeave?: boolean;
 }
+
+export interface WorkdaySchedule {
+  id: string;
+  type: string;
+  startDate: string; // formato MM-DD
+  endDate: string;   // formato MM-DD
+  mondayHours: number;
+  tuesdayHours: number;
+  wednesdayHours: number;
+  thursdayHours: number;
+  fridayHours: number;
+}

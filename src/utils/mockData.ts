@@ -6,6 +6,7 @@ import {
   VacationDay,
   WorkSchedule,
   DailyHoursData,
+  WorkdaySchedule,
 } from './types';
 
 // Datos iniciales para usuarios
@@ -220,6 +221,32 @@ const initialVacationDays: VacationDay[] = [
   { userId: 'user_3', date: '2024-03-12', type: 'sick_leave' },
 ];
 
+// Datos iniciales para horarios de trabajo diarios
+const initialWorkdaySchedules: WorkdaySchedule[] = [
+  {
+    id: 'schedule_1',
+    type: 'Reducida',
+    startDate: '07-01', // July 1st
+    endDate: '08-31',   // August 31st
+    mondayHours: 7,
+    tuesdayHours: 7,
+    wednesdayHours: 7,
+    thursdayHours: 7,
+    fridayHours: 7,
+  },
+  {
+    id: 'schedule_2',
+    type: 'Normal',
+    startDate: '01-01', // January 1st
+    endDate: '12-31',   // December 31st
+    mondayHours: 8.5,
+    tuesdayHours: 8.5,
+    wednesdayHours: 8.5,
+    thursdayHours: 8.5,
+    fridayHours: 6,
+  }
+];
+
 // Configuración inicial del horario de trabajo
 const initialWorkSchedule: WorkSchedule = {
   regularHours: {
@@ -252,17 +279,22 @@ let mockTimeEntries: TimeEntry[] = localStorage.getItem('mockTimeEntries')
   ? JSON.parse(localStorage.getItem('mockTimeEntries') as string)
   : initialTimeEntries;
 
-// Holidays
+// Mock data for holidays
 let mockHolidays: Holiday[] = localStorage.getItem('mockHolidays')
   ? JSON.parse(localStorage.getItem('mockHolidays') as string)
   : initialHolidays;
 
-// Vacation and sick leave days
+// Mock data for vacation days
 let mockVacationDays: VacationDay[] = localStorage.getItem('mockVacationDays')
   ? JSON.parse(localStorage.getItem('mockVacationDays') as string)
   : initialVacationDays;
 
-// Work schedule configuration
+// Mock data for workday schedules
+let mockWorkdaySchedules: WorkdaySchedule[] = localStorage.getItem('mockWorkdaySchedules')
+  ? JSON.parse(localStorage.getItem('mockWorkdaySchedules') as string)
+  : initialWorkdaySchedules;
+
+// Mock data for work schedule configuration
 let mockWorkSchedule: WorkSchedule = localStorage.getItem('mockWorkSchedule')
   ? JSON.parse(localStorage.getItem('mockWorkSchedule') as string)
   : initialWorkSchedule;
@@ -280,13 +312,16 @@ const saveTimeEntries = () => {
   localStorage.setItem('mockTimeEntries', JSON.stringify(mockTimeEntries));
 };
 
-// Save updated mock data to localStorage
 const saveHolidays = () => {
   localStorage.setItem('mockHolidays', JSON.stringify(mockHolidays));
 };
 
 const saveVacationDays = () => {
   localStorage.setItem('mockVacationDays', JSON.stringify(mockVacationDays));
+};
+
+const saveWorkdaySchedules = () => {
+  localStorage.setItem('mockWorkdaySchedules', JSON.stringify(mockWorkdaySchedules));
 };
 
 const saveWorkSchedule = () => {
@@ -301,6 +336,7 @@ export const resetDatabase = () => {
   mockHolidays = [...initialHolidays];
   mockVacationDays = [...initialVacationDays];
   mockWorkSchedule = {...initialWorkSchedule};
+  mockWorkdaySchedules = [...initialWorkdaySchedules];
   
   saveUsers();
   saveTasks();
@@ -308,6 +344,7 @@ export const resetDatabase = () => {
   saveHolidays();
   saveVacationDays();
   saveWorkSchedule();
+  saveWorkdaySchedules();
   
   // Si el usuario actual no existe después del restablecimiento, también limpiamos la sesión
   const currentUser = localStorage.getItem('currentUser');
@@ -477,10 +514,35 @@ export const updateWorkSchedule = (schedule: WorkSchedule): void => {
   saveWorkSchedule();
 };
 
-// Add to the existing time entry functions
-export const addTimeEntry = (entry: TimeEntry): void => {
-  mockTimeEntries.unshift(entry);
-  saveTimeEntries();
+// Workday schedule functions
+export const getWorkdaySchedules = (): WorkdaySchedule[] => {
+  return [...mockWorkdaySchedules];
+};
+
+export const getWorkdayScheduleById = (id: string): WorkdaySchedule | undefined => {
+  return mockWorkdaySchedules.find((schedule) => schedule.id === id);
+};
+
+export const addWorkdaySchedule = (schedule: WorkdaySchedule): void => {
+  // Generate an ID if not provided
+  if (!schedule.id) {
+    const nextId = mockWorkdaySchedules.length + 1;
+    schedule.id = `schedule_${nextId}`;
+  }
+  mockWorkdaySchedules.push(schedule);
+  saveWorkdaySchedules();
+};
+
+export const updateWorkdaySchedule = (schedule: WorkdaySchedule): void => {
+  mockWorkdaySchedules = mockWorkdaySchedules.map((s) => 
+    s.id === schedule.id ? schedule : s
+  );
+  saveWorkdaySchedules();
+};
+
+export const deleteWorkdaySchedule = (id: string): void => {
+  mockWorkdaySchedules = mockWorkdaySchedules.filter((s) => s.id !== id);
+  saveWorkdaySchedules();
 };
 
 // Export mock data for direct access
@@ -490,5 +552,6 @@ export {
   mockTimeEntries,
   mockHolidays,
   mockVacationDays,
-  mockWorkSchedule
+  mockWorkSchedule,
+  mockWorkdaySchedules
 };
