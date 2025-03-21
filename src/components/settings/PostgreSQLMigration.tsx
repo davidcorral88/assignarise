@@ -11,8 +11,10 @@ import { Label } from '@/components/ui/label';
 import { migrateToPostgreSQL, testPostgreSQLConnection } from '@/utils/migrationService';
 import { getUseAPI, setUseAPI } from '@/utils/dataService';
 import { API_URL, dbConfig, pgAdminConfig } from '@/utils/dbConfig';
+import { useAuth } from '@/components/auth/AuthContext';
 
 const PostgreSQLMigration: React.FC = () => {
+  const { currentUser } = useAuth();
   const [isMigrating, setIsMigrating] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'failed'>('unknown');
   const [migrationProgress, setMigrationProgress] = useState(0);
@@ -22,9 +24,16 @@ const PostgreSQLMigration: React.FC = () => {
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [lastConnectionError, setLastConnectionError] = useState<string | null>(null);
   
+  // Verificar si el usuario actual es administrador
+  const isAdmin = currentUser?.role === 'admin';
+  
   useEffect(() => {
     setUsePostgresStorage(getUseAPI());
-    handleTestConnection();
+    
+    // Solo realizar prueba de conexión automática si estamos usando PostgreSQL
+    if (getUseAPI()) {
+      handleTestConnection();
+    }
   }, []);
   
   const handleTestConnection = async () => {
@@ -45,8 +54,6 @@ const PostgreSQLMigration: React.FC = () => {
           title: "Conexión exitosa",
           description: "Se ha establecido conexión con la base de datos PostgreSQL",
         });
-        setUseAPI(true);
-        setUsePostgresStorage(true);
       } else {
         const errorMsg = "No se pudo conectar con la base de datos PostgreSQL. Revise la consola para más detalles.";
         setLastConnectionError(errorMsg);
@@ -55,6 +62,11 @@ const PostgreSQLMigration: React.FC = () => {
           description: errorMsg,
           variant: "destructive"
         });
+        // Si estamos usando PostgreSQL pero no podemos conectar, pasamos a localStorage
+        if (getUseAPI()) {
+          setUseAPI(false);
+          setUsePostgresStorage(false);
+        }
       }
     } catch (error) {
       setConnectionStatus('failed');
@@ -66,6 +78,12 @@ const PostgreSQLMigration: React.FC = () => {
         variant: "destructive"
       });
       console.error("Error detallado:", error);
+      
+      // Si estamos usando PostgreSQL pero no podemos conectar, pasamos a localStorage
+      if (getUseAPI()) {
+        setUseAPI(false);
+        setUsePostgresStorage(false);
+      }
     } finally {
       setIsTestingConnection(false);
     }
@@ -148,6 +166,11 @@ const PostgreSQLMigration: React.FC = () => {
         : "La aplicación está usando el almacenamiento local",
     });
   };
+  
+  // Si el usuario no es administrador, no mostrar la tarjeta
+  if (!isAdmin) {
+    return null;
+  }
   
   return (
     <Card>

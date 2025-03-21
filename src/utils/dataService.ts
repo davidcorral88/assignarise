@@ -1,4 +1,5 @@
 import * as apiService from './apiService';
+import * as localStorageService from './storageService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
 
@@ -22,101 +23,163 @@ export const getUseAPI = () => useAPI;
 
 // Funciones para usuarios
 export const getUsers = async (): Promise<User[]> => {
+  if (!useAPI) {
+    return localStorageService.getFromStorage<User[]>('mockUsers', []);
+  }
+  
   try {
     return await apiService.getUsers();
   } catch (error) {
     console.error('Error en getUsers:', error);
     toast({
       title: 'Error de conexión',
-      description: 'No se pudo conectar con PostgreSQL. Verifique la conexión con la base de datos.',
+      description: 'No se pudo conectar con PostgreSQL. Cambiando a almacenamiento local.',
       variant: 'destructive',
     });
-    throw error;
+    // Cambiar automáticamente a almacenamiento local cuando falla
+    setUseAPI(false);
+    return localStorageService.getFromStorage<User[]>('mockUsers', []);
   }
 };
 
 export const getUserById = async (id: string): Promise<User | undefined> => {
+  if (!useAPI) {
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    return users.find(u => u.id === id);
+  }
+  
   try {
     return await apiService.getUserById(id);
   } catch (error) {
     console.error(`Error en getUserById(${id}):`, error);
-    toast({
-      title: 'Error de conexión',
-      description: 'No se pudo obtener el usuario desde PostgreSQL.',
-      variant: 'destructive',
-    });
-    throw error;
+    // Cambiar automáticamente a almacenamiento local cuando falla
+    setUseAPI(false);
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    return users.find(u => u.id === id);
   }
 };
 
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
+  if (!useAPI) {
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    return users.find(u => u.email === email);
+  }
+  
   try {
     return await apiService.getUserByEmail(email);
   } catch (error) {
     console.error(`Error en getUserByEmail(${email}):`, error);
-    toast({
-      title: 'Error de conexión',
-      description: 'No se pudo verificar el email desde PostgreSQL.',
-      variant: 'destructive',
-    });
-    throw error;
+    // Cambiar automáticamente a almacenamiento local cuando falla
+    setUseAPI(false);
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    return users.find(u => u.email === email);
   }
 };
 
 export const addUser = async (user: User): Promise<void> => {
+  if (!useAPI) {
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    users.push(user);
+    localStorageService.saveToStorage('mockUsers', users);
+    return;
+  }
+  
   try {
     await apiService.addUser(user);
   } catch (error) {
     console.error('Error en addUser:', error);
     toast({
       title: 'Error al crear usuario',
-      description: 'No se pudo guardar el usuario en PostgreSQL.',
+      description: 'No se pudo guardar el usuario en PostgreSQL. Cambiando a almacenamiento local.',
       variant: 'destructive',
     });
-    throw error;
+    // Cambiar automáticamente a almacenamiento local y guardar ahí
+    setUseAPI(false);
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    users.push(user);
+    localStorageService.saveToStorage('mockUsers', users);
   }
 };
 
 export const updateUser = async (user: User): Promise<void> => {
+  if (!useAPI) {
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    const index = users.findIndex(u => u.id === user.id);
+    if (index !== -1) {
+      users[index] = user;
+      localStorageService.saveToStorage('mockUsers', users);
+    }
+    return;
+  }
+  
   try {
     await apiService.updateUser(user);
   } catch (error) {
     console.error('Error en updateUser:', error);
     toast({
       title: 'Error al actualizar usuario',
-      description: 'No se pudo actualizar el usuario en PostgreSQL.',
+      description: 'No se pudo actualizar el usuario en PostgreSQL. Cambiando a almacenamiento local.',
       variant: 'destructive',
     });
-    throw error;
+    // Cambiar automáticamente a almacenamiento local y guardar ahí
+    setUseAPI(false);
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    const index = users.findIndex(u => u.id === user.id);
+    if (index !== -1) {
+      users[index] = user;
+      localStorageService.saveToStorage('mockUsers', users);
+    }
   }
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
+  if (!useAPI) {
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    const filteredUsers = users.filter(u => u.id !== id);
+    localStorageService.saveToStorage('mockUsers', filteredUsers);
+    return;
+  }
+  
   try {
     await apiService.deleteUser(id);
   } catch (error) {
     console.error(`Error en deleteUser(${id}):`, error);
     toast({
       title: 'Error al eliminar usuario',
-      description: 'No se pudo eliminar el usuario en PostgreSQL.',
+      description: 'No se pudo eliminar el usuario en PostgreSQL. Cambiando a almacenamiento local.',
       variant: 'destructive',
     });
-    throw error;
+    // Cambiar automáticamente a almacenamiento local y eliminar ahí
+    setUseAPI(false);
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    const filteredUsers = users.filter(u => u.id !== id);
+    localStorageService.saveToStorage('mockUsers', filteredUsers);
   }
 };
 
 // Nueva función para obtener el siguiente ID de usuario
 export const getNextUserId = async (): Promise<number> => {
+  if (!useAPI) {
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    const maxId = users.reduce((max, user) => {
+      const userId = parseInt(user.id);
+      return isNaN(userId) ? max : Math.max(max, userId);
+    }, 0);
+    return maxId + 1;
+  }
+  
   try {
     return await apiService.getNextUserId();
   } catch (error) {
     console.error('Error al obtener próximo ID de usuario:', error);
-    toast({
-      title: 'Error de conexión',
-      description: 'No se pudo obtener el siguiente ID desde PostgreSQL.',
-      variant: 'destructive',
-    });
-    return Date.now(); // Fallback usando timestamp
+    // Cambiar automáticamente a almacenamiento local
+    setUseAPI(false);
+    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
+    const maxId = users.reduce((max, user) => {
+      const userId = parseInt(user.id);
+      return isNaN(userId) ? max : Math.max(max, userId);
+    }, 0);
+    return maxId + 1 || Date.now();
   }
 };
 
@@ -507,10 +570,26 @@ export const getNextTaskId = async (): Promise<number> => {
 
 // Esta función ya no es relevante en modo PostgreSQL
 export const resetDatabase = (): void => {
+  if (useAPI) {
+    toast({
+      title: 'Operación no disponible',
+      description: 'El restablecimiento de la base de datos no está disponible en modo PostgreSQL.',
+      variant: 'destructive',
+    });
+    return;
+  }
+  
+  // Reiniciar todas las colecciones en localStorage
+  localStorageService.saveToStorage('mockUsers', []);
+  localStorageService.saveToStorage('mockTasks', []);
+  localStorageService.saveToStorage('mockTimeEntries', []);
+  localStorageService.saveToStorage('mockHolidays', []);
+  localStorageService.saveToStorage('mockVacationDays', []);
+  localStorageService.saveToStorage('mockWorkdaySchedules', []);
+  
   toast({
-    title: 'Operación no disponible',
-    description: 'El restablecimiento de la base de datos no está disponible en modo PostgreSQL.',
-    variant: 'destructive',
+    title: 'Base de datos reiniciada',
+    description: 'Se han eliminado todos los datos del almacenamiento local.',
   });
 };
 

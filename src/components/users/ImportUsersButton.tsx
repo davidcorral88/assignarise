@@ -16,7 +16,7 @@ import {
 import { testPostgreSQLConnection } from '@/utils/migrationService';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { getUseAPI } from '@/utils/dataService';
+import { getUseAPI, setUseAPI } from '@/utils/dataService';
 
 interface ImportUsersButtonProps {
   onImportComplete: () => void;
@@ -27,18 +27,25 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
   const [jsonData, setJsonData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  // Ya no necesitamos un estado separado aquí, usamos directamente el de dataService
   const [isPostgreSQLAvailable, setIsPostgreSQLAvailable] = useState(false);
+  const [currentStorageMode, setCurrentStorageMode] = useState(getUseAPI());
   
   useEffect(() => {
     // Verificar si PostgreSQL está disponible
     const checkPostgreSQL = async () => {
-      const isAvailable = await testPostgreSQLConnection();
-      setIsPostgreSQLAvailable(isAvailable);
+      try {
+        const isAvailable = await testPostgreSQLConnection();
+        setIsPostgreSQLAvailable(isAvailable);
+      } catch (error) {
+        console.error("Error al verificar conexión PostgreSQL:", error);
+        setIsPostgreSQLAvailable(false);
+      }
     };
     
     checkPostgreSQL();
-  }, []);
+    // Actualizar el estado cuando cambie el modo de almacenamiento
+    setCurrentStorageMode(getUseAPI());
+  }, [isDialogOpen]);
   
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrors([]);
@@ -99,8 +106,8 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
           validationErrors.push(`Fila ${i + 1}: Email inválido.`);
         }
       }
-      if (!row.role || (row.role !== 'worker' && row.role !== 'manager')) {
-        validationErrors.push(`Fila ${i + 1}: Rol inválido (debe ser 'worker' o 'manager').`);
+      if (!row.role || (row.role !== 'worker' && row.role !== 'manager' && row.role !== 'admin')) {
+        validationErrors.push(`Fila ${i + 1}: Rol inválido (debe ser 'worker', 'manager' o 'admin').`);
       }
       if (row.organism && row.organism !== 'Xunta' && row.organism !== 'iPlan') {
         validationErrors.push(`Fila ${i + 1}: Organismo inválido (debe ser 'Xunta' o 'iPlan').`);
@@ -129,6 +136,13 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
       errors: 0,
     };
 
+    // Forzar el modo de almacenamiento local si PostgreSQL no está disponible
+    const useLocalStorage = !isPostgreSQLAvailable || !getUseAPI();
+    if (useLocalStorage && getUseAPI()) {
+      console.log("PostgreSQL no disponible o no configurado, usando almacenamiento local");
+      setUseAPI(false);
+    }
+
     // Process each row of data
     for (const item of jsonData) {
       try {
@@ -140,11 +154,12 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=0D8ABC&color=fff`,
           organism: item.organism,
           phone: item.phone,
-          emailATSXPTPG: item.emailATSXPTPG
+          emailATSXPTPG: item.emailATSXPTPG,
+          active: item.active !== false
         };
         
         try {
-          // Usamos el método addUser del adaptador que sabe si usar API o localStorage
+          console.log(`Importando usuario: ${newUser.name}, almacenamiento: ${getUseAPI() ? 'PostgreSQL' : 'Local'}`);
           await addUser(newUser);
           importResults.success++;
         } catch (error) {
@@ -220,24 +235,30 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
             </DialogDescription>
           </DialogHeader>
           
-          {isPostgreSQLAvailable && (
-            <div className="flex items-center space-x-2 mb-4">
-              <Switch
-                id="use-postgresql"
-                checked={getUseAPI()}
-                disabled={true}
-              />
-              <Label htmlFor="use-postgresql" className="flex items-center cursor-pointer">
-                <Database className="h-4 w-4 mr-2" />
-                {getUseAPI() 
-                  ? "Importando a PostgreSQL (configuración actual)" 
-                  : "Importando a localStorage (configuración actual)"}
-              </Label>
-              <p className="text-xs text-muted-foreground ml-8">
-                Para cambiar el destino, vaya a Configuración &gt; PostgreSQL
-              </p>
-            </div>
-          )}
+          <div className="flex items-center space-x-2 mb-4">
+            <Switch
+              id="use-postgresql"
+              checked={getUseAPI()}
+              onCheckedChange={(value) => {
+                if (value && !isPostgreSQLAvailable) {
+                  toast({
+                    title: "PostgreSQL no disponible",
+                    description: "No se puede usar PostgreSQL porque no está disponible. Se usará almacenamiento local.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                setUseAPI(value);
+              }}
+              disabled={!isPostgreSQLAvailable || isLoading}
+            />
+            <Label htmlFor="use-postgresql" className="flex items-center cursor-pointer">
+              <Database className="h-4 w-4 mr-2" />
+              {getUseAPI() 
+                ? "Importando a PostgreSQL" 
+                : "Importando a localStorage"}
+            </Label>
+          </div>
           
           <div className="max-h-60 overflow-auto border rounded-md">
             <table className="w-full text-sm">
