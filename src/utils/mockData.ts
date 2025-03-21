@@ -1,3 +1,4 @@
+
 import {
   User,
   Task,
@@ -388,6 +389,12 @@ export const addTask = (task: Task): void => {
 
 export const updateTask = (task: Task): void => {
   mockTasks = mockTasks.map((t) => (t.id === task.id ? task : t));
+  saveTasks();
+};
+
+// Add the missing deleteTask function
+export const deleteTask = (id: string): void => {
+  mockTasks = mockTasks.filter((task) => task.id !== id);
   saveTasks();
 };
 
