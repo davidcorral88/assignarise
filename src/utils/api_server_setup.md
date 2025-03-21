@@ -1,129 +1,129 @@
 
-# Configuración del Servidor API para la conexión con PostgreSQL
+# API Server Configuration for PostgreSQL Connection
 
-Este documento detalla cómo configurar y ejecutar el servidor API que conecta la aplicación web con la base de datos PostgreSQL.
+This document details how to configure and run the API server that connects the web application to the PostgreSQL database.
 
-## Requisitos previos
+## Prerequisites
 
-- Node.js (versión 14 o superior)
-- npm o yarn
-- PostgreSQL configurado y en ejecución
+- Node.js (version 14 or higher)
+- npm or yarn
+- PostgreSQL configured and running
 
-## Configuración del servidor API
+## API Server Configuration
 
-### 1. Clonar o descargar el repositorio del servidor API
+### 1. Clone or download the API server repository
 
 ```bash
-git clone https://github.com/TuUsuario/control-tarefas-api.git
-cd control-tarefas-api
+git clone https://github.com/YourUsername/task-control-api.git
+cd task-control-api
 ```
 
-### 2. Instalar dependencias
+### 2. Install dependencies
 
 ```bash
 npm install
-# o
+# or
 yarn install
 ```
 
-### 3. Configurar variables de entorno
+### 3. Configure environment variables
 
-Crea un archivo `.env` en la raíz del proyecto con la siguiente información:
+Create a `.env` file in the root of the project with the following information:
 
 ```
-# Configuración del servidor
+# Server configuration
 PORT=3000
 
-# Configuración de PostgreSQL
+# PostgreSQL configuration
 PGHOST=localhost
-PGPORT=5433
-PGDATABASE=DBtarefas
-PGUSER=control_de_tarefas
+PGPORT=5432
+PGDATABASE=task_management
+PGUSER=task_control
 PGPASSWORD=dc0rralIplan
 
-# Otros ajustes
+# Other settings
 NODE_ENV=production
 CORS_ORIGIN=http://localhost:8080
 ```
 
-Ajusta los valores según tu entorno específico. `CORS_ORIGIN` debe apuntar a la URL donde se aloja la aplicación web.
+Adjust the values according to your specific environment. `CORS_ORIGIN` should point to the URL where the web application is hosted.
 
-### 4. Ejecutar el servidor
+### 4. Run the server
 
-Para desarrollo:
+For development:
 ```bash
 npm run dev
-# o
+# or
 yarn dev
 ```
 
-Para producción:
+For production:
 ```bash
 npm run build
 npm start
-# o
+# or
 yarn build
 yarn start
 ```
 
-El servidor API debería estar accesible en `http://localhost:3000` (o el puerto que hayas configurado).
+The API server should be accessible at `http://localhost:3000` (or the port you've configured).
 
-## Endpoints disponibles
+## Available Endpoints
 
-El servidor API proporciona los siguientes endpoints principales:
+The API server provides the following main endpoints:
 
-- `GET /api/status` - Verifica el estado de la conexión a PostgreSQL
-- `GET /api/users` - Obtiene todos los usuarios
-- `GET /api/tasks` - Obtiene todas las tareas
-- ... (todos los endpoints correspondientes a las entidades del sistema)
+- `GET /api/status` - Check the status of the PostgreSQL connection
+- `GET /api/users` - Get all users
+- `GET /api/tasks` - Get all tasks
+- ... (all endpoints corresponding to system entities)
 
-## Mantenimiento y solución de problemas
+## Maintenance and Troubleshooting
 
-### Registros (logs)
+### Logs
 
-Los registros del servidor se guardan en la carpeta `logs/` y también se muestran en la consola durante la ejecución.
+Server logs are saved in the `logs/` folder and also displayed in the console during execution.
 
-### Reinicio del servidor
+### Restarting the server
 
-En producción, se recomienda usar un gestor de procesos como PM2:
+In production, it's recommended to use a process manager like PM2:
 
 ```bash
-# Instalar PM2 globalmente
+# Install PM2 globally
 npm install -g pm2
 
-# Iniciar el servidor con PM2
-pm2 start dist/index.js --name control-tarefas-api
+# Start the server with PM2
+pm2 start dist/index.js --name task-control-api
 
-# Ver logs
-pm2 logs control-tarefas-api
+# View logs
+pm2 logs task-control-api
 
-# Reiniciar el servidor
-pm2 restart control-tarefas-api
+# Restart the server
+pm2 restart task-control-api
 ```
 
-### Solución de problemas comunes
+### Common issues
 
-1. **Error de conexión a PostgreSQL**:
-   - Verifica que PostgreSQL esté en ejecución
-   - Comprueba las credenciales en el archivo `.env`
-   - Verifica que la base de datos exista y tenga las tablas necesarias
+1. **PostgreSQL connection error**:
+   - Verify that PostgreSQL is running
+   - Check the credentials in the `.env` file
+   - Verify that the database exists and has the necessary tables
 
-2. **Errores CORS**:
-   - Asegúrate de que `CORS_ORIGIN` en el archivo `.env` coincida con la URL de la aplicación web
+2. **CORS errors**:
+   - Make sure that `CORS_ORIGIN` in the `.env` file matches the web application URL
 
-3. **El servidor no responde**:
-   - Verifica los logs para identificar posibles errores
-   - Comprueba que el puerto no esté siendo utilizado por otra aplicación
+3. **Server not responding**:
+   - Check the logs to identify potential errors
+   - Verify that the port is not being used by another application
 
-## Actualizaciones y mantenimiento
+## Updates and Maintenance
 
-Para actualizar el servidor API:
+To update the API server:
 
-1. Detén el servidor actual
-2. Obtén los últimos cambios (`git pull` o descarga la nueva versión)
-3. Instala las dependencias (`npm install` o `yarn install`)
-4. Reinicia el servidor
+1. Stop the current server
+2. Get the latest changes (`git pull` or download the new version)
+3. Install dependencies (`npm install` or `yarn install`)
+4. Restart the server
 
-## Contacto y soporte
+## Contact and Support
 
-Si encuentras problemas o tienes preguntas sobre la configuración del servidor API, contacta con el equipo de soporte en [correo_de_soporte@ejemplo.com]
+If you encounter problems or have questions about the API server configuration, contact the support team at [support_email@example.com]

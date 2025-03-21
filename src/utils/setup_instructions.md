@@ -1,87 +1,88 @@
 
-# Instrucciones para configurar la aplicación en producción
+# Instructions for setting up the application in production
 
-## 1. Configuración de la base de datos PostgreSQL
+## 1. PostgreSQL Database Configuration
 
-### Requisitos previos
-- PostgreSQL instalado (versión 12 o superior)
-- Cliente pgAdmin o acceso a la línea de comandos psql
+### Prerequisites
+- PostgreSQL installed (version 12 or higher)
+- pgAdmin or access to psql command line
 
-### Pasos para inicializar la base de datos
+### Steps to initialize the database
 
-1. Inicia sesión en PostgreSQL como superusuario (generalmente 'postgres')
-2. Crea un nuevo usuario para la aplicación:
+1. Log in to PostgreSQL as superuser (typically 'postgres')
+2. Create a new user for the application:
    ```sql
-   CREATE USER control_de_tarefas WITH PASSWORD 'dc0rralIplan';
+   CREATE USER task_control WITH PASSWORD 'dc0rralIplan';
    ```
 
-3. Crea una nueva base de datos:
+3. Create a new database:
    ```sql
-   CREATE DATABASE DBtarefas OWNER control_de_tarefas;
+   CREATE DATABASE task_management OWNER task_control;
    ```
 
-4. Ejecuta el script de inicialización de la base de datos que se encuentra en `src/utils/database_reset.sql`:
+4. Run the database initialization script located at `src/utils/database_reset.sql`:
    
-   **Usando psql:**
+   **Using psql:**
    ```bash
-   psql -U postgres -d DBtarefas -p 5433 -f ruta/a/database_reset.sql
+   psql -U postgres -d task_management -p 5432 -f C:\Users\administrator\Documents\NODE\CONTROL TAREFAS\control_tarefas\src\utils\database_reset.sql
    ```
    
-   **Usando pgAdmin:**
-   1. Abre pgAdmin
-   2. Conéctate al servidor PostgreSQL
-   3. Selecciona la base de datos "DBtarefas"
-   4. Abre la herramienta de consulta (Query Tool)
-   5. Carga el archivo SQL y ejecútalo
+   **Using pgAdmin:**
+   1. Open pgAdmin
+   2. Connect to the PostgreSQL server
+   3. Select the "task_management" database
+   4. Open the Query Tool
+   5. Load the SQL file and execute it
 
-5. Verifica que las tablas y los usuarios iniciales se han creado correctamente:
+5. Verify that the tables and initial users have been created correctly:
    ```sql
    SELECT * FROM users;
    ```
-   Deberías ver al menos 5 usuarios incluyendo los usuarios de prueba.
+   You should see at least 5 users including the test users.
 
-## 2. Configuración del servidor API
+## 2. API Server Configuration
 
-1. Verifica que la configuración en `src/utils/dbConfig.ts` coincida con tu configuración de PostgreSQL:
+1. Make sure the configuration in `src/utils/dbConfig.ts` matches your PostgreSQL configuration:
    ```typescript
    export const dbConfig = {
      host: 'localhost',
-     port: 5433,  // Ajusta según tu configuración
-     database: 'DBtarefas',
-     user: 'control_de_tarefas',
+     port: 5432,  // Adjust according to your configuration
+     database: 'task_management',
+     user: 'task_control',
      password: 'dc0rralIplan',
    };
    ```
 
-2. Configura y ejecuta el servidor API según las instrucciones en `src/utils/api_server_setup.md`
+2. Configure and run the API server according to the instructions in `src/utils/api_server_setup.md`
 
-## 3. Ejecución de la aplicación web
+## 3. Running the Web Application
 
-1. Asegúrate de que todas las dependencias están instaladas:
+1. Make sure all dependencies are installed:
    ```bash
+   cd C:\Users\administrator\Documents\NODE\CONTROL TAREFAS\control_tarefas
    npm install
    ```
 
-2. Inicia la aplicación en modo de desarrollo:
+2. Start the application in development mode:
    ```bash
    npm run dev
    ```
 
-3. Para producción, construye la aplicación:
+3. For production, build the application:
    ```bash
    npm run build
    ```
 
-4. Sirve la aplicación construida:
+4. Serve the built application:
    ```bash
    npm run preview
    ```
 
-## 4. Acceso a la aplicación
+## 4. Accessing the Application
 
-Una vez que la aplicación esté en funcionamiento, puedes iniciar sesión con cualquiera de los siguientes usuarios:
+Once the application is running, you can log in with any of the following users:
 
-| Email                     | Rol      |
+| Email                     | Role      |
 |---------------------------|----------|
 | admin@example.com         | manager  |
 | ana.pereira@example.com   | manager  |
@@ -89,11 +90,45 @@ Una vez que la aplicación esté en funcionamiento, puedes iniciar sesión con c
 | laura.mendez@example.com  | worker   |
 | miguel.gonzalez@example.com | worker |
 
-La autenticación está configurada para aceptar cualquier contraseña para estos usuarios de prueba.
+Authentication is configured to accept any password for these test users.
 
-## 5. Consideraciones para producción
+## 5. Creating New Users
 
-- Configura un servicio web como Nginx o Apache para servir la aplicación construida
-- Implementa seguridad HTTPS para la aplicación web y la API
-- Configura copias de seguridad regulares de la base de datos
-- Considera la implementación de políticas de contraseñas seguras para entornos de producción
+To create new users in the application:
+
+1. Log in using an admin account (like admin@example.com)
+2. Navigate to the "Users" section
+3. Click on "Add User"
+4. Fill in the required information:
+   - Name
+   - Email (must be unique)
+   - Role (manager or worker)
+   - Other optional fields
+
+Alternatively, you can add users directly to the database:
+
+```sql
+INSERT INTO users (id, name, email, role, avatar, active) 
+VALUES 
+('6', 'New User', 'new.user@example.com', 'worker', 'https://ui-avatars.com/api/?name=New+User&background=0D8ABC&color=fff', true);
+```
+
+## 6. Production Considerations
+
+- Configure a web server like Nginx or Apache to serve the built application
+- Implement HTTPS security for both the web application and API
+- Set up regular database backups
+- Consider implementing secure password policies for production environments
+
+## 7. Troubleshooting
+
+If you encounter issues with logging in:
+
+1. Verify the database connection by checking the application logs
+2. Confirm the user exists in the database:
+   ```sql
+   SELECT * FROM users WHERE email = 'admin@example.com';
+   ```
+3. Check that the API server is running and accessible
+4. Look for errors in the browser console (F12 Developer Tools)
+5. Verify the `API_URL` configuration in `src/utils/dbConfig.ts`

@@ -1,8 +1,8 @@
 
--- Script para recrear todas as táboas na base de datos PostgreSQL
--- Este script borrará todas as táboas existentes e recrearaas coa estrutura adecuada
+-- Script to recreate all tables in PostgreSQL database
+-- This script will delete all existing tables and recreate them with the proper structure
 
--- Primeiro, borramos todas as táboas se existen (na orde correcta para manexar as claves foráneas)
+-- First, drop all tables if they exist (in correct order to handle foreign keys)
 DROP TABLE IF EXISTS task_tags CASCADE;
 DROP TABLE IF EXISTS task_assignments CASCADE;
 DROP TABLE IF EXISTS time_entries CASCADE;
@@ -14,20 +14,20 @@ DROP TABLE IF EXISTS reduced_periods CASCADE;
 DROP TABLE IF EXISTS holidays CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
--- Crear táboa de usuarios
+-- Create users table
 CREATE TABLE users (
   id VARCHAR(255) PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   role VARCHAR(50) NOT NULL,
   avatar VARCHAR(255),
-  organism VARCHAR(50),
+  organization VARCHAR(50),
   phone VARCHAR(50),
-  email_atsxptpg VARCHAR(255),
+  email_notification VARCHAR(255),
   active BOOLEAN DEFAULT true
 );
 
--- Crear táboa de tarefas
+-- Create tasks table
 CREATE TABLE tasks (
   id VARCHAR(255) PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
@@ -42,14 +42,14 @@ CREATE TABLE tasks (
   project VARCHAR(255)
 );
 
--- Crear táboa task_tags para a relación moitos-a-moitos entre tarefas e etiquetas
+-- Create task_tags table for many-to-many relationship between tasks and tags
 CREATE TABLE task_tags (
   task_id VARCHAR(255) REFERENCES tasks(id) ON DELETE CASCADE,
   tag VARCHAR(255) NOT NULL,
   PRIMARY KEY (task_id, tag)
 );
 
--- Crear táboa task_assignments
+-- Create task_assignments table
 CREATE TABLE task_assignments (
   task_id VARCHAR(255) REFERENCES tasks(id) ON DELETE CASCADE,
   user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
@@ -57,7 +57,7 @@ CREATE TABLE task_assignments (
   PRIMARY KEY (task_id, user_id)
 );
 
--- Crear táboa time_entries
+-- Create time_entries table
 CREATE TABLE time_entries (
   id VARCHAR(255) PRIMARY KEY,
   task_id VARCHAR(255) REFERENCES tasks(id) ON DELETE CASCADE,
@@ -71,13 +71,13 @@ CREATE TABLE time_entries (
   time_format VARCHAR(50)
 );
 
--- Crear táboa holidays
+-- Create holidays table
 CREATE TABLE holidays (
   date DATE PRIMARY KEY,
   name VARCHAR(255) NOT NULL
 );
 
--- Crear táboa vacation_days
+-- Create vacation_days table
 CREATE TABLE vacation_days (
   user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE vacation_days (
   PRIMARY KEY (user_id, date)
 );
 
--- Crear táboa work_schedule (para configuración global de horario)
+-- Create work_schedule table (for global schedule configuration)
 CREATE TABLE work_schedule (
   id SERIAL PRIMARY KEY,
   regular_hours_monday_to_thursday NUMERIC NOT NULL,
@@ -93,20 +93,20 @@ CREATE TABLE work_schedule (
   reduced_hours_daily NUMERIC NOT NULL
 );
 
--- Crear táboa reduced_periods
+-- Create reduced_periods table
 CREATE TABLE reduced_periods (
   id SERIAL PRIMARY KEY,
   work_schedule_id INTEGER REFERENCES work_schedule(id) ON DELETE CASCADE,
-  start_date VARCHAR(10) NOT NULL,  -- Formato: MM-DD
-  end_date VARCHAR(10) NOT NULL     -- Formato: MM-DD
+  start_date VARCHAR(10) NOT NULL,  -- Format: MM-DD
+  end_date VARCHAR(10) NOT NULL     -- Format: MM-DD
 );
 
--- Crear táboa workday_schedules
+-- Create workday_schedules table
 CREATE TABLE workday_schedules (
   id VARCHAR(255) PRIMARY KEY,
   type VARCHAR(50) NOT NULL,
-  start_date VARCHAR(10) NOT NULL,  -- Formato: MM-DD
-  end_date VARCHAR(10) NOT NULL,    -- Formato: MM-DD
+  start_date VARCHAR(10) NOT NULL,  -- Format: MM-DD
+  end_date VARCHAR(10) NOT NULL,    -- Format: MM-DD
   monday_hours NUMERIC NOT NULL,
   tuesday_hours NUMERIC NOT NULL,
   wednesday_hours NUMERIC NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE workday_schedules (
   friday_hours NUMERIC NOT NULL
 );
 
--- Insertar usuarios iniciales para que el sistema tenga varios usuarios para probar
+-- Insert initial users for testing the system
 INSERT INTO users (id, name, email, role, avatar, active) 
 VALUES 
 ('1', 'Admin', 'admin@example.com', 'manager', 'https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff', true),
@@ -123,22 +123,37 @@ VALUES
 ('4', 'Laura Méndez', 'laura.mendez@example.com', 'worker', 'https://ui-avatars.com/api/?name=Laura+Mendez&background=0D8ABC&color=fff', true),
 ('5', 'Miguel González', 'miguel.gonzalez@example.com', 'worker', 'https://ui-avatars.com/api/?name=Miguel+Gonzalez&background=0D8ABC&color=fff', true);
 
--- Insertar configuración inicial de horario
+-- Insert initial schedule configuration
 INSERT INTO work_schedule 
 (regular_hours_monday_to_thursday, regular_hours_friday, reduced_hours_daily) 
 VALUES (8, 7, 6);
 
--- Insertar algunos días festivos
+-- Insert some holidays
 INSERT INTO holidays (date, name)
 VALUES 
-('2023-01-01', 'Aninovo'),
-('2023-01-06', 'Reis'),
-('2023-04-07', 'Venres Santo'),
-('2023-05-01', 'Día do Traballo'),
-('2023-07-25', 'Santiago Apóstolo'),
-('2023-08-15', 'Asunción'),
-('2023-10-12', 'Día da Hispanidade'),
-('2023-11-01', 'Todos os Santos'),
-('2023-12-06', 'Día da Constitución'),
-('2023-12-08', 'Inmaculada Concepción'),
-('2023-12-25', 'Nadal');
+('2023-01-01', 'New Year'),
+('2023-01-06', 'Epiphany'),
+('2023-04-07', 'Good Friday'),
+('2023-05-01', 'Labor Day'),
+('2023-07-25', 'Saint James'),
+('2023-08-15', 'Assumption'),
+('2023-10-12', 'National Day'),
+('2023-11-01', 'All Saints'),
+('2023-12-06', 'Constitution Day'),
+('2023-12-08', 'Immaculate Conception'),
+('2023-12-25', 'Christmas');
+
+-- Add 2024 holidays
+INSERT INTO holidays (date, name)
+VALUES 
+('2024-01-01', 'New Year'),
+('2024-01-06', 'Epiphany'),
+('2024-03-29', 'Good Friday'),
+('2024-05-01', 'Labor Day'),
+('2024-07-25', 'Saint James'),
+('2024-08-15', 'Assumption'),
+('2024-10-12', 'National Day'),
+('2024-11-01', 'All Saints'),
+('2024-12-06', 'Constitution Day'),
+('2024-12-08', 'Immaculate Conception'),
+('2024-12-25', 'Christmas');

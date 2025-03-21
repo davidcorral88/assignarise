@@ -1,19 +1,19 @@
 
-// Configuración de la base de datos PostgreSQL para producción
+// PostgreSQL database configuration for production
 export const dbConfig = {
   host: 'localhost',
-  port: 5433,
-  database: 'DBtarefas',
-  user: 'control_de_tarefas',
+  port: 5432,
+  database: 'task_management',
+  user: 'task_control',
   password: 'dc0rralIplan',
 };
 
-// Configuración del usuario administrador de PostgreSQL
+// PostgreSQL admin user configuration
 export const pgAdminConfig = {
   user: 'postgres',
-  password: 'iPlan'
+  password: 'admin'  // Change this to your actual postgres admin password
 };
 
-// URL de la API que conecta con PostgreSQL
-// Modifica esta URL según la configuración de tu servidor en producción
+// API URL that connects to PostgreSQL
+// Modify this URL according to your server configuration in production
 export const API_URL = 'http://localhost:3000/api';
