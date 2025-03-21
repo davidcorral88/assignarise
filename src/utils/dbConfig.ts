@@ -24,7 +24,7 @@ export const defaultUsers = [
     id: '1',
     name: 'Admin',
     email: 'admin@example.com',
-    role: 'manager' as const,
+    role: 'admin' as const,
     avatar: 'https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff',
     active: true
   },
