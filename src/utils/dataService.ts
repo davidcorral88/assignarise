@@ -1,10 +1,9 @@
-
 import * as apiService from './apiService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
 
 // Inicializar el uso de la API desde localStorage (si existe) o por defecto a false
-let useAPI = localStorage.getItem('useAPI') === 'true' || false;
+let useAPI = localStorage.getItem('useAPI') === 'true' ? true : false;
 
 export const setUseAPI = (value: boolean) => {
   useAPI = value;

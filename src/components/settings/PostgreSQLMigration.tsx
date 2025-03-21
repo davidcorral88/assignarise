@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon, InfoIcon, ExternalLinkIcon, HardDriveIcon, ToggleRight, ToggleLeft } from 'lucide-react';
+import { Database as DatabaseIcon, Server as ServerIcon, CheckCircle2 as CheckCircle2Icon, AlertCircle as AlertCircleIcon, DatabaseBackup as DatabaseBackupIcon, Info as InfoIcon, ExternalLink as ExternalLinkIcon, HardDrive as HardDriveIcon, ToggleRight, ToggleLeft } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
