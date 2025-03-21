@@ -40,6 +40,49 @@ export const testPostgreSQLConnection = async (): Promise<boolean> => {
 };
 
 /**
+ * Borra los datos locales después de una migración exitosa a PostgreSQL
+ * Este proceso solo debe realizarse después de confirmar que todos los datos 
+ * se han migrado correctamente a PostgreSQL
+ */
+export const clearLocalStorage = (): void => {
+  try {
+    // Lista de claves de datos de la aplicación para borrar
+    const appKeys = [
+      'mockUsers', 
+      'mockTasks', 
+      'mockTimeEntries', 
+      'mockHolidays', 
+      'mockVacationDays', 
+      'mockWorkdaySchedules', 
+      'mockWorkSchedule'
+    ];
+    
+    // Borrar cada clave de datos de la aplicación
+    appKeys.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    // Conservar las configuraciones y preferencias del usuario
+    // como el informe de migración para referencia
+    
+    toast({
+      title: 'Datos locales eliminados',
+      description: 'Los datos locales han sido eliminados después de la migración a PostgreSQL.',
+    });
+    
+    console.log('localStorage limpiado después de la migración a PostgreSQL');
+  } catch (error) {
+    console.error('Error al limpiar localStorage:', error);
+    
+    toast({
+      title: 'Error al borrar datos',
+      description: 'No se pudieron eliminar los datos locales. Consulta la consola para más detalles.',
+      variant: 'destructive',
+    });
+  }
+};
+
+/**
  * Migra todos los datos del almacenamiento local a PostgreSQL
  */
 export const migrateToPostgreSQL = async (): Promise<{ success: boolean; message: string }> => {
