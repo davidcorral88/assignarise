@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon, InfoIcon, ExternalLinkIcon, HardDriveIcon, ToggleRightIcon, ToggleLeftIcon } from 'lucide-react';
+import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon, InfoIcon, ExternalLinkIcon, HardDriveIcon, ToggleRight, ToggleLeft } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -23,10 +22,7 @@ const PostgreSQLMigration: React.FC = () => {
   const [lastConnectionError, setLastConnectionError] = useState<string | null>(null);
   
   useEffect(() => {
-    // Check if postgres is already active
     setUsePostgresStorage(getUseAPI());
-    
-    // Intentamos conectar nada más cargar el componente
     handleTestConnection();
   }, []);
   
@@ -36,9 +32,7 @@ const PostgreSQLMigration: React.FC = () => {
     
     try {
       console.log("Iniciando prueba de conexión a:", apiUrl);
-      // Actualizar URL global para asegurar que usamos la URL actual
       if (apiUrl !== API_URL) {
-        // En una aplicación real, se guardaría en algún lugar persistente
         console.log("Actualizando URL de API de", API_URL, "a", apiUrl);
       }
       
@@ -50,11 +44,8 @@ const PostgreSQLMigration: React.FC = () => {
           title: "Conexión exitosa",
           description: "Se ha establecido conexión con la base de datos PostgreSQL",
         });
-        
-        // Si la conexión es exitosa, activamos automáticamente el uso de PostgreSQL
         setUseAPI(true);
         setUsePostgresStorage(true);
-        
       } else {
         const errorMsg = "No se pudo conectar con la base de datos PostgreSQL. Revise la consola para más detalles.";
         setLastConnectionError(errorMsg);
@@ -93,7 +84,6 @@ const PostgreSQLMigration: React.FC = () => {
     setMigrationProgress(10);
     
     try {
-      // Simulamos progreso durante la migración
       const progressInterval = setInterval(() => {
         setMigrationProgress(prev => {
           if (prev >= 90) {
@@ -114,7 +104,6 @@ const PostgreSQLMigration: React.FC = () => {
           title: "Migración completada",
           description: result.message,
         });
-        // Activar el uso de PostgreSQL automáticamente después de una migración exitosa
         setUseAPI(true);
         setUsePostgresStorage(true);
       } else {
@@ -137,7 +126,6 @@ const PostgreSQLMigration: React.FC = () => {
   };
   
   const handleToggleStorage = (checked: boolean) => {
-    // Only allow enabling PostgreSQL if the connection is established
     if (checked && connectionStatus !== 'connected') {
       toast({
         title: "Conexión no establecida",
@@ -280,7 +268,6 @@ const PostgreSQLMigration: React.FC = () => {
           )}
         </div>
         
-        {/* Botón más visible para alternar entre almacenamiento local y PostgreSQL */}
         <div className="flex flex-col space-y-2 pt-4 border-t">
           <Button
             variant={usePostgresStorage ? "default" : "outline"}
@@ -295,7 +282,7 @@ const PostgreSQLMigration: React.FC = () => {
                   <DatabaseIcon className="mr-2 h-5 w-5" />
                   <span>Usando PostgreSQL</span>
                 </div>
-                <ToggleRightIcon className="h-5 w-5" />
+                <ToggleRight className="h-5 w-5" />
               </>
             ) : (
               <>
@@ -303,7 +290,7 @@ const PostgreSQLMigration: React.FC = () => {
                   <HardDriveIcon className="mr-2 h-5 w-5" />
                   <span>Usando almacenamiento local</span>
                 </div>
-                <ToggleLeftIcon className="h-5 w-5" />
+                <ToggleLeft className="h-5 w-5" />
               </>
             )}
           </Button>
@@ -313,7 +300,6 @@ const PostgreSQLMigration: React.FC = () => {
               : "La aplicación está utilizando el almacenamiento local del navegador. Los datos no se comparten entre dispositivos."}
           </p>
           
-          {/* Mantener la opción de switch también para coherencia */}
           <div className="flex items-center space-x-2 mt-2">
             <Switch
               id="use-postgresql"

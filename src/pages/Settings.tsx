@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
@@ -9,14 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
-import { DatabaseBackup, FileUp, RefreshCw, HardDrive, AlertCircle, CheckCircle2, Ban, Database, Trash2 } from 'lucide-react';
+import { DatabaseBackup, FileUp, RefreshCw, HardDrive, AlertCircle, CheckCircle2, Ban, Database, Trash2, ToggleRight, ToggleLeft } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { downloadDatabaseBackup, importDatabaseFromJSON, getStorageUsage, resetDatabase } from '@/utils/dataService';
+import { downloadDatabaseBackup, importDatabaseFromJSON, getStorageUsage, resetDatabase, getUseAPI, setUseAPI } from '@/utils/dataService';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthContext';
 import PostgreSQLMigration from '@/components/settings/PostgreSQLMigration';
 import { clearLocalStorage } from '@/utils/migrationService';
-import { getUseAPI } from '@/utils/dataService';
 
 const Settings = () => {
   const { currentUser } = useAuth();
@@ -45,7 +43,6 @@ const Settings = () => {
     }
   }, [currentUser, navigate]);
 
-  // Verificar si el usuario es administrador
   const isAdmin = currentUser?.role === 'admin';
   
   const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -440,7 +437,7 @@ const Settings = () => {
                           <Database className="mr-2 h-5 w-5" />
                           <span>Usando PostgreSQL</span>
                         </div>
-                        <ToggleRightIcon className="h-5 w-5" />
+                        <ToggleRight className="h-5 w-5" />
                       </>
                     ) : (
                       <>
@@ -448,7 +445,7 @@ const Settings = () => {
                           <HardDrive className="mr-2 h-5 w-5" />
                           <span>Usando almacenamiento local</span>
                         </div>
-                        <ToggleLeftIcon className="h-5 w-5" />
+                        <ToggleLeft className="h-5 w-5" />
                       </>
                     )}
                   </Button>
