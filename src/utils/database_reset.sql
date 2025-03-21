@@ -114,11 +114,31 @@ CREATE TABLE workday_schedules (
   friday_hours NUMERIC NOT NULL
 );
 
--- Insertar usuario administrador inicial para que o sistema teña polo menos un usuario
-INSERT INTO users (id, name, email, role) 
-VALUES ('1', 'Admin', 'admin@example.com', 'manager');
+-- Insertar usuarios iniciales para que el sistema tenga varios usuarios para probar
+INSERT INTO users (id, name, email, role, avatar, active) 
+VALUES 
+('1', 'Admin', 'admin@example.com', 'manager', 'https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff', true),
+('2', 'Ana Pereira', 'ana.pereira@example.com', 'manager', 'https://ui-avatars.com/api/?name=Ana+Pereira&background=0D8ABC&color=fff', true),
+('3', 'Carlos Silva', 'carlos.silva@example.com', 'worker', 'https://ui-avatars.com/api/?name=Carlos+Silva&background=0D8ABC&color=fff', true),
+('4', 'Laura Méndez', 'laura.mendez@example.com', 'worker', 'https://ui-avatars.com/api/?name=Laura+Mendez&background=0D8ABC&color=fff', true),
+('5', 'Miguel González', 'miguel.gonzalez@example.com', 'worker', 'https://ui-avatars.com/api/?name=Miguel+Gonzalez&background=0D8ABC&color=fff', true);
 
 -- Insertar configuración inicial de horario
 INSERT INTO work_schedule 
 (regular_hours_monday_to_thursday, regular_hours_friday, reduced_hours_daily) 
 VALUES (8, 7, 6);
+
+-- Insertar algunos días festivos
+INSERT INTO holidays (date, name)
+VALUES 
+('2023-01-01', 'Aninovo'),
+('2023-01-06', 'Reis'),
+('2023-04-07', 'Venres Santo'),
+('2023-05-01', 'Día do Traballo'),
+('2023-07-25', 'Santiago Apóstolo'),
+('2023-08-15', 'Asunción'),
+('2023-10-12', 'Día da Hispanidade'),
+('2023-11-01', 'Todos os Santos'),
+('2023-12-06', 'Día da Constitución'),
+('2023-12-08', 'Inmaculada Concepción'),
+('2023-12-25', 'Nadal');
