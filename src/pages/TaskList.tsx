@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -14,7 +15,8 @@ import {
   Eye,
   Hash,
   Calendar,
-  User as UserIcon
+  User as UserIcon,
+  Trash2
 } from 'lucide-react';
 import { 
   Table, 
@@ -48,12 +50,25 @@ import {
   mockTasks, 
   mockUsers, 
   getTasksByUserId, 
-  getUserById 
+  getUserById,
+  deleteTask
 } from '../utils/mockData';
 import { Task } from '../utils/types';
 import { format, isAfter, isBefore, parseISO } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from '@/components/ui/use-toast';
 
 const TaskList = () => {
   const { currentUser } = useAuth();
@@ -69,6 +84,7 @@ const TaskList = () => {
   const [dueDateStartFilter, setDueDateStartFilter] = useState<Date | undefined>(undefined);
   const [dueDateEndFilter, setDueDateEndFilter] = useState<Date | undefined>(undefined);
   const [dateFilterType, setDateFilterType] = useState<'creation' | 'due'>('creation');
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   
   useEffect(() => {
     if (currentUser) {
@@ -209,6 +225,23 @@ const TaskList = () => {
     if (startDateFilter || endDateFilter) count++;
     if (dueDateStartFilter || dueDateEndFilter) count++;
     return count;
+  };
+
+  const handleDeleteTask = () => {
+    if (taskToDelete) {
+      deleteTask(taskToDelete);
+      toast({
+        title: 'Tarefa eliminada',
+        description: 'A tarefa foi eliminada correctamente.',
+      });
+      // Refresh the task list
+      if (currentUser?.role === 'worker') {
+        setTasks(getTasksByUserId(currentUser.id));
+      } else {
+        setTasks(mockTasks);
+      }
+      setTaskToDelete(null);
+    }
   };
   
   return (
@@ -613,6 +646,40 @@ const TaskList = () => {
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">Editar</span>
                         </Button>
+                        {currentUser?.role === 'manager' && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-red-500">
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Eliminar</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción non se pode desfacer. Eliminarás permanentemente esta tarefa.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => {
+                                  deleteTask(task.id);
+                                  toast({
+                                    title: 'Tarefa eliminada',
+                                    description: 'A tarefa foi eliminada correctamente.',
+                                  });
+                                  // Refresh the task list
+                                  if (currentUser?.role === 'worker') {
+                                    setTasks(getTasksByUserId(currentUser.id));
+                                  } else {
+                                    setTasks(mockTasks);
+                                  }
+                                }}>Eliminar</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -631,6 +698,21 @@ const TaskList = () => {
           </Table>
         </div>
       </div>
+      
+      <AlertDialog open={taskToDelete !== null} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción non se pode desfacer. Eliminarás permanentemente esta tarefa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTask}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

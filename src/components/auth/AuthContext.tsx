@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../../utils/types';
 import { toast } from '@/components/ui/use-toast';
 import { getUserByEmail } from '@/utils/dataService';
+import { mockUsers } from '@/utils/mockData';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -33,8 +34,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Simulating authentication delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Get user from PostgreSQL via adapter
-      const user = await getUserByEmail(email);
+      // First try to get user from PostgreSQL via adapter
+      let user: User | undefined;
+      try {
+        user = await getUserByEmail(email);
+      } catch (error) {
+        console.log("Error getting user from PostgreSQL, falling back to mockUsers", error);
+      }
+      
+      // If user not found in PostgreSQL, fallback to mockUsers for demo purposes
+      if (!user) {
+        user = mockUsers.find(u => u.email === email);
+      }
       
       if (!user) {
         throw new Error('Usuario non atopado');

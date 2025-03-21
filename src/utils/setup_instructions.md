@@ -1,134 +1,158 @@
 
-# Instructions for setting up the application in production
+# Instrucciones para configurar la aplicación de Control de Tarefas
 
-## 1. PostgreSQL Database Configuration
+Este documento contiene instrucciones detalladas para configurar la aplicación correctamente en un entorno de producción.
 
-### Prerequisites
-- PostgreSQL installed (version 12 or higher)
-- pgAdmin or access to psql command line
+## 1. Requisitos previos
 
-### Steps to initialize the database
+- PostgreSQL 12 o superior
+- Node.js 14 o superior
+- Acceso al repositorio del código fuente
 
-1. Log in to PostgreSQL as superuser (typically 'postgres')
-2. Create a new user for the application:
-   ```sql
-   CREATE USER task_control WITH PASSWORD 'dc0rralIplan';
-   ```
+## 2. Configuración de la base de datos PostgreSQL
 
-3. Create a new database:
-   ```sql
-   CREATE DATABASE task_management OWNER task_control;
-   ```
+### Paso 1: Crear la base de datos y el usuario
 
-4. Run the database initialization script located at `src/utils/database_reset.sql`:
-   
-   **Using psql:**
-   ```bash
-   psql -U postgres -d task_management -p 5432 -f C:\Users\administrator\Documents\NODE\CONTROL TAREFAS\control_tarefas\src\utils\database_reset.sql
-   ```
-   
-   **Using pgAdmin:**
-   1. Open pgAdmin
-   2. Connect to the PostgreSQL server
-   3. Select the "task_management" database
-   4. Open the Query Tool
-   5. Load the SQL file and execute it
+1. Inicia sesión en PostgreSQL como superusuario (normalmente 'postgres')
+2. Ejecuta los siguientes comandos SQL:
 
-5. Verify that the tables and initial users have been created correctly:
-   ```sql
-   SELECT * FROM users;
-   ```
-   You should see at least 5 users including the test users.
+```sql
+CREATE USER task_control WITH PASSWORD 'dc0rralIplan';
+CREATE DATABASE task_management OWNER task_control;
+```
 
-## 2. API Server Configuration
+### Paso 2: Inicializar la base de datos con las tablas y datos base
 
-1. Make sure the configuration in `src/utils/dbConfig.ts` matches your PostgreSQL configuration:
-   ```typescript
-   export const dbConfig = {
-     host: 'localhost',
-     port: 5432,  // Adjust according to your configuration
-     database: 'task_management',
-     user: 'task_control',
-     password: 'dc0rralIplan',
-   };
-   ```
+Ejecuta el script de inicialización ubicado en `src/utils/database_reset.sql`:
 
-2. Configure and run the API server according to the instructions in `src/utils/api_server_setup.md`
+**Usando psql:**
+```bash
+psql -U postgres -d task_management -p 5432 -f C:\Users\administrator\Documents\NODE\CONTROL TAREFAS\control_tarefas\src\utils\database_reset.sql
+```
 
-## 3. Running the Web Application
+**Usando pgAdmin:**
+1. Abre pgAdmin
+2. Conéctate al servidor PostgreSQL
+3. Selecciona la base de datos "task_management"
+4. Abre la herramienta de consultas
+5. Carga el archivo SQL y ejecútalo
 
-1. Make sure all dependencies are installed:
-   ```bash
-   cd C:\Users\administrator\Documents\NODE\CONTROL TAREFAS\control_tarefas
-   npm install
-   ```
+### Paso 3: Verifica la creación correcta
 
-2. Start the application in development mode:
-   ```bash
-   npm run dev
-   ```
+```sql
+SELECT * FROM users;
+```
 
-3. For production, build the application:
-   ```bash
-   npm run build
-   ```
+Deberías ver al menos 5 usuarios predefinidos en la tabla.
 
-4. Serve the built application:
-   ```bash
-   npm run preview
-   ```
+## 3. Configuración del servidor API
 
-## 4. Accessing the Application
+### Paso 1: Configura el archivo dbConfig.ts
 
-Once the application is running, you can log in with any of the following users:
+Verifica que la configuración en `src/utils/dbConfig.ts` coincida con tu configuración de PostgreSQL:
 
-| Email                     | Role      |
-|---------------------------|----------|
-| admin@example.com         | manager  |
-| ana.pereira@example.com   | manager  |
-| carlos.silva@example.com  | worker   |
-| laura.mendez@example.com  | worker   |
-| miguel.gonzalez@example.com | worker |
+```typescript
+export const dbConfig = {
+  host: 'localhost',  // Cambia a la dirección de tu servidor PostgreSQL
+  port: 5432,         // Cambia si usas otro puerto
+  database: 'task_management',
+  user: 'task_control',
+  password: 'dc0rralIplan',
+};
+```
 
-Authentication is configured to accept any password for these test users.
+### Paso 2: Configurar y ejecutar el servidor API
 
-## 5. Creating New Users
+Sigue las instrucciones detalladas en `src/utils/api_server_setup.md` para configurar y ejecutar el servidor API que conecta con PostgreSQL.
 
-To create new users in the application:
+## 4. Ejecución de la aplicación web
 
-1. Log in using an admin account (like admin@example.com)
-2. Navigate to the "Users" section
-3. Click on "Add User"
-4. Fill in the required information:
-   - Name
-   - Email (must be unique)
-   - Role (manager or worker)
-   - Other optional fields
+### Paso 1: Instalar dependencias
 
-Alternatively, you can add users directly to the database:
+```bash
+cd C:\Users\administrator\Documents\NODE\CONTROL TAREFAS\control_tarefas
+npm install
+```
+
+### Paso 2: Iniciar la aplicación en modo desarrollo
+
+```bash
+npm run dev
+```
+
+### Paso 3: Para producción, construir la aplicación
+
+```bash
+npm run build
+npm run preview
+```
+
+## 5. Accediendo a la aplicación
+
+### Usuarios predeterminados para inicio de sesión
+
+La aplicación incluye los siguientes usuarios predeterminados:
+
+| Email                     | Rol      | Contraseña |
+|---------------------------|----------|------------|
+| admin@example.com         | Gerente  | Cualquiera |
+| ana.pereira@example.com   | Gerente  | Cualquiera |
+| carlos.silva@example.com  | Trabajador | Cualquiera |
+| laura.mendez@example.com  | Trabajador | Cualquiera |
+| miguel.gonzalez@example.com | Trabajador | Cualquiera |
+
+Nota: Para fines de demostración, la aplicación aceptará cualquier contraseña para estos usuarios.
+
+## 6. Creación de nuevos usuarios
+
+### Opción 1: A través de la interfaz de usuario
+
+1. Inicia sesión como administrador (admin@example.com)
+2. Navega a la sección "Usuarios"
+3. Haz clic en "Agregar Usuario"
+4. Completa la información requerida
+
+### Opción 2: Directamente en la base de datos
+
+Ejecuta un comando SQL como este:
 
 ```sql
 INSERT INTO users (id, name, email, role, avatar, active) 
 VALUES 
-('6', 'New User', 'new.user@example.com', 'worker', 'https://ui-avatars.com/api/?name=New+User&background=0D8ABC&color=fff', true);
+('6', 'Nuevo Usuario', 'nuevo.usuario@example.com', 'worker', 'https://ui-avatars.com/api/?name=Nuevo+Usuario&background=0D8ABC&color=fff', true);
 ```
 
-## 6. Production Considerations
+## 7. Solución de problemas comunes
 
-- Configure a web server like Nginx or Apache to serve the built application
-- Implement HTTPS security for both the web application and API
-- Set up regular database backups
-- Consider implementing secure password policies for production environments
+### Problema de inicio de sesión
 
-## 7. Troubleshooting
+Si tienes problemas para iniciar sesión:
 
-If you encounter issues with logging in:
-
-1. Verify the database connection by checking the application logs
-2. Confirm the user exists in the database:
+1. Asegúrate de que la aplicación esté configurada para usar PostgreSQL y no el almacenamiento local
+2. Verifica que la base de datos PostgreSQL esté funcionando
+3. Verifica que las credenciales en `dbConfig.ts` sean correctas
+4. Comprueba que el usuario exista en la base de datos:
    ```sql
    SELECT * FROM users WHERE email = 'admin@example.com';
    ```
-3. Check that the API server is running and accessible
-4. Look for errors in the browser console (F12 Developer Tools)
-5. Verify the `API_URL` configuration in `src/utils/dbConfig.ts`
+5. Si el problema persiste, intenta iniciar sesión con un usuario de demostración como fallback
+
+### Configuración del servidor API
+
+Si tienes problemas con el servidor API:
+
+1. Verifica que el servidor API esté en ejecución
+2. Comprueba que la URL en `API_URL` en `dbConfig.ts` apunte a la dirección correcta
+3. Revisa los logs del servidor API para errores específicos
+
+### Uso en modo local para desarrollo o demostración
+
+Para usar la aplicación sin configurar PostgreSQL, puedes cambiar la aplicación para utilizar almacenamiento local. Esto no se recomienda para producción, pero es útil para desarrollo:
+
+1. Ve a la página de Configuración en la aplicación
+2. Cambia de "Usar PostgreSQL" a "Usar almacenamiento local"
+3. Los datos se guardarán en el almacenamiento local del navegador
+
+## 8. Contacto y soporte
+
+Si necesitas ayuda adicional o tienes preguntas sobre la configuración, contacta al equipo de soporte en [correo@ejemplo.com]

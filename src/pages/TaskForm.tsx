@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -46,12 +47,24 @@ import {
   getTaskById,
   getNextTaskId,
   addTask,
-  updateTask
+  updateTask,
+  deleteTask
 } from '../utils/mockData';
 import { Task, User, TaskAssignment } from '../utils/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -75,8 +88,18 @@ const TaskForm = () => {
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
-  const workers = mockUsers.filter(user => user.role === 'worker');
+  // Get all available users for assignment, including managers when the current user is a manager
+  const availableUsers = mockUsers.filter(user => {
+    if (currentUser?.role === 'manager') {
+      // Managers can assign to all workers and managers (including themselves)
+      return user.active !== false;
+    } else {
+      // Workers can only assign to workers
+      return user.role === 'worker' && user.active !== false;
+    }
+  });
   
   useEffect(() => {
     if (isEditing && id) {
@@ -144,6 +167,17 @@ const TaskForm = () => {
       navigate('/tasks');
       setSubmitting(false);
     }, 800);
+  };
+
+  const handleDeleteTask = () => {
+    if (isEditing && id) {
+      deleteTask(id);
+      toast({
+        title: 'Tarefa eliminada',
+        description: 'A tarefa foi eliminada correctamente.',
+      });
+      navigate('/tasks');
+    }
   };
   
   const handleSearchTask = () => {
@@ -251,9 +285,33 @@ const TaskForm = () => {
             Volver a tarefas
           </Button>
           
-          <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
-            {isEditing ? 'Editar tarefa' : 'Nova tarefa'}
-          </h1>
+          <div className="flex space-x-2">
+            {isEditing && (
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar tarefa
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción non se pode desfacer. Eliminarás permanentemente esta tarefa.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteTask}>Eliminar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
+              {isEditing ? 'Editar tarefa' : 'Nova tarefa'}
+            </h1>
+          </div>
         </div>
         
         <form onSubmit={handleSubmit}>
@@ -460,9 +518,9 @@ const TaskForm = () => {
                             <SelectValue placeholder="Seleccionar usuario" />
                           </SelectTrigger>
                           <SelectContent>
-                            {workers.map(user => (
+                            {availableUsers.map(user => (
                               <SelectItem key={user.id} value={user.id}>
-                                {user.name}
+                                {user.name} {user.role === 'manager' ? ' (Xerente)' : ''}
                               </SelectItem>
                             ))}
                           </SelectContent>
