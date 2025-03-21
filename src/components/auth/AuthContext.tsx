@@ -45,8 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('A túa conta está desactivada. Por favor, contacta co administrador.');
       }
       
-      // In a real app, we would validate the password here
-      // For demo purposes, any password is accepted for the users
+      // En producción, aquí se validaría la contraseña usando un backend seguro
+      // Este código es solo para demostración
       
       setCurrentUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));

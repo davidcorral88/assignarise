@@ -1,51 +1,51 @@
 
-# Instrucciones para resetear la base de datos PostgreSQL
+# Instrucións para resetear a base de datos PostgreSQL
 
-Estos pasos te ayudarán a borrar todas las tablas existentes y recrearlas con la estructura correcta.
+Estes pasos axudarante a borrar todas as táboas existentes e recrealas coa estrutura correcta.
 
-## Opción 1: Usando psql (línea de comandos)
+## Opción 1: Usando psql (liña de comandos)
 
-1. Abre una terminal o línea de comandos
-2. Ejecuta el siguiente comando (ajusta los parámetros según sea necesario):
+1. Abre unha terminal ou liña de comandos
+2. Executa o seguinte comando (axusta os parámetros segundo sexa necesario):
 
 ```bash
 psql -U postgres -d DBtarefas -p 5433 -f ruta/a/database_reset.sql
 ```
 
-Donde:
-- `-U postgres` es el usuario (reemplaza con el usuario administrador)
-- `-d DBtarefas` es el nombre de la base de datos
-- `-p 5433` es el puerto
-- `-f ruta/a/database_reset.sql` es la ruta al archivo SQL
+Onde:
+- `-U postgres` é o usuario (reemplaza co usuario administrador)
+- `-d DBtarefas` é o nome da base de datos
+- `-p 5433` é o porto
+- `-f ruta/a/database_reset.sql` é a ruta ao arquivo SQL
 
 ## Opción 2: Usando pgAdmin
 
 1. Abre pgAdmin
-2. Conéctate a tu servidor PostgreSQL
-3. Selecciona la base de datos "DBtarefas"
-4. Haz clic derecho y selecciona "Query Tool"
-5. Haz clic en el botón "Open File" (ícono de carpeta)
-6. Navega y selecciona el archivo `database_reset.sql`
-7. Haz clic en el botón "Execute/Refresh" (ícono de Play)
+2. Conéctate ao teu servidor PostgreSQL
+3. Selecciona a base de datos "DBtarefas"
+4. Fai clic dereito e selecciona "Query Tool"
+5. Fai clic no botón "Open File" (ícono de carpeta)
+6. Navega e selecciona o arquivo `database_reset.sql`
+7. Fai clic no botón "Execute/Refresh" (ícono de Play)
 
-## Opción 3: Usando DBeaver u otro cliente SQL
+## Opción 3: Usando DBeaver ou outro cliente SQL
 
-1. Conéctate a tu base de datos
-2. Abre una nueva consulta SQL
-3. Carga el contenido del archivo `database_reset.sql`
-4. Ejecuta la consulta
+1. Conéctate á túa base de datos
+2. Abre unha nova consulta SQL
+3. Carga o contido do arquivo `database_reset.sql`
+4. Executa a consulta
 
-## Después de restablecer la base de datos
+## Despois de restablecer a base de datos
 
-Una vez que hayas ejecutado el script:
+Unha vez que executaras o script:
 
-1. Reinicia el servidor API si está en ejecución
-2. En la aplicación web, ve a la sección "Configuración" -> "PostgreSQL"
-3. Verifica la conexión con el botón "Verificar conexión"
-4. Si la conexión es exitosa, haz clic en "Iniciar migración" para migrar los datos
-5. Activa la opción "Usar PostgreSQL como almacenamiento principal"
+1. Reinicia o servidor API se está en execución
+2. Na aplicación web, vai á sección "Configuración" -> "PostgreSQL"
+3. Verifica a conexión co botón "Verificar conexión"
+4. Se a conexión é exitosa, fai clic en "Iniciar migración" para migrar os datos
+5. Activa a opción "Usar PostgreSQL como almacenamento principal"
 
-Si sigues experimentando errores después de este proceso, verifica:
-- Que los datos de conexión sean correctos (host, puerto, nombre de base de datos, usuario, contraseña)
-- Que el servidor API esté funcionando correctamente
-- Los logs del servidor API para más detalles sobre los errores
+Se segues experimentando erros despois deste proceso, verifica:
+- Que os datos de conexión sexan correctos (host, porto, nome de base de datos, usuario, contrasinal)
+- Que o servidor API estea funcionando correctamente
+- Os logs do servidor API para máis detalles sobre os erros

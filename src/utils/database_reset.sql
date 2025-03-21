@@ -1,8 +1,8 @@
 
--- Script for recreating all tables in the PostgreSQL database
--- This will drop all existing tables and recreate them with the proper schema
+-- Script para recrear todas as táboas na base de datos PostgreSQL
+-- Este script borrará todas as táboas existentes e recrearaas coa estrutura adecuada
 
--- First, drop all tables if they exist (in correct order to handle foreign keys)
+-- Primeiro, borramos todas as táboas se existen (na orde correcta para manexar as claves foráneas)
 DROP TABLE IF EXISTS task_tags CASCADE;
 DROP TABLE IF EXISTS task_assignments CASCADE;
 DROP TABLE IF EXISTS time_entries CASCADE;
@@ -10,10 +10,11 @@ DROP TABLE IF EXISTS tasks CASCADE;
 DROP TABLE IF EXISTS vacation_days CASCADE;
 DROP TABLE IF EXISTS workday_schedules CASCADE;
 DROP TABLE IF EXISTS work_schedule CASCADE;
+DROP TABLE IF EXISTS reduced_periods CASCADE;
 DROP TABLE IF EXISTS holidays CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
--- Create users table
+-- Crear táboa de usuarios
 CREATE TABLE users (
   id VARCHAR(255) PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -26,7 +27,7 @@ CREATE TABLE users (
   active BOOLEAN DEFAULT true
 );
 
--- Create tasks table
+-- Crear táboa de tarefas
 CREATE TABLE tasks (
   id VARCHAR(255) PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
@@ -41,14 +42,14 @@ CREATE TABLE tasks (
   project VARCHAR(255)
 );
 
--- Create task_tags table for the many-to-many relationship between tasks and tags
+-- Crear táboa task_tags para a relación moitos-a-moitos entre tarefas e etiquetas
 CREATE TABLE task_tags (
   task_id VARCHAR(255) REFERENCES tasks(id) ON DELETE CASCADE,
   tag VARCHAR(255) NOT NULL,
   PRIMARY KEY (task_id, tag)
 );
 
--- Create task_assignments table
+-- Crear táboa task_assignments
 CREATE TABLE task_assignments (
   task_id VARCHAR(255) REFERENCES tasks(id) ON DELETE CASCADE,
   user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
@@ -56,7 +57,7 @@ CREATE TABLE task_assignments (
   PRIMARY KEY (task_id, user_id)
 );
 
--- Create time_entries table
+-- Crear táboa time_entries
 CREATE TABLE time_entries (
   id VARCHAR(255) PRIMARY KEY,
   task_id VARCHAR(255) REFERENCES tasks(id) ON DELETE CASCADE,
@@ -70,13 +71,13 @@ CREATE TABLE time_entries (
   time_format VARCHAR(50)
 );
 
--- Create holidays table
+-- Crear táboa holidays
 CREATE TABLE holidays (
   date DATE PRIMARY KEY,
   name VARCHAR(255) NOT NULL
 );
 
--- Create vacation_days table
+-- Crear táboa vacation_days
 CREATE TABLE vacation_days (
   user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL,
@@ -84,7 +85,7 @@ CREATE TABLE vacation_days (
   PRIMARY KEY (user_id, date)
 );
 
--- Create work_schedule table (for global schedule configuration)
+-- Crear táboa work_schedule (para configuración global de horario)
 CREATE TABLE work_schedule (
   id SERIAL PRIMARY KEY,
   regular_hours_monday_to_thursday NUMERIC NOT NULL,
@@ -92,20 +93,20 @@ CREATE TABLE work_schedule (
   reduced_hours_daily NUMERIC NOT NULL
 );
 
--- Create reduced periods table
+-- Crear táboa reduced_periods
 CREATE TABLE reduced_periods (
   id SERIAL PRIMARY KEY,
   work_schedule_id INTEGER REFERENCES work_schedule(id) ON DELETE CASCADE,
-  start_date VARCHAR(10) NOT NULL,  -- Format: MM-DD
-  end_date VARCHAR(10) NOT NULL     -- Format: MM-DD
+  start_date VARCHAR(10) NOT NULL,  -- Formato: MM-DD
+  end_date VARCHAR(10) NOT NULL     -- Formato: MM-DD
 );
 
--- Create workday_schedules table
+-- Crear táboa workday_schedules
 CREATE TABLE workday_schedules (
   id VARCHAR(255) PRIMARY KEY,
   type VARCHAR(50) NOT NULL,
-  start_date VARCHAR(10) NOT NULL,  -- Format: MM-DD
-  end_date VARCHAR(10) NOT NULL,    -- Format: MM-DD
+  start_date VARCHAR(10) NOT NULL,  -- Formato: MM-DD
+  end_date VARCHAR(10) NOT NULL,    -- Formato: MM-DD
   monday_hours NUMERIC NOT NULL,
   tuesday_hours NUMERIC NOT NULL,
   wednesday_hours NUMERIC NOT NULL,
@@ -113,11 +114,11 @@ CREATE TABLE workday_schedules (
   friday_hours NUMERIC NOT NULL
 );
 
--- Insert initial admin user so the system has at least one user
+-- Insertar usuario administrador inicial para que o sistema teña polo menos un usuario
 INSERT INTO users (id, name, email, role) 
 VALUES ('1', 'Admin', 'admin@example.com', 'manager');
 
--- Insert initial work schedule
+-- Insertar configuración inicial de horario
 INSERT INTO work_schedule 
 (regular_hours_monday_to_thursday, regular_hours_friday, reduced_hours_daily) 
 VALUES (8, 7, 6);

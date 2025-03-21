@@ -1,5 +1,5 @@
 
-// Configuración de la base de datos PostgreSQL
+// Configuración de la base de datos PostgreSQL para producción
 export const dbConfig = {
   host: 'localhost',
   port: 5433,
@@ -15,4 +15,5 @@ export const pgAdminConfig = {
 };
 
 // URL de la API que conecta con PostgreSQL
+// Modifica esta URL según la configuración de tu servidor en producción
 export const API_URL = 'http://localhost:3000/api';
