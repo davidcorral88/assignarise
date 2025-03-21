@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon, InfoIcon, ExternalLinkIcon } from 'lucide-react';
+import { DatabaseIcon, ServerIcon, CheckCircle2Icon, AlertCircleIcon, DatabaseBackupIcon, InfoIcon, ExternalLinkIcon, HardDriveIcon, ToggleRightIcon, ToggleLeftIcon } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -136,7 +137,7 @@ const PostgreSQLMigration: React.FC = () => {
   };
   
   const handleToggleStorage = (checked: boolean) => {
-    // Solo permitir activar PostgreSQL si la conexión está establecida
+    // Only allow enabling PostgreSQL if the connection is established
     if (checked && connectionStatus !== 'connected') {
       toast({
         title: "Conexión no establecida",
@@ -279,19 +280,52 @@ const PostgreSQLMigration: React.FC = () => {
           )}
         </div>
         
-        {connectionStatus === 'connected' && (
-          <div className="flex items-center space-x-2 pt-4 border-t">
+        {/* Botón más visible para alternar entre almacenamiento local y PostgreSQL */}
+        <div className="flex flex-col space-y-2 pt-4 border-t">
+          <Button
+            variant={usePostgresStorage ? "default" : "outline"}
+            size="lg"
+            className="w-full justify-between"
+            onClick={() => handleToggleStorage(!usePostgresStorage)}
+            disabled={(connectionStatus !== 'connected' && !usePostgresStorage) || isMigrating}
+          >
+            {usePostgresStorage ? (
+              <>
+                <div className="flex items-center">
+                  <DatabaseIcon className="mr-2 h-5 w-5" />
+                  <span>Usando PostgreSQL</span>
+                </div>
+                <ToggleRightIcon className="h-5 w-5" />
+              </>
+            ) : (
+              <>
+                <div className="flex items-center">
+                  <HardDriveIcon className="mr-2 h-5 w-5" />
+                  <span>Usando almacenamiento local</span>
+                </div>
+                <ToggleLeftIcon className="h-5 w-5" />
+              </>
+            )}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            {usePostgresStorage
+              ? "La aplicación está utilizando PostgreSQL como sistema de almacenamiento. Sus datos están siendo guardados en la base de datos."
+              : "La aplicación está utilizando el almacenamiento local del navegador. Los datos no se comparten entre dispositivos."}
+          </p>
+          
+          {/* Mantener la opción de switch también para coherencia */}
+          <div className="flex items-center space-x-2 mt-2">
             <Switch
               id="use-postgresql"
               checked={usePostgresStorage}
               onCheckedChange={handleToggleStorage}
-              disabled={isMigrating}
+              disabled={isMigrating || (connectionStatus !== 'connected' && !usePostgresStorage)}
             />
             <Label htmlFor="use-postgresql" className="font-medium">
               Usar PostgreSQL como almacenamiento principal
             </Label>
           </div>
-        )}
+        </div>
         
         {connectionStatus === 'connected' && (
           <>
