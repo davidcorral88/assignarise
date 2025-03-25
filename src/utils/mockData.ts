@@ -7,6 +7,7 @@ import {
   WorkSchedule,
   DailyHoursData,
   WorkdaySchedule,
+  TaskAttachment
 } from './types';
 import { saveToStorage, getFromStorage } from './storageService';
 
@@ -36,7 +37,7 @@ const initialUsers: User[] = [
 ];
 
 // Datos iniciales para tareas con IDs numéricos
-export const mockTasks: Task[] = [
+const initialTasks: Task[] = [
   {
     id: '1',
     title: 'Desenvolver interface de usuario',
