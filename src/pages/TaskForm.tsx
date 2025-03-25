@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -83,7 +82,7 @@ const TaskForm = () => {
   const navigate = useNavigate();
   const isEditing = !!id;
   
-  const [taskId, setTaskId] = useState(getNextTaskId());
+  const [taskId, setTaskId] = useState<number | undefined>(undefined);
   const [searchTaskId, setSearchTaskId] = useState('');
   const [tarefa, setTarefa] = useState('');
   const [description, setDescription] = useState('');
@@ -101,6 +100,7 @@ const TaskForm = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [searchMode, setSearchMode] = useState(false);
   
   // Get all available users for assignment, including managers when the current user is a manager
   const availableUsers = mockUsers.filter(user => {
@@ -129,6 +129,7 @@ const TaskForm = () => {
         setAttachments(task.attachments || []);
       }
     } else {
+      // For new tasks, automatically set the next ID and make it read-only
       setTaskId(getNextTaskId());
     }
     setLoading(false);
@@ -146,6 +147,15 @@ const TaskForm = () => {
       return;
     }
     
+    if (!taskId) {
+      toast({
+        title: 'Erro',
+        description: 'O ID da tarefa non é válido',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setSubmitting(true);
     
     // Prepare the task object
@@ -156,25 +166,28 @@ const TaskForm = () => {
       status: status as 'pending' | 'in_progress' | 'completed',
       priority: priority as 'low' | 'medium' | 'high',
       createdBy: currentUser?.id || '',
-      createdAt: isEditing ? getTaskById(id!)?.createdAt || new Date().toISOString() : new Date().toISOString(),
-      startDate: startDate ? startDate.toISOString() : new Date().toISOString(),
-      dueDate: dueDate ? dueDate.toISOString() : undefined,
+      createdAt: isEditing || searchMode ? getTaskById(searchMode ? searchTaskId : id!)?.createdAt || new Date().toISOString() : new Date().toISOString(),
+      startDate: startDate ? format(startDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0],
+      dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined,
       tags,
       assignments,
       attachments,
     };
     
     // Save the task
-    if (isEditing) {
+    if (isEditing || searchMode) {
       updateTask(task);
+      toast({
+        title: 'Tarefa actualizada',
+        description: 'A tarefa foi actualizada correctamente.',
+      });
     } else {
       addTask(task);
+      toast({
+        title: 'Tarefa creada',
+        description: 'A tarefa foi creada correctamente.',
+      });
     }
-    
-    toast({
-      title: isEditing ? 'Tarefa actualizada' : 'Tarefa creada',
-      description: isEditing ? 'A tarefa foi actualizada correctamente.' : 'A tarefa foi creada correctamente.',
-    });
     
     // Navigate back to tasks list
     setTimeout(() => {
@@ -184,8 +197,9 @@ const TaskForm = () => {
   };
 
   const handleDeleteTask = () => {
-    if (isEditing && id) {
-      deleteTask(id);
+    if ((isEditing && id) || (searchMode && searchTaskId)) {
+      const taskIdToDelete = isEditing ? id : searchTaskId;
+      deleteTask(taskIdToDelete);
       toast({
         title: 'Tarefa eliminada',
         description: 'A tarefa foi eliminada correctamente.',
@@ -208,6 +222,7 @@ const TaskForm = () => {
         setTags(task.tags || []);
         setAssignments([...task.assignments]);
         setAttachments(task.attachments || []);
+        setSearchMode(true);
         
         toast({
           title: 'Tarefa atopada',
@@ -221,6 +236,26 @@ const TaskForm = () => {
         });
       }
     }
+  };
+  
+  const handleResetForm = () => {
+    setTaskId(getNextTaskId());
+    setTarefa('');
+    setDescription('');
+    setStatus('pending');
+    setPriority('medium');
+    setStartDate(new Date());
+    setDueDate(undefined);
+    setTags([]);
+    setAssignments([]);
+    setAttachments([]);
+    setSearchMode(false);
+    setSearchTaskId('');
+    
+    toast({
+      title: 'Formulario restablecido',
+      description: 'O formulario foi restablecido para crear unha nova tarefa.',
+    });
   };
   
   const handleAddTag = () => {
@@ -288,7 +323,8 @@ const TaskForm = () => {
   
   // Access control: only managers and task owners can edit
   const canEdit = currentUser?.role === 'manager' || 
-    (isEditing && getTaskById(id!)?.createdBy === currentUser?.id);
+    (isEditing && getTaskById(id!)?.createdBy === currentUser?.id) ||
+    (searchMode && getTaskById(searchTaskId)?.createdBy === currentUser?.id);
   
   // Para tareas completadas, solo se puede añadir archivos de resolución
   const isTaskCompleted = status === 'completed';
@@ -301,7 +337,7 @@ const TaskForm = () => {
     currentUser.role === 'manager' || isUserAssignedToTask
   );
   
-  if (isEditing && !canEdit) {
+  if ((isEditing || searchMode) && !canEdit) {
     navigate('/tasks');
     return null;
   }
@@ -320,7 +356,7 @@ const TaskForm = () => {
           </Button>
           
           <div className="flex space-x-2">
-            {isEditing && (
+            {(isEditing || searchMode) && (
               <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive">
@@ -343,7 +379,7 @@ const TaskForm = () => {
               </AlertDialog>
             )}
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
-              {isEditing ? 'Editar tarefa' : 'Nova tarefa'}
+              {isEditing ? 'Editar tarefa' : searchMode ? 'Editar tarefa (buscada)' : 'Nova tarefa'}
             </h1>
           </div>
         </div>
@@ -366,15 +402,17 @@ const TaskForm = () => {
                         <Input
                           id="id"
                           type="number"
-                          value={taskId}
-                          onChange={(e) => setTaskId(parseInt(e.target.value))}
-                          className={isEditing ? "bg-gray-100" : ""}
-                          readOnly={isEditing}
+                          value={taskId || ''}
+                          className="bg-gray-100 cursor-not-allowed"
+                          readOnly
                         />
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        O ID asígnase automaticamente e non se pode modificar
+                      </p>
                     </div>
 
-                    {!isEditing && (
+                    {!isEditing && !searchMode && (
                       <div className="w-2/3 space-y-2">
                         <Label htmlFor="searchId">Buscar tarefa por ID</Label>
                         <div className="flex space-x-2">
@@ -394,6 +432,20 @@ const TaskForm = () => {
                             Buscar
                           </Button>
                         </div>
+                      </div>
+                    )}
+                    
+                    {searchMode && (
+                      <div className="w-2/3 space-y-2 flex items-end">
+                        <Button 
+                          type="button" 
+                          onClick={handleResetForm}
+                          variant="outline"
+                          className="ml-auto"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Nova tarefa
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -710,12 +762,12 @@ const TaskForm = () => {
                     {submitting ? (
                       <>
                         <Clock className="mr-2 h-4 w-4 animate-spin" />
-                        {isEditing ? 'Actualizando...' : 'Creando...'}
+                        {isEditing || searchMode ? 'Actualizando...' : 'Creando...'}
                       </>
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        {isEditing ? 'Actualizar tarefa' : 'Crear tarefa'}
+                        {isEditing || searchMode ? 'Actualizar tarefa' : 'Crear tarefa'}
                       </>
                     )}
                   </Button>
