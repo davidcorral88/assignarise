@@ -5,6 +5,43 @@
 
 Aplicación para o rexistro e seguimento de tarefas e tempo do Plan de Transporte Público de Galicia.
 
+## Repositorios
+
+Este proxecto xestiónase a través de dous repositorios en GitHub:
+
+1. **assignarise**: Versión estable e conxelada para implementación en produción.
+2. **control_de_tarefas**: Repositorio activo para o desenvolvemento continuo.
+
+### Instrucións para clonar o repositorio existente e crear un novo
+
+Para crear unha copia do repositorio actual e continuar o desenvolvemento no novo repositorio "control_de_tarefas", siga estos pasos:
+
+1. **Clonar o repositorio actual**:
+   ```bash
+   git clone https://github.com/TeuUsuario/assignarise.git
+   cd assignarise
+   ```
+
+2. **Crear un novo repositorio en GitHub**:
+   - Accede á túa conta de GitHub
+   - Crea un novo repositorio chamado "control_de_tarefas"
+   - Non inicialices o repositorio con README, .gitignore ou licenza
+
+3. **Conectar o repositorio local co novo repositorio remoto**:
+   ```bash
+   git remote rename origin assignarise
+   git remote add origin https://github.com/TeuUsuario/control_de_tarefas.git
+   ```
+
+4. **Empurrar o código ao novo repositorio**:
+   ```bash
+   git push -u origin main  # ou 'master' según a túa rama principal
+   ```
+
+5. **Para futuras actualizacións**:
+   - Traballa normalmente no repositorio "control_de_tarefas"
+   - O repositorio "assignarise" manterase sen cambios para implementación estable
+
 ## Requisitos previos
 
 Antes de iniciar a aplicación, asegúrate de ter instalado:
@@ -47,8 +84,8 @@ O servidor API debe estar en execución na URL configurada no arquivo `src/utils
 
 ```bash
 # Clonar o repositorio
-git clone https://github.com/TeuUsuario/control_tarefas.git
-cd control_tarefas
+git clone https://github.com/TeuUsuario/control_de_tarefas.git
+cd control_de_tarefas
 
 # Instalar dependencias
 npm install
@@ -65,7 +102,7 @@ npm run preview
 
 ### 4. Configuración inicial na aplicación
 
-1. Accede á aplicación no navegador (por defecto: `http://localhost:8080`)
+1. Accede á aplicación no navegador (por defecto: `http://localhost:5551`)
 2. Inicia sesión co usuario administrador predeterminado:
    - Email: admin@example.com
    - (En produción, deberías cambiar este usuario inmediatamente)
