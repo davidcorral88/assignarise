@@ -1,4 +1,3 @@
-
 import {
   User,
   Task,
@@ -37,7 +36,7 @@ const initialUsers: User[] = [
 ];
 
 // Datos iniciales para tareas con IDs numéricos
-const initialTasks: Task[] = [
+export const mockTasks: Task[] = [
   {
     id: '1',
     title: 'Desenvolver interface de usuario',
@@ -54,6 +53,7 @@ const initialTasks: Task[] = [
     tags: ['frontend', 'react'],
     category: 'Desenvolvemento',
     project: 'Novo Produto',
+    attachments: []
   },
   {
     id: '2',
@@ -72,6 +72,7 @@ const initialTasks: Task[] = [
     tags: ['backend', 'api', 'authentication'],
     category: 'Desenvolvemento',
     project: 'Plataforma Principal',
+    attachments: []
   },
   {
     id: '3',
@@ -89,6 +90,7 @@ const initialTasks: Task[] = [
     tags: ['documentation', 'api'],
     category: 'Documentación',
     project: 'Plataforma Principal',
+    attachments: []
   },
   {
     id: '4',
@@ -106,6 +108,7 @@ const initialTasks: Task[] = [
     tags: ['usability', 'testing', 'frontend'],
     category: 'Testes',
     project: 'Novo Produto',
+    attachments: []
   },
   {
     id: '5',
@@ -123,6 +126,7 @@ const initialTasks: Task[] = [
     tags: ['database', 'optimization', 'backend'],
     category: 'Infraestrutura',
     project: 'Plataforma Principal',
+    attachments: []
   },
 ];
 
@@ -383,16 +387,23 @@ export const getTaskById = (id: string): Task | undefined => {
 };
 
 export const addTask = (task: Task): void => {
+  if (!task.attachments) {
+    task.attachments = [];
+  }
+  
   mockTasks.push(task);
   saveTasks();
 };
 
-export const updateTask = (task: Task): void => {
-  mockTasks = mockTasks.map((t) => (t.id === task.id ? task : t));
+export const updateTask = (updatedTask: Task): void => {
+  if (!updatedTask.attachments) {
+    updatedTask.attachments = [];
+  }
+  
+  mockTasks = mockTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t));
   saveTasks();
 };
 
-// Add the missing deleteTask function
 export const deleteTask = (id: string): void => {
   mockTasks = mockTasks.filter((task) => task.id !== id);
   saveTasks();
@@ -568,3 +579,28 @@ export {
   importDatabaseFromJSON,
   getStorageUsage 
 } from './storageService';
+
+// Agregar funciones para manejar adjuntos
+export function addAttachment(attachment: TaskAttachment): void {
+  const task = getTaskById(attachment.taskId);
+  if (task) {
+    if (!task.attachments) {
+      task.attachments = [];
+    }
+    task.attachments.push(attachment);
+    updateTask(task);
+  }
+}
+
+export function removeAttachment(taskId: string, attachmentId: string): void {
+  const task = getTaskById(taskId);
+  if (task && task.attachments) {
+    task.attachments = task.attachments.filter(a => a.id !== attachmentId);
+    updateTask(task);
+  }
+}
+
+export function getAttachmentsByTaskId(taskId: string): TaskAttachment[] {
+  const task = getTaskById(taskId);
+  return task?.attachments || [];
+}

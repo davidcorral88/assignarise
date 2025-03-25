@@ -167,6 +167,53 @@ export const updateTask = async (task: Task): Promise<void> => {
   }
 };
 
+// Nuevas funciones para manejar archivos adjuntos
+export const getTaskAttachments = async (taskId: string): Promise<TaskAttachment[]> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/${taskId}/attachments`);
+    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    return handleFetchError(error, `Error al obtener adjuntos de la tarea ${taskId}`);
+  }
+};
+
+export const uploadTaskAttachment = async (
+  taskId: string, 
+  file: File, 
+  userId: string, 
+  isResolution: boolean
+): Promise<TaskAttachment> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('taskId', taskId);
+    formData.append('userId', userId);
+    formData.append('isResolution', String(isResolution));
+    
+    const response = await fetch(`${API_URL}/tasks/${taskId}/attachments`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    return handleFetchError(error, 'Error al subir archivo');
+  }
+};
+
+export const deleteTaskAttachment = async (taskId: string, attachmentId: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/${taskId}/attachments/${attachmentId}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+  } catch (error) {
+    handleFetchError(error, `Error al eliminar adjunto ${attachmentId}`);
+  }
+};
+
 // Registros de tiempo (TimeEntries)
 export const getTimeEntries = async (): Promise<TimeEntry[]> => {
   try {

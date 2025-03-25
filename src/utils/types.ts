@@ -31,6 +31,18 @@ export interface TimeEntry {
   timeFormat?: string; // Para formato hh:mm
 }
 
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  uploadedBy: string;
+  uploadedAt: string;
+  isTaskResolution: boolean; // true si es un archivo de resolución, false si es un archivo inicial
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -45,6 +57,7 @@ export interface Task {
   tags?: string[];
   category?: string;
   project?: string;
+  attachments?: TaskAttachment[]; // Archivos adjuntos a la tarea
 }
 
 export interface AuthContextType {

@@ -13,7 +13,9 @@ import {
   X,
   Clock,
   Save,
-  Search
+  Search,
+  FileUp,
+  FilePlus2
 } from 'lucide-react';
 import { 
   Card, 
@@ -48,9 +50,11 @@ import {
   getNextTaskId,
   addTask,
   updateTask,
-  deleteTask
+  deleteTask,
+  addAttachment,
+  removeAttachment
 } from '../utils/mockData';
-import { Task, User, TaskAssignment } from '../utils/types';
+import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
@@ -65,6 +69,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import FileUploader from '@/components/files/FileUploader';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -85,6 +96,7 @@ const TaskForm = () => {
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [allocatedHours, setAllocatedHours] = useState<number>(0);
+  const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -114,6 +126,7 @@ const TaskForm = () => {
         setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
         setTags(task.tags || []);
         setAssignments([...task.assignments]);
+        setAttachments(task.attachments || []);
       }
     } else {
       setTaskId(getNextTaskId());
@@ -148,6 +161,7 @@ const TaskForm = () => {
       dueDate: dueDate ? dueDate.toISOString() : undefined,
       tags,
       assignments,
+      attachments,
     };
     
     // Save the task
@@ -193,6 +207,7 @@ const TaskForm = () => {
         setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
         setTags(task.tags || []);
         setAssignments([...task.assignments]);
+        setAttachments(task.attachments || []);
         
         toast({
           title: 'Tarefa atopada',
@@ -251,6 +266,14 @@ const TaskForm = () => {
     setAssignments(assignments.filter(a => a.userId !== userId));
   };
   
+  const handleAttachmentAdded = (attachment: TaskAttachment) => {
+    setAttachments(prev => [...prev, attachment]);
+  };
+  
+  const handleAttachmentRemoved = (attachmentId: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== attachmentId));
+  };
+  
   if (loading) {
     return (
       <Layout>
@@ -266,6 +289,17 @@ const TaskForm = () => {
   // Access control: only managers and task owners can edit
   const canEdit = currentUser?.role === 'manager' || 
     (isEditing && getTaskById(id!)?.createdBy === currentUser?.id);
+  
+  // Para tareas completadas, solo se puede añadir archivos de resolución
+  const isTaskCompleted = status === 'completed';
+  
+  // Comprobar si el usuario actual está asignado a esta tarea
+  const isUserAssignedToTask = currentUser && assignments.some(a => a.userId === currentUser.id);
+  
+  // Solo los usuarios asignados y managers pueden añadir adjuntos de resolución
+  const canAddResolutionAttachments = currentUser && (
+    currentUser.role === 'manager' || isUserAssignedToTask
+  );
   
   if (isEditing && !canEdit) {
     navigate('/tasks');
@@ -465,6 +499,59 @@ const TaskForm = () => {
                       Engadir
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle style={{ color: '#007bc4' }}>Arquivos adjuntos</CardTitle>
+                  <CardDescription>
+                    Xestión de arquivos relacionados coa tarefa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="task-files">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="task-files" className="flex items-center">
+                        <FileUp className="h-4 w-4 mr-2" />
+                        Arquivos da tarefa
+                      </TabsTrigger>
+                      <TabsTrigger value="resolution-files" className="flex items-center">
+                        <FilePlus2 className="h-4 w-4 mr-2" />
+                        Arquivos de resolución
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="task-files" className="mt-4">
+                      <FileUploader
+                        taskId={String(taskId)}
+                        attachments={attachments}
+                        isResolution={false}
+                        onAttachmentAdded={handleAttachmentAdded}
+                        onAttachmentRemoved={handleAttachmentRemoved}
+                        readOnly={isEditing && !canEdit}
+                      />
+                    </TabsContent>
+                    
+                    <TabsContent value="resolution-files" className="mt-4">
+                      <FileUploader
+                        taskId={String(taskId)}
+                        attachments={attachments}
+                        isResolution={true}
+                        onAttachmentAdded={handleAttachmentAdded}
+                        onAttachmentRemoved={handleAttachmentRemoved}
+                        readOnly={!canAddResolutionAttachments}
+                      />
+                      
+                      {!canAddResolutionAttachments && (
+                        <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-md text-sm">
+                          <p className="text-orange-700">
+                            Solo os usuarios asignados a esta tarefa poden engadir arquivos de resolución.
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
               

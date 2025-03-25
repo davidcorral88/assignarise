@@ -109,6 +109,26 @@ npm run preview
 3. Vai a Configuración > PostgreSQL
 4. Verifica a conexión coa base de datos e asegúrate de que o enlace co PostgreSQL estea activo
 
+## Funcionalidades
+
+### Xestión de Tarefas
+- Creación, edición e seguimento de tarefas
+- Asignación de tarefas a usuarios
+- Xestión de estados e prioridades
+- Categorización mediante etiquetas
+
+### Xestión de Arquivos Adxuntos
+- Cada tarefa pode ter dous tipos de arquivos adxuntos:
+  - **Arquivos iniciais da tarefa**: Documentos relacionados coa definición ou requisitos da tarefa
+  - **Arquivos de resolución**: Documentos subidos polos usuarios asignados relacionados coa resolución ou entrega da tarefa
+- Soporta múltiples formatos de arquivos (PDF, Word, Excel, imaxes, etc.)
+- Os usuarios poden descargar, ver e eliminar os arquivos segundo os seus permisos
+
+### Rexistro de Tempos
+- Seguimento de horas dedicadas a cada tarefa
+- Informes de horas por usuario, proxecto ou tarefa
+- Visualización de horas asignadas vs. horas consumidas
+
 ## Configuración para produción
 
 Para un entorno de produción, revisa e actualiza os seguintes valores:
