@@ -37,7 +37,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Check for admin credentials directly
       if (email === 'admin@ticmoveo.com' && password === 'dc0rralIplan') {
-        const adminUser = defaultUsers[0];
+        // Ensure the admin user has the 'admin' role
+        const adminUser: User = {
+          id: 'admin-user',
+          name: 'Administrador ATSXPTPG',
+          email: 'admin@ticmoveo.com',
+          role: 'admin', // Explicitly set as admin role
+          active: true
+        };
+        
         setCurrentUser(adminUser);
         localStorage.setItem('currentUser', JSON.stringify(adminUser));
         toast({

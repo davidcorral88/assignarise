@@ -105,9 +105,10 @@ const Login = () => {
         
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>Para fins de demostración, usa:</p>
-          <p className="mt-1 font-medium">Email: ana.pereira@example.com (xerente)</p>
-          <p className="font-medium">Email: carlos.silva@example.com (traballador)</p>
-          <p className="mt-1">O contrasinal pode ser calquera texto</p>
+          <p className="mt-1 font-medium">Email: admin@ticmoveo.com (Administrador)</p>
+          <p className="font-medium">Email: ana.pereira@example.com (Xerente)</p>
+          <p className="font-medium">Email: carlos.silva@example.com (Traballador)</p>
+          <p className="mt-1">Contrasinal: dc0rralIplan</p>
         </div>
       </div>
     </div>
