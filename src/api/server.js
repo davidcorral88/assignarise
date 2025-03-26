@@ -31,12 +31,28 @@ pool.query('SELECT NOW()', (err, res) => {
 });
 
 // API status endpoint
-app.get('/api/status', (req, res) => {
-  res.json({
-    status: 'online',
-    message: 'API is running',
-    timestamp: new Date().toISOString()
-  });
+app.get('/api/status', async (req, res) => {
+  try {
+    // Check the actual database connection
+    const dbResult = await pool.query('SELECT NOW()');
+    
+    res.json({
+      status: 'online',
+      database: 'connected',
+      message: 'API is running and database is connected',
+      dbTime: dbResult.rows[0].now,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Database connection check failed:', error);
+    res.json({
+      status: 'online',
+      database: 'disconnected',
+      message: 'API is running but database connection failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Root endpoint redirects to status

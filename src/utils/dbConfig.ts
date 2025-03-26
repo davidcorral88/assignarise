@@ -15,7 +15,7 @@ export const pgAdminConfig = {
 };
 
 // API URL that connects to PostgreSQL
-// Modify this URL according to your server configuration in production
+// Ensure the URL ends without a trailing slash
 export const API_URL = 'http://localhost:3000/api';
 
 // Default users for testing purposes (used as fallback when PostgreSQL is not available)

@@ -32,7 +32,8 @@ export const testPostgreSQLConnection = async (): Promise<boolean> => {
     const data = await response.json();
     console.log('Respuesta del estado de PostgreSQL:', data);
     
-    return data.status === 'connected';
+    // Check for "online" status instead of "connected"
+    return data.status === 'online';
   } catch (error) {
     console.error('Error al probar la conexión a PostgreSQL:', error);
     return false;
