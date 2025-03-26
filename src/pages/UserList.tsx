@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -14,7 +15,8 @@ import {
   AlertCircle,
   Phone,
   Check,
-  X
+  X,
+  KeyRound,
 } from 'lucide-react';
 import { 
   Table, 
@@ -51,6 +53,7 @@ import { toast } from '@/components/ui/use-toast';
 import { mockUsers, getUsers, updateUser, getUserById } from '../utils/mockData';
 import { User } from '../utils/types';
 import ImportUsersButton from '../components/users/ImportUsersButton';
+import ResetPasswordDialog from '../components/users/ResetPasswordDialog';
 
 const UserList = () => {
   const { currentUser } = useAuth();
@@ -60,6 +63,7 @@ const UserList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   
   const loadUsers = () => {
     const loadedUsers = getUsers();
@@ -139,6 +143,11 @@ const UserList = () => {
         description: `${user.name} foi ${updatedUser.active ? 'activado' : 'desactivado'} correctamente.`,
       });
     }
+  };
+  
+  const handleResetPassword = (user: User) => {
+    setSelectedUser(user);
+    setShowResetPasswordDialog(true);
   };
   
   return (
@@ -263,6 +272,12 @@ const UserList = () => {
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleResetPassword(user)}
+                          >
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            Resetear contrasinal
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             onClick={() => handleToggleActive(user.id, user.active)}
@@ -330,6 +345,14 @@ const UserList = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {selectedUser && (
+        <ResetPasswordDialog 
+          open={showResetPasswordDialog} 
+          onOpenChange={setShowResetPasswordDialog}
+          user={selectedUser}
+        />
+      )}
     </Layout>
   );
 };
