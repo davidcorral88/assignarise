@@ -1,129 +1,192 @@
 
-# API Server Configuration for PostgreSQL Connection
+# API Server Setup Instructions
 
-This document details how to configure and run the API server that connects the web application to the PostgreSQL database.
+This document explains how to set up and run the API server for the Task Management application.
 
 ## Prerequisites
 
-- Node.js (version 14 or higher)
-- npm or yarn
-- PostgreSQL configured and running
+Before starting, make sure you have:
 
-## API Server Configuration
+1. **Node.js** installed (v16 or higher)
+2. **PostgreSQL** installed and running on port 5433
+3. The **task_management** database created
+4. The necessary database tables created (see database.sql)
 
-### 1. Clone or download the API server repository
+## Installation Steps
 
-```bash
-git clone https://github.com/YourUsername/task-control-api.git
-cd task-control-api
-```
+1. **Install API Server Dependencies**
 
-### 2. Install dependencies
+   Navigate to the API server directory and install dependencies:
 
-```bash
-npm install
-# or
-yarn install
-```
+   ```bash
+   cd src/api
+   npm install
+   ```
 
-### 3. Configure environment variables
+2. **Configure PostgreSQL**
 
-Create a `.env` file in the root of the project with the following information:
+   Ensure PostgreSQL is running on port 5433. If your PostgreSQL is running on a different port, update the configuration in `server.js`:
 
-```
-# Server configuration
-PORT=3000
+   ```javascript
+   const pool = new Pool({
+     user: 'task_control',
+     host: 'localhost',
+     database: 'task_management',
+     password: 'dc0rralIplan',
+     port: 5433, // Change this to your PostgreSQL port if needed
+   });
+   ```
 
-# PostgreSQL configuration
-PGHOST=localhost
-PGPORT=5432
-PGDATABASE=task_management
-PGUSER=task_control
-PGPASSWORD=dc0rralIplan
+3. **Create Database and Tables**
 
-# Other settings
-NODE_ENV=production
-CORS_ORIGIN=http://localhost:8080
-```
+   Create the database and necessary tables in PostgreSQL:
 
-Adjust the values according to your specific environment. `CORS_ORIGIN` should point to the URL where the web application is hosted.
+   ```bash
+   # Connect to PostgreSQL
+   psql -U postgres
 
-### 4. Run the server
+   # Create the database (if not exists)
+   CREATE DATABASE task_management;
 
-For development:
-```bash
-npm run dev
-# or
-yarn dev
-```
+   # Create the user with password
+   CREATE USER task_control WITH PASSWORD 'dc0rralIplan';
 
-For production:
-```bash
-npm run build
-npm start
-# or
-yarn build
-yarn start
-```
+   # Grant privileges
+   GRANT ALL PRIVILEGES ON DATABASE task_management TO task_control;
 
-The API server should be accessible at `http://localhost:3000` (or the port you've configured).
+   # Exit PostgreSQL admin
+   \q
 
-## Available Endpoints
+   # Connect to the new database with the new user
+   psql -U task_control -d task_management -h localhost -p 5433
 
-The API server provides the following main endpoints:
+   # Run the SQL from database.sql file (you can copy-paste it or use:)
+   \i /path/to/src/api/database.sql
+   ```
 
-- `GET /api/status` - Check the status of the PostgreSQL connection
+   Alternatively, you can run the SQL script directly from the command line:
+
+   ```bash
+   psql -U postgres -c "CREATE DATABASE task_management;"
+   psql -U postgres -c "CREATE USER task_control WITH PASSWORD 'dc0rralIplan';"
+   psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE task_management TO task_control;"
+   psql -U task_control -d task_management -p 5433 -f src/api/database.sql
+   ```
+
+## Running the API Server
+
+1. **Start the API Server**
+
+   From the api directory:
+
+   ```bash
+   npm start
+   ```
+
+   Or to run in development mode with auto-restart:
+
+   ```bash
+   npm run dev
+   ```
+
+2. **Verify the Server is Running**
+
+   The server should start and listen on port 3000. You should see:
+
+   ```
+   API server running at http://localhost:3000/api
+   ```
+
+3. **Test the API Connection**
+
+   Open a browser or use a tool like curl to test the API:
+
+   ```bash
+   curl http://localhost:3000/api/status
+   ```
+
+   You should receive a JSON response:
+
+   ```json
+   {
+     "status": "online",
+     "message": "API is running",
+     "timestamp": "2023-xx-xxTxx:xx:xx.xxxZ"
+   }
+   ```
+
+## Common Errors and Solutions
+
+### PostgreSQL Connection Issues
+
+1. **Error: Could not connect to database**
+
+   Verify that PostgreSQL is running:
+
+   ```bash
+   # Windows
+   sc query postgresql
+
+   # Mac/Linux
+   systemctl status postgresql
+   ```
+
+2. **Error: Password authentication failed**
+
+   Check the credentials in `server.js` and ensure they match your PostgreSQL setup.
+
+3. **Error: Database does not exist**
+
+   Create the database:
+
+   ```sql
+   CREATE DATABASE task_management;
+   ```
+
+### Port Conflicts
+
+1. **Error: Address already in use**
+
+   If port 3000 is already in use, you can change the port in `server.js`:
+
+   ```javascript
+   const port = 3001; // Change to an available port
+   ```
+
+## Migrating Data from Local Storage to PostgreSQL
+
+Once the API server is running, you can use the built-in migration feature in the application:
+
+1. Go to the Settings page in the application
+2. Navigate to the PostgreSQL tab
+3. Enter the API URL: http://localhost:3000/api
+4. Click "Verify Connection"
+5. If connection is successful, click "Start Migration"
+
+This will transfer all your local data to the PostgreSQL database.
+
+## API Endpoints
+
+The API server provides the following endpoints:
+
+- `GET /api/status` - Check API status
 - `GET /api/users` - Get all users
-- `GET /api/tasks` - Get all tasks
-- ... (all endpoints corresponding to system entities)
+- `GET /api/users/:id` - Get user by ID
+- `POST /api/users` - Create a new user
+- `PUT /api/users/:id` - Update a user
+- `DELETE /api/users/:id` - Delete a user
 
-## Maintenance and Troubleshooting
+And similar endpoints for tasks, time entries, vacations, etc.
 
-### Logs
+For a complete list of endpoints, see the `server.js` file or test the API using a tool like Postman.
 
-Server logs are saved in the `logs/` folder and also displayed in the console during execution.
+## Troubleshooting API Connection
 
-### Restarting the server
+If the front-end application can't connect to the API, verify:
 
-In production, it's recommended to use a process manager like PM2:
+1. CORS is properly configured (the API server includes CORS middleware)
+2. The API URL in the application matches the actual API server address
+3. No firewall or network restrictions are blocking the connection
+4. The API server is running
 
-```bash
-# Install PM2 globally
-npm install -g pm2
-
-# Start the server with PM2
-pm2 start dist/index.js --name task-control-api
-
-# View logs
-pm2 logs task-control-api
-
-# Restart the server
-pm2 restart task-control-api
-```
-
-### Common issues
-
-1. **PostgreSQL connection error**:
-   - Verify that PostgreSQL is running
-   - Check the credentials in the `.env` file
-   - Verify that the database exists and has the necessary tables
-
-2. **CORS errors**:
-   - Make sure that `CORS_ORIGIN` in the `.env` file matches the web application URL
-
-3. **Server not responding**:
-   - Check the logs to identify potential errors
-   - Verify that the port is not being used by another application
-
-## Updates and Maintenance
-
-To update the API server:
-
-1. Stop the current server
-2. Get the latest changes (`git pull` or download the new version)
-3. Install dependencies (`npm install` or `yarn install`)
-4. Restart the server
-
-## Contact and Support
-
-If you encounter problems or have questions about the API server configuration, contact the support team at [support_email@example.com]
+You can modify the API URL in the application settings if needed.

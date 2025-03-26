@@ -2,7 +2,7 @@
 // PostgreSQL database configuration for production
 export const dbConfig = {
   host: 'localhost',
-  port: 5432,
+  port: 5433, // Updated to match the requirement in port 5433
   database: 'task_management',
   user: 'task_control',
   password: 'dc0rralIplan',
