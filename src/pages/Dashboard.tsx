@@ -37,7 +37,7 @@ const Dashboard = () => {
         // Workers only see tasks assigned to them
         setUserTasks(getTasksByUserId(currentUser.id));
       } else {
-        // Managers see all tasks
+        // Managers and Admins see all tasks
         setUserTasks(mockTasks);
       }
     }
@@ -71,8 +71,8 @@ const Dashboard = () => {
   
   // Prepare chart data
   const getChartData = () => {
-    if (currentUser?.role === 'manager') {
-      // For managers: tasks by status
+    if (currentUser?.role === 'manager' || currentUser?.role === 'admin') {
+      // For managers and admins: tasks by status
       const statusCounts = {
         completed: mockTasks.filter(t => t.status === 'completed').length,
         in_progress: mockTasks.filter(t => t.status === 'in_progress').length,
@@ -108,7 +108,7 @@ const Dashboard = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Panel</h1>
             <p className="text-muted-foreground mt-1">
-              Benvido/a, {currentUser?.name}. {currentUser?.role === 'manager' ? 'Aquí tes un resumo de todas as tarefas.' : 'Aquí tes as túas tarefas asignadas.'}
+              Benvido/a, {currentUser?.name}. {currentUser?.role === 'worker' ? 'Aquí tes as túas tarefas asignadas.' : 'Aquí tes un resumo de todas as tarefas.'}
             </p>
           </div>
           <Button 
@@ -133,9 +133,9 @@ const Dashboard = () => {
                 {userTasks.length}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {currentUser?.role === 'manager' 
-                  ? 'Todas as tarefas no sistema' 
-                  : 'Tarefas asignadas a ti'}
+                {currentUser?.role === 'worker'
+                  ? 'Tarefas asignadas a ti'
+                  : 'Todas as tarefas no sistema'}
               </p>
             </CardContent>
           </Card>
@@ -157,7 +157,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
           
-          {currentUser?.role === 'manager' ? (
+          {(currentUser?.role === 'manager' || currentUser?.role === 'admin') ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">

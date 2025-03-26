@@ -63,7 +63,7 @@ export const Navigation = () => {
       name: 'Usuarios',
       path: '/users',
       icon: <Users className="h-5 w-5" />,
-      show: isAdmin
+      show: isManager
     },
     {
       name: 'Perfil',
@@ -75,7 +75,7 @@ export const Navigation = () => {
       name: 'Configuración',
       path: '/settings',
       icon: <Settings className="h-5 w-5" />,
-      show: isAdmin
+      show: isAdmin  // Ahora solo visible para administradores
     }
   ];
 

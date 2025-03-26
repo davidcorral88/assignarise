@@ -50,6 +50,12 @@ export const Header: React.FC = () => {
       .toUpperCase();
   };
 
+  // Check if user is admin
+  const isAdmin = currentUser?.role === 'admin';
+  
+  // Check if user is manager or admin
+  const isManager = currentUser?.role === 'manager' || isAdmin;
+
   const navLinks = [
     {
       to: '/dashboard',
@@ -67,7 +73,7 @@ export const Header: React.FC = () => {
       to: '/users',
       icon: <Users className="mr-2 h-4 w-4" />,
       label: 'Usuarios',
-      show: currentUser?.role === 'manager'
+      show: isManager
     },
     {
       to: '/calendars',
@@ -85,7 +91,7 @@ export const Header: React.FC = () => {
       to: '/settings',
       icon: <Settings className="mr-2 h-4 w-4" />,
       label: 'Configuración',
-      show: true
+      show: isAdmin  // Ahora solo visible para administradores
     }
   ];
 
@@ -172,7 +178,11 @@ export const Header: React.FC = () => {
                   <p className="text-sm font-medium leading-none">{currentUser.name}</p>
                   <p className="text-xs leading-none text-muted-foreground">{currentUser.email}</p>
                   <p className="text-xs leading-none text-muted-foreground capitalize">
-                    {currentUser.role === 'manager' ? 'Xerente' : 'Traballador'}
+                    {currentUser.role === 'admin' 
+                      ? 'Administrador' 
+                      : currentUser.role === 'manager' 
+                        ? 'Xerente' 
+                        : 'Traballador'}
                   </p>
                 </div>
               </DropdownMenuLabel>

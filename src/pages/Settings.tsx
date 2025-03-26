@@ -16,7 +16,7 @@ const Settings = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Only admin can access this page
+    // Solo los administradores pueden acceder a esta página
     if (!currentUser || currentUser.role !== 'admin') {
       navigate('/dashboard');
     }
