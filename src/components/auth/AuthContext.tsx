@@ -35,17 +35,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Simulating authentication delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
+      // Check for admin credentials directly
+      if (email === 'admin@ticmoveo.com' && password === 'dc0rralIplan') {
+        const adminUser = defaultUsers[0];
+        setCurrentUser(adminUser);
+        localStorage.setItem('currentUser', JSON.stringify(adminUser));
+        toast({
+          title: 'Benvido/a!',
+          description: `Iniciaches sesión como ${adminUser.name}`,
+        });
+        setLoading(false);
+        return adminUser;
+      }
+      
       // First try to get user from PostgreSQL via adapter
       let user: User | undefined;
       try {
         user = await getUserByEmail(email);
       } catch (error) {
-        console.log("Error getting user from PostgreSQL, falling back to mockUsers and defaultUsers", error);
+        console.log("Error getting user from PostgreSQL, falling back to mockUsers", error);
       }
       
-      // If user not found in PostgreSQL, fallback to mockUsers for demo purposes
+      // If user not found in PostgreSQL, fallback to mockUsers only for existing users
       if (!user) {
-        user = mockUsers.find(u => u.email === email) || defaultUsers.find(u => u.email === email);
+        user = mockUsers.find(u => u.email === email);
       }
       
       if (!user) {
@@ -57,8 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('A túa conta está desactivada. Por favor, contacta co administrador.');
       }
       
-      // En producción, aquí se validaría la contraseña usando un backend seguro
-      // Este código es solo para demostración
+      // In production, password validation would be done securely by the backend
+      // This is only for demonstration purposes
       
       setCurrentUser(user);
       localStorage.setItem('currentUser', JSON.stringify(user));

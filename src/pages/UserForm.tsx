@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -43,8 +42,8 @@ const UserForm = () => {
   const [nextId, setNextId] = useState<string>('');
   
   useEffect(() => {
-    // Only managers can access this page
-    if (currentUser?.role !== 'manager') {
+    // Only admins can access this page
+    if (currentUser?.role !== 'admin') {
       navigate('/dashboard');
     }
     
@@ -237,6 +236,13 @@ const UserForm = () => {
                         <Label htmlFor="manager" className="flex items-center cursor-pointer">
                           <Shield className="mr-1.5 h-4 w-4" />
                           Xerente
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="admin" id="admin" />
+                        <Label htmlFor="admin" className="flex items-center cursor-pointer">
+                          <Shield className="mr-1.5 h-4 w-4 text-red-500" />
+                          Administrador
                         </Label>
                       </div>
                     </RadioGroup>

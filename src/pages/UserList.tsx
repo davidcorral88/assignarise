@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -68,8 +67,8 @@ const UserList = () => {
   };
   
   useEffect(() => {
-    // Only managers can access this page
-    if (currentUser?.role !== 'manager') {
+    // Only admins can access this page
+    if (currentUser?.role !== 'admin') {
       navigate('/dashboard');
     }
     
@@ -219,7 +218,12 @@ const UserList = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {user.role === 'manager' ? (
+                      {user.role === 'admin' ? (
+                        <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
+                          <Shield className="mr-1 h-3 w-3" />
+                          Administrador
+                        </Badge>
+                      ) : user.role === 'manager' ? (
                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                           <Shield className="mr-1 h-3 w-3" />
                           Xerente

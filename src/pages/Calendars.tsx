@@ -19,10 +19,20 @@ import HolidaysCalendar from '@/components/calendar/HolidaysCalendar';
 import AllUsersVacationsCalendar from '@/components/calendar/AllUsersVacationsCalendar';
 import UserVacationsCalendar from '@/components/calendar/UserVacationsCalendar';
 import WorkdayScheduleTable from '@/components/schedule/WorkdayScheduleTable';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 const Calendars = () => {
   const { currentUser } = useAuth();
-  const isManager = currentUser?.role === 'manager';
+  const navigate = useNavigate();
+  const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
+  
+  useEffect(() => {
+    // Redirect if not authenticated
+    if (!currentUser) {
+      navigate('/login');
+    }
+  }, [currentUser, navigate]);
   
   return (
     <Layout>
