@@ -43,7 +43,9 @@ export const downloadFile = (attachment: TaskAttachment): void => {
 
 // Función para obtener el ícono adecuado según el tipo de archivo
 export const getFileIcon = (fileType: string): string => {
-  if (fileType.includes('image')) {
+  if (fileType.includes('zip') || fileType.includes('x-rar') || fileType.includes('x-7z-compressed')) {
+    return 'file-archive';
+  } else if (fileType.includes('image')) {
     return 'image';
   } else if (fileType.includes('pdf')) {
     return 'file-text';
@@ -57,8 +59,6 @@ export const getFileIcon = (fileType: string): string => {
     return 'file-video';
   } else if (fileType.includes('audio')) {
     return 'file-audio';
-  } else if (fileType.includes('zip') || fileType.includes('compressed')) {
-    return 'file-archive';
   } else {
     return 'file';
   }
@@ -78,6 +78,11 @@ export const formatFileSize = (bytes: number): string => {
 // Función para verificar si un tipo de archivo es una imagen
 export const isImageFile = (fileType: string): boolean => {
   return fileType.includes('image');
+};
+
+// Función para verificar si un tipo de archivo es comprimido (.zip, .rar, .7z)
+export const isCompressedFile = (fileType: string): boolean => {
+  return fileType.includes('zip') || fileType.includes('x-rar') || fileType.includes('x-7z-compressed');
 };
 
 // En el futuro, aquí se implementarían funciones para integrar con servicios de almacenamiento como S3, Firebase, etc.

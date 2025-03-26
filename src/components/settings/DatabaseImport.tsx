@@ -16,21 +16,44 @@ export const DatabaseImport: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Verificar que el archivo tenga la extensión correcta
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (fileExtension !== 'json') {
+      toast({
+        title: "Formato incorrecto",
+        description: "O arquivo debe ter a extensión .json",
+        variant: "destructive",
+      });
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
     setIsLoading(true);
     try {
       const fileContent = await file.text();
+      
+      // Validar que el contenido sea un JSON válido
+      try {
+        JSON.parse(fileContent);
+      } catch (jsonError) {
+        throw new Error("El archivo no contiene un JSON válido");
+      }
       
       // Implementation for handling the imported data would go here
       // This is just a mock implementation
       
       toast({
         title: "Importación completada",
-        description: "Los datos se han importado correctamente",
+        description: "Os datos foron importados correctamente",
       });
     } catch (error) {
       toast({
         title: "Error de importación",
-        description: "No se pudieron importar los datos",
+        description: error instanceof Error ? error.message : "Non se puideron importar os datos",
         variant: "destructive",
       });
     } finally {
@@ -48,7 +71,7 @@ export const DatabaseImport: React.FC = () => {
         <div>
           <h3 className="text-sm font-medium">Importar datos</h3>
           <p className="text-sm text-muted-foreground">
-            Importa datos desde una copia de seguridad
+            Importa datos desde unha copia de seguridade
           </p>
         </div>
         <input

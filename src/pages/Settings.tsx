@@ -8,6 +8,8 @@ import { DatabaseBackup } from '@/components/settings/DatabaseBackup';
 import { DatabaseImport } from '@/components/settings/DatabaseImport';
 import { StorageUsage } from '@/components/settings/StorageUsage';
 import PostgreSQLMigration from '@/components/settings/PostgreSQLMigration';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Shield } from 'lucide-react';
 
 const Settings = () => {
   const { currentUser } = useAuth();
@@ -34,6 +36,14 @@ const Settings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6">
+          <Alert className="bg-green-50 border-green-200">
+            <Shield className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800">Seguridade mellorada</AlertTitle>
+            <AlertDescription className="text-green-700">
+              Por motivos de seguridade, só se permiten cargar arquivos comprimidos (.zip, .rar, .7z).
+            </AlertDescription>
+          </Alert>
+          
           <PostgreSQLMigration />
           <DatabaseBackup />
           <DatabaseImport />

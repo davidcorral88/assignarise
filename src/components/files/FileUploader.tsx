@@ -5,7 +5,8 @@ import {
   File, 
   FileText, 
   FileImage, 
-  FileSpreadsheet, 
+  FileSpreadsheet,
+  FileLock2,
   X, 
   Download,
   Trash2
@@ -50,15 +51,30 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       return;
     }
     
+    const file = event.target.files[0];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    // Verificar si el archivo es del tipo permitido (.zip, .rar, .7z)
+    const allowedExtensions = ['zip', 'rar', '7z'];
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      toast({
+        title: "Tipo de arquivo non permitido",
+        description: "Só se permiten arquivos comprimidos (.zip, .rar, .7z)",
+        variant: "destructive",
+      });
+      // Limpiar el input para permitir cargar el mismo archivo repetidamente
+      event.target.value = '';
+      return;
+    }
+    
     setUploading(true);
     
     try {
-      const file = event.target.files[0];
       const attachment = await uploadFile(file, taskId, currentUser.id, isResolution);
       onAttachmentAdded(attachment);
       
       toast({
-        title: "Archivo cargado",
+        title: "Arquivo cargado",
         description: `${file.name} foi cargado correctamente.`,
       });
     } catch (error) {
@@ -90,7 +106,9 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   
   // Determinar qué ícono mostrar según el tipo de archivo
   const getFileIcon = (fileType: string) => {
-    if (fileType.includes('image')) {
+    if (fileType.includes('zip') || fileType.includes('x-rar') || fileType.includes('x-7z-compressed')) {
+      return <FileLock2 className="h-6 w-6 text-purple-500" />;
+    } else if (fileType.includes('image')) {
       return <FileImage className="h-6 w-6 text-blue-500" />;
     } else if (fileType.includes('pdf')) {
       return <FileText className="h-6 w-6 text-red-500" />;
@@ -104,7 +122,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   return (
     <div className="space-y-4">
       {!readOnly && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2">
           <Button 
             variant="outline" 
             onClick={() => document.getElementById(`file-upload-${isResolution ? 'resolution' : 'initial'}`).click()}
@@ -112,11 +130,15 @@ const FileUploader: React.FC<FileUploaderProps> = ({
             className="w-full"
           >
             <Upload className="mr-2 h-4 w-4" />
-            {uploading ? 'Cargando...' : 'Cargar arquivo'}
+            {uploading ? 'Cargando...' : 'Cargar arquivo comprimido'}
           </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            Só se permiten arquivos comprimidos (.zip, .rar, .7z)
+          </p>
           <input
             id={`file-upload-${isResolution ? 'resolution' : 'initial'}`}
             type="file"
+            accept=".zip,.rar,.7z"
             onChange={handleFileChange}
             style={{ display: 'none' }}
           />
