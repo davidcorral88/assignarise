@@ -232,10 +232,10 @@ const UserList = () => {
                           <Shield className="mr-1 h-3 w-3" />
                           Administrador
                         </Badge>
-                      ) : user.role === 'manager' ? (
+                      ) : user.role === 'director' ? (
                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                           <Shield className="mr-1 h-3 w-3" />
-                          Xerente
+                          Director
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-muted text-muted-foreground">

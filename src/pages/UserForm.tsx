@@ -42,7 +42,6 @@ const UserForm = () => {
   const [nextId, setNextId] = useState<string>('');
   
   useEffect(() => {
-    // Only admins can access this page
     if (currentUser?.role !== 'admin') {
       navigate('/dashboard');
     }
@@ -57,10 +56,9 @@ const UserForm = () => {
           setPhone(user.phone || '');
           setEmailATSXPTPG(user.emailATSXPTPG || '');
           setOrganism(user.organism || '');
-          setActive(user.active !== false); // If active is undefined, treat as true
+          setActive(user.active !== false);
         }
       } else {
-        // Get next available ID for new users
         try {
           const nextUserId = await getNextUserId();
           setNextId(String(nextUserId));
@@ -87,7 +85,6 @@ const UserForm = () => {
       return;
     }
     
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast({
@@ -98,7 +95,6 @@ const UserForm = () => {
       return;
     }
     
-    // Validate ATSXPTPG email if provided
     if (emailATSXPTPG && !emailRegex.test(emailATSXPTPG)) {
       toast({
         title: 'Erro',
@@ -111,7 +107,6 @@ const UserForm = () => {
     setSubmitting(true);
     
     try {
-      // Create the user object
       const user: User = {
         id: isEditing && id ? id : nextId || String(Date.now()),
         name,
@@ -124,7 +119,6 @@ const UserForm = () => {
         active: active
       };
       
-      // Save the user
       if (isEditing) {
         await updateUser(user);
       } else {
@@ -136,7 +130,6 @@ const UserForm = () => {
         description: isEditing ? 'O usuario foi actualizado correctamente.' : 'O usuario foi creado correctamente.',
       });
       
-      // Navigate back to users list
       setTimeout(() => {
         navigate('/users');
         setSubmitting(false);
@@ -232,10 +225,10 @@ const UserForm = () => {
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="manager" id="manager" />
-                        <Label htmlFor="manager" className="flex items-center cursor-pointer">
+                        <RadioGroupItem value="director" id="director" />
+                        <Label htmlFor="director" className="flex items-center cursor-pointer">
                           <Shield className="mr-1.5 h-4 w-4" />
-                          Xerente
+                          Director
                         </Label>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -310,8 +303,8 @@ const UserForm = () => {
               <div className="bg-muted/50 p-4 rounded-md">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-semibold">Nota: </span>
-                  {role === 'manager' 
-                    ? 'Os xerentes poden crear, ver e editar todas as tarefas e usuarios no sistema.' 
+                  {role === 'director' 
+                    ? 'Os directores poden crear, ver e editar todas as tarefas e usuarios no sistema.' 
                     : 'Os traballadores só poden ver, crear e editar as súas propias tarefas asignadas.'}
                 </p>
               </div>

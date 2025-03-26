@@ -53,8 +53,8 @@ export const Header: React.FC = () => {
   // Check if user is admin
   const isAdmin = currentUser?.role === 'admin';
   
-  // Check if user is manager or admin
-  const isManager = currentUser?.role === 'manager' || isAdmin;
+  // Check if user is director or admin
+  const isDirector = currentUser?.role === 'director' || isAdmin;
 
   const navLinks = [
     {
@@ -73,7 +73,7 @@ export const Header: React.FC = () => {
       to: '/users',
       icon: <Users className="mr-2 h-4 w-4" />,
       label: 'Usuarios',
-      show: isManager
+      show: isDirector
     },
     {
       to: '/calendars',

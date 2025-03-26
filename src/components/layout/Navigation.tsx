@@ -21,8 +21,8 @@ export const Navigation = () => {
   // Check if user is admin
   const isAdmin = currentUser?.role === 'admin';
   
-  // Check if user is manager or admin
-  const isManager = currentUser?.role === 'manager' || isAdmin;
+  // Check if user is director or admin
+  const isDirector = currentUser?.role === 'director' || isAdmin;
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -63,7 +63,7 @@ export const Navigation = () => {
       name: 'Usuarios',
       path: '/users',
       icon: <Users className="h-5 w-5" />,
-      show: isManager
+      show: isDirector
     },
     {
       name: 'Perfil',

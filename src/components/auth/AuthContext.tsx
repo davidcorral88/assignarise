@@ -60,6 +60,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let user: User | undefined;
       try {
         user = await getUserByEmail(email);
+        
+        // Update any 'manager' roles to 'director'
+        if (user && user.role === 'manager') {
+          user.role = 'director';
+        }
       } catch (error) {
         console.log("Error getting user from PostgreSQL, falling back to mockUsers", error);
       }
@@ -67,6 +72,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // If user not found in PostgreSQL, fallback to mockUsers only for existing users
       if (!user) {
         user = mockUsers.find(u => u.email === email);
+        
+        // Update any 'manager' roles to 'director' in mockUsers too
+        if (user && user.role === 'manager') {
+          user.role = 'director';
+        }
       }
       
       if (!user) {
