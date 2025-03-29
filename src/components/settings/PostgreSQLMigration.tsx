@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,13 +23,11 @@ const PostgreSQLMigration: React.FC = () => {
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [lastConnectionError, setLastConnectionError] = useState<string | null>(null);
   
-  // Verificar si el usuario actual es administrador
   const isAdmin = currentUser?.role === 'admin';
   
   useEffect(() => {
     setUsePostgresStorage(getUseAPI());
     
-    // Solo realizar prueba de conexión automática si estamos usando PostgreSQL
     if (getUseAPI()) {
       handleTestConnection();
     }
@@ -62,7 +59,6 @@ const PostgreSQLMigration: React.FC = () => {
           description: errorMsg,
           variant: "destructive"
         });
-        // Si estamos usando PostgreSQL pero no podemos conectar, pasamos a localStorage
         if (getUseAPI()) {
           setUseAPI(false);
           setUsePostgresStorage(false);
@@ -79,7 +75,6 @@ const PostgreSQLMigration: React.FC = () => {
       });
       console.error("Error detallado:", error);
       
-      // Si estamos usando PostgreSQL pero no podemos conectar, pasamos a localStorage
       if (getUseAPI()) {
         setUseAPI(false);
         setUsePostgresStorage(false);
@@ -167,7 +162,6 @@ const PostgreSQLMigration: React.FC = () => {
     });
   };
   
-  // Si el usuario no es administrador, no mostrar la tarjeta
   if (!isAdmin) {
     return null;
   }
@@ -225,13 +219,17 @@ const PostgreSQLMigration: React.FC = () => {
                 <li>Usuario: {dbConfig.user}</li>
                 <li>Contraseña: {dbConfig.password}</li>
                 <li>URL API: {apiUrl}</li>
+                <li>Ubicación actual: {window.location.href}</li>
+                <li>Hostname: {window.location.hostname}</li>
+                <li>Protocolo: {window.location.protocol}</li>
+                <li>URL API configurada: {API_URL}</li>
               </ul>
               <p className="mt-2"><strong>Configuración de administrador:</strong></p>
               <ul className="list-disc pl-5 space-y-1 mt-1">
                 <li>Usuario: {pgAdminConfig.user}</li>
                 <li>Contraseña: {pgAdminConfig.password}</li>
               </ul>
-              <p className="mt-2"><strong>Nota:</strong> La API está corriendo en http://localhost:3000. Asegúrese de que el servidor esté en ejecución.</p>
+              <p className="mt-2"><strong>Nota:</strong> Asegúrese de que el servidor API esté en ejecución en la URL configurada y sea accesible desde esta ubicación.</p>
               
               <div className="mt-3 space-y-2">
                 <p><strong>Enlaces útiles para verificación:</strong></p>
@@ -245,12 +243,12 @@ const PostgreSQLMigration: React.FC = () => {
                     Verificar endpoint users <ExternalLinkIcon className="ml-1 h-3 w-3" />
                   </a>
                   <a 
-                    href={`${apiUrl.replace(/\/api$/, '')}`} 
+                    href={`${apiUrl.replace(/\/api$/, '')}/status`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline inline-flex items-center"
                   >
-                    Verificar servidor API <ExternalLinkIcon className="ml-1 h-3 w-3" />
+                    Verificar estado del servidor API <ExternalLinkIcon className="ml-1 h-3 w-3" />
                   </a>
                 </div>
               </div>

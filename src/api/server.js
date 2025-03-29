@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
@@ -9,7 +8,11 @@ const app = express();
 const port = 3000;
 
 // Configure middleware
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins for development, consider restricting this in production
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
 
 // PostgreSQL connection pool
@@ -681,7 +684,8 @@ app.post('/api/migrate', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`API server running at http://localhost:${port}/api`);
+// Start server - listen on all interfaces, not just localhost
+app.listen(port, '0.0.0.0', () => {
+  console.log(`API server running at http://0.0.0.0:${port}/api`);
+  console.log(`For remote access, make sure port ${port} is accessible and properly forwarded`);
 });
