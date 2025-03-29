@@ -645,7 +645,7 @@ const TaskList = () => {
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">Editar</span>
                         </Button>
-                        {currentUser?.role === 'manager' && (
+                        {currentUser?.role === 'director' && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon" className="text-red-500">

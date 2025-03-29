@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -162,7 +161,6 @@ const TaskDetail = () => {
           </Button>
           
           <div className="flex space-x-2">
-            {/* Only directors or the assigned workers can edit tasks */}
             {(currentUser?.role === 'director' || task.assignments.some(a => a.userId === currentUser?.id)) && (
               <Button onClick={() => navigate(`/tasks/${task.id}/edit`)}>
                 <Edit className="mr-2 h-4 w-4" />
@@ -170,7 +168,6 @@ const TaskDetail = () => {
               </Button>
             )}
             
-            {/* Only assigned workers can log time */}
             {currentUser?.role === 'worker' && task.assignments.some(a => a.userId === currentUser?.id) && (
               <Button variant="outline" onClick={() => navigate('/time-tracking')}>
                 <Timer className="mr-2 h-4 w-4" />
@@ -280,7 +277,7 @@ const TaskDetail = () => {
                       <div className="flex flex-col items-center justify-center py-8 text-center">
                         <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
                         <p className="text-muted-foreground mb-4">No hay usuarios asignados a esta tarea</p>
-                        {currentUser?.role === 'manager' && (
+                        {currentUser?.role === 'director' && (
                           <Button onClick={() => navigate(`/tasks/${task.id}/edit`)}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Asignar usuarios

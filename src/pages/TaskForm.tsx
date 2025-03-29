@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -660,7 +659,7 @@ const TaskForm = () => {
                           <SelectContent>
                             {availableUsers.map(user => (
                               <SelectItem key={user.id} value={user.id}>
-                                {user.name} {user.role === 'manager' ? ' (Xerente)' : ''}
+                                {user.name} {user.role === 'director' ? ' (Xerente)' : ''}
                               </SelectItem>
                             ))}
                           </SelectContent>
