@@ -16,13 +16,12 @@ export const pgAdminConfig = {
 
 // API URL that connects to PostgreSQL
 // When accessing remotely, use the same domain as the application with the appropriate port
-// For local development, use localhost
 const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
 // Configure the API URL based on the environment
 export const API_URL = isLocalhost 
   ? 'http://localhost:3000/api' 
-  : 'https://rexistrodetarefas.iplanmovilidad.com:5551/api';
+  : 'https://rexistrodetarefas.iplanmovilidad.com/api';
 
 // Default admin user (used as fallback when PostgreSQL is not available)
 export const defaultUsers = [
