@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user = await getUserByEmail(email);
         
         // Update any 'manager' roles to 'director'
-        if (user && user.role === 'manager') {
+        if (user && user.role === 'director') {
           user.role = 'director';
         }
       } catch (error) {
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user = mockUsers.find(u => u.email === email);
         
         // Update any 'manager' roles to 'director' in mockUsers too
-        if (user && user.role === 'manager') {
+        if (user && user.role === 'director') {
           user.role = 'director';
         }
       }

@@ -25,7 +25,7 @@ import { useEffect } from 'react';
 const Calendars = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const isManager = currentUser?.role === 'manager' || currentUser?.role === 'admin';
+  const isManager = currentUser?.role === 'director' || currentUser?.role === 'admin';
   
   useEffect(() => {
     // Redirect if not authenticated

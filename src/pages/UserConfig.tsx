@@ -21,7 +21,7 @@ import AllUsersVacationsCalendar from '@/components/calendar/AllUsersVacationsCa
 
 const UserConfig = () => {
   const { currentUser } = useAuth();
-  const isManager = currentUser?.role === 'manager';
+  const isManager = currentUser?.role === 'director';
   
   return (
     <Layout>

@@ -180,8 +180,8 @@ export const Header: React.FC = () => {
                   <p className="text-xs leading-none text-muted-foreground capitalize">
                     {currentUser.role === 'admin' 
                       ? 'Administrador' 
-                      : currentUser.role === 'manager' 
-                        ? 'Xerente' 
+                      : currentUser.role === 'director' 
+                        ? 'Director' 
                         : 'Traballador'}
                   </p>
                 </div>
