@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Upload, AlertTriangle, Check, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,21 +16,23 @@ import { testPostgreSQLConnection } from '@/utils/migrationService';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { getUseAPI, setUseAPI } from '@/utils/dataService';
+import { useAuth } from '@/components/auth/AuthContext';
 
 interface ImportUsersButtonProps {
   onImportComplete: () => void;
 }
 
 const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete }) => {
+  const { currentUser } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [jsonData, setJsonData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [isPostgreSQLAvailable, setIsPostgreSQLAvailable] = useState(false);
   const [currentStorageMode, setCurrentStorageMode] = useState(getUseAPI());
+  const isAdmin = currentUser?.role === 'admin';
   
   useEffect(() => {
-    // Verificar si PostgreSQL está disponible
     const checkPostgreSQL = async () => {
       try {
         const isAvailable = await testPostgreSQLConnection();
@@ -43,7 +44,6 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
     };
     
     checkPostgreSQL();
-    // Actualizar el estado cuando cambie el modo de almacenamiento
     setCurrentStorageMode(getUseAPI());
   }, [isDialogOpen]);
   
@@ -53,7 +53,6 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
     
     if (!file) return;
     
-    // Check file type
     const fileType = file.name.split('.').pop()?.toLowerCase();
     if (fileType !== 'json') {
       setErrors(['El archivo debe ser de tipo JSON (.json)']);
@@ -78,20 +77,17 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
     };
     
     reader.readAsText(file);
-    // Reset input value so the same file can be selected again
     e.target.value = '';
   };
 
   const validateJsonData = (data: any[]) => {
     const validationErrors: string[] = [];
     
-    // Check if required headers exist
     if (data.length === 0) {
       validationErrors.push('El archivo está vacío.');
       return validationErrors;
     }
     
-    // Verify basic data structure
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       if (!row.name) {
@@ -100,7 +96,6 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
       if (!row.email) {
         validationErrors.push(`Fila ${i + 1}: Falta el email.`);
       } else {
-        // Simple email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(row.email)) {
           validationErrors.push(`Fila ${i + 1}: Email inválido.`);
@@ -136,14 +131,12 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
       errors: 0,
     };
 
-    // Forzar el modo de almacenamiento local si PostgreSQL no está disponible
     const useLocalStorage = !isPostgreSQLAvailable || !getUseAPI();
     if (useLocalStorage && getUseAPI()) {
       console.log("PostgreSQL no disponible o no configurado, usando almacenamiento local");
       setUseAPI(false);
     }
 
-    // Process each row of data
     for (const item of jsonData) {
       try {
         const newUser: User = {
@@ -171,7 +164,6 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
       }
     }
     
-    // Close dialog and notify results
     setIsLoading(false);
     setIsDialogOpen(false);
     
@@ -190,8 +182,30 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
       });
     }
     
-    // Notify parent component to refresh user list
     onImportComplete();
+  };
+
+  const handleToggleStorage = (value: boolean) => {
+    if (!isAdmin) {
+      toast({
+        title: "Acceso denegado",
+        description: "Solo los administradores pueden cambiar el modo de almacenamiento.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (value && !isPostgreSQLAvailable) {
+      toast({
+        title: "PostgreSQL no disponible",
+        description: "No se puede usar PostgreSQL porque no está disponible. Se usará almacenamiento local.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setUseAPI(value);
+    setCurrentStorageMode(value);
   };
 
   return (
@@ -235,30 +249,34 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex items-center space-x-2 mb-4">
-            <Switch
-              id="use-postgresql"
-              checked={getUseAPI()}
-              onCheckedChange={(value) => {
-                if (value && !isPostgreSQLAvailable) {
-                  toast({
-                    title: "PostgreSQL no disponible",
-                    description: "No se puede usar PostgreSQL porque no está disponible. Se usará almacenamiento local.",
-                    variant: "destructive"
-                  });
-                  return;
-                }
-                setUseAPI(value);
-              }}
-              disabled={!isPostgreSQLAvailable || isLoading}
-            />
-            <Label htmlFor="use-postgresql" className="flex items-center cursor-pointer">
-              <Database className="h-4 w-4 mr-2" />
-              {getUseAPI() 
-                ? "Importando a PostgreSQL" 
-                : "Importando a localStorage"}
-            </Label>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center space-x-2 mb-4">
+              <Switch
+                id="use-postgresql"
+                checked={getUseAPI()}
+                onCheckedChange={handleToggleStorage}
+                disabled={!isPostgreSQLAvailable || isLoading || !isAdmin}
+              />
+              <Label htmlFor="use-postgresql" className="flex items-center cursor-pointer">
+                <Database className="h-4 w-4 mr-2" />
+                {getUseAPI() 
+                  ? "Importando a PostgreSQL" 
+                  : "Importando a localStorage"}
+              </Label>
+            </div>
+          )}
+          
+          {!isAdmin && getUseAPI() && (
+            <div className="bg-blue-50 p-2 rounded text-xs text-blue-700 mb-3">
+              Los datos se almacenarán en PostgreSQL (configuración por defecto).
+            </div>
+          )}
+          
+          {!isAdmin && !getUseAPI() && (
+            <div className="bg-amber-50 p-2 rounded text-xs text-amber-700 mb-3">
+              Los datos se almacenarán localmente. Consulte con un administrador para cambiar a PostgreSQL.
+            </div>
+          )}
           
           <div className="max-h-60 overflow-auto border rounded-md">
             <table className="w-full text-sm">

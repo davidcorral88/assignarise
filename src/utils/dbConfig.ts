@@ -34,3 +34,6 @@ export const defaultUsers = [
     active: true
   }
 ];
+
+// PostgreSQL should be the default storage option
+export const DEFAULT_USE_POSTGRESQL = true;

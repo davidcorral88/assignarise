@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Database as DatabaseIcon, Server as ServerIcon, CheckCircle2 as CheckCircle2Icon, AlertCircle as AlertCircleIcon, DatabaseBackup as DatabaseBackupIcon, Info as InfoIcon, ExternalLink as ExternalLinkIcon, HardDrive as HardDriveIcon, ToggleRight, ToggleLeft } from 'lucide-react';
+import { Database as DatabaseIcon, Server as ServerIcon, CheckCircle2 as CheckCircle2Icon, AlertCircle as AlertCircleIcon, DatabaseBackup as DatabaseBackupIcon, Info as InfoIcon, ExternalLink as ExternalLinkIcon, HardDrive as HardDriveIcon, ToggleRight, ToggleLeft, Shield } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { migrateToPostgreSQL, testPostgreSQLConnection } from '@/utils/migrationService';
 import { getUseAPI, setUseAPI } from '@/utils/dataService';
-import { API_URL, dbConfig, pgAdminConfig } from '@/utils/dbConfig';
+import { API_URL, dbConfig, pgAdminConfig, DEFAULT_USE_POSTGRESQL } from '@/utils/dbConfig';
 import { useAuth } from '@/components/auth/AuthContext';
 
 const PostgreSQLMigration: React.FC = () => {
@@ -26,6 +26,10 @@ const PostgreSQLMigration: React.FC = () => {
   const isAdmin = currentUser?.role === 'admin';
   
   useEffect(() => {
+    if (DEFAULT_USE_POSTGRESQL && !getUseAPI()) {
+      handleTestConnection();
+    }
+    
     setUsePostgresStorage(getUseAPI());
     
     if (getUseAPI()) {
@@ -140,6 +144,15 @@ const PostgreSQLMigration: React.FC = () => {
   };
   
   const handleToggleStorage = (checked: boolean) => {
+    if (!isAdmin) {
+      toast({
+        title: "Acceso denegado",
+        description: "Solo los administradores pueden cambiar el modo de almacenamiento.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (checked && connectionStatus !== 'connected') {
       toast({
         title: "Conexión no establecida",
@@ -163,7 +176,37 @@ const PostgreSQLMigration: React.FC = () => {
   };
   
   if (!isAdmin) {
-    return null;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <DatabaseIcon className="mr-2 h-5 w-5" />
+            Base de datos
+          </CardTitle>
+          <CardDescription>
+            Información sobre la base de datos actual
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-3 p-4 bg-muted rounded-md">
+            <Shield className="h-10 w-10 text-primary/70" />
+            <div>
+              <h3 className="font-medium">
+                {getUseAPI() ? "PostgreSQL activado" : "Almacenamiento local activado"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {getUseAPI() 
+                  ? "La aplicación está usando la base de datos PostgreSQL para almacenar datos." 
+                  : "La aplicación está usando el almacenamiento local del navegador."}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Solo los administradores pueden cambiar esta configuración.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
   
   return (

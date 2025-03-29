@@ -2,9 +2,10 @@ import * as apiService from './apiService';
 import * as localStorageService from './storageService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
+import { DEFAULT_USE_POSTGRESQL } from './dbConfig';
 
-// Initialize API usage from localStorage (if exists) or default to true
-let useAPI = localStorage.getItem('useAPI') === 'false' ? false : true;
+// Initialize API usage from localStorage (if exists) or use the default from dbConfig
+let useAPI = localStorage.getItem('useAPI') === 'false' ? false : DEFAULT_USE_POSTGRESQL;
 
 export const setUseAPI = (value: boolean) => {
   useAPI = value;
