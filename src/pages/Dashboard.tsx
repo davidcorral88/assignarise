@@ -37,7 +37,7 @@ const Dashboard = () => {
         // Workers only see tasks assigned to them
         setUserTasks(getTasksByUserId(currentUser.id));
       } else {
-        // Managers and Admins see all tasks
+        // Directors and Admins see all tasks
         setUserTasks(mockTasks);
       }
     }
@@ -71,8 +71,8 @@ const Dashboard = () => {
   
   // Prepare chart data
   const getChartData = () => {
-    if (currentUser?.role === 'manager' || currentUser?.role === 'admin') {
-      // For managers and admins: tasks by status
+    if (currentUser?.role === 'director' || currentUser?.role === 'admin') {
+      // For directors and admins: tasks by status
       const statusCounts = {
         completed: mockTasks.filter(t => t.status === 'completed').length,
         in_progress: mockTasks.filter(t => t.status === 'in_progress').length,
@@ -157,7 +157,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
           
-          {(currentUser?.role === 'manager' || currentUser?.role === 'admin') ? (
+          {(currentUser?.role === 'director' || currentUser?.role === 'admin') ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -199,7 +199,7 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle>Tarefas recentes</CardTitle>
               <CardDescription>
-                {currentUser?.role === 'manager' ? 'Todas as tarefas' : 'As túas tarefas asignadas'}
+                {currentUser?.role === 'director' ? 'Todas as tarefas' : 'As túas tarefas asignadas'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -242,7 +242,7 @@ const Dashboard = () => {
                     <CheckSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
                     <h3 className="text-lg font-medium mb-1">Non hai tarefas</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      {currentUser?.role === 'manager' 
+                      {currentUser?.role === 'director' 
                         ? 'Non hai tarefas no sistema.' 
                         : 'Non tes tarefas asignadas.'}
                     </p>
@@ -266,7 +266,7 @@ const Dashboard = () => {
               <div>
                 <CardTitle>Análise</CardTitle>
                 <CardDescription>
-                  {currentUser?.role === 'manager' 
+                  {currentUser?.role === 'director' 
                     ? 'Estado das tarefas' 
                     : 'Horas traballadas por tarefa'}
                 </CardDescription>
@@ -281,7 +281,7 @@ const Dashboard = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="value" fill="hsl(var(--primary))" name={currentUser?.role === 'manager' ? 'Tarefas' : 'Horas'} />
+                    <Bar dataKey="value" fill="hsl(var(--primary))" name={currentUser?.role === 'director' ? 'Tarefas' : 'Horas'} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -251,7 +250,7 @@ const TaskList = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Tarefas</h1>
             <p className="text-muted-foreground mt-1">
-              {currentUser?.role === 'manager' ? 'Administra todas as tarefas' : 'Administra as túas tarefas asignadas'}
+              {currentUser?.role === 'director' ? 'Administra todas as tarefas' : 'Administra as túas tarefas asignadas'}
             </p>
           </div>
           <Button 

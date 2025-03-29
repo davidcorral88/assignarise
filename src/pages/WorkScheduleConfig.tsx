@@ -72,8 +72,8 @@ const WorkScheduleConfig = () => {
   const [newPeriodEnd, setNewPeriodEnd] = useState<Date | undefined>();
   
   useEffect(() => {
-    // Only managers can access this page
-    if (currentUser?.role !== 'manager') {
+    // Only directors can access this page
+    if (currentUser?.role !== 'director') {
       navigate('/dashboard');
       return;
     }

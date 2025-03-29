@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -102,10 +103,10 @@ const TaskForm = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   
-  // Get all available users for assignment, including managers when the current user is a manager
+  // Get all available users for assignment, including directors when the current user is a director
   const availableUsers = mockUsers.filter(user => {
-    if (currentUser?.role === 'manager') {
-      // Managers can assign to all workers and managers (including themselves)
+    if (currentUser?.role === 'director') {
+      // Directors can assign to all workers and directors (including themselves)
       return user.active !== false;
     } else {
       // Workers can only assign to workers
@@ -321,8 +322,8 @@ const TaskForm = () => {
     );
   }
   
-  // Access control: only managers and task owners can edit
-  const canEdit = currentUser?.role === 'manager' || 
+  // Access control: only directors and task owners can edit
+  const canEdit = currentUser?.role === 'director' || 
     (isEditing && getTaskById(id!)?.createdBy === currentUser?.id) ||
     (searchMode && getTaskById(searchTaskId)?.createdBy === currentUser?.id);
   
@@ -332,9 +333,9 @@ const TaskForm = () => {
   // Comprobar si el usuario actual está asignado a esta tarea
   const isUserAssignedToTask = currentUser && assignments.some(a => a.userId === currentUser.id);
   
-  // Solo los usuarios asignados y managers pueden añadir adjuntos de resolución
+  // Solo los usuarios asignados y directors pueden añadir adjuntos de resolución
   const canAddResolutionAttachments = currentUser && (
-    currentUser.role === 'manager' || isUserAssignedToTask
+    currentUser.role === 'director' || isUserAssignedToTask
   );
   
   if ((isEditing || searchMode) && !canEdit) {

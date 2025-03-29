@@ -162,8 +162,8 @@ const TaskDetail = () => {
           </Button>
           
           <div className="flex space-x-2">
-            {/* Only managers or the assigned workers can edit tasks */}
-            {(currentUser?.role === 'manager' || task.assignments.some(a => a.userId === currentUser?.id)) && (
+            {/* Only directors or the assigned workers can edit tasks */}
+            {(currentUser?.role === 'director' || task.assignments.some(a => a.userId === currentUser?.id)) && (
               <Button onClick={() => navigate(`/tasks/${task.id}/edit`)}>
                 <Edit className="mr-2 h-4 w-4" />
                 Editar tarea
