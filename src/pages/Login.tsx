@@ -103,13 +103,6 @@ const Login = () => {
           </form>
         </Card>
         
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Para fins de demostración, usa:</p>
-          <p className="mt-1 font-medium">Email: admin@ticmoveo.com (Administrador)</p>
-          <p className="font-medium">Email: ana.pereira@example.com (Director)</p>
-          <p className="font-medium">Email: carlos.silva@example.com (Traballador)</p>
-          <p className="mt-1">Contrasinal: dc0rralIplan</p>
-        </div>
       </div>
     </div>
   );
