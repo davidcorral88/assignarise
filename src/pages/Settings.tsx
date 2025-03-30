@@ -3,11 +3,9 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResetDatabaseDialog } from '@/components/settings/ResetDatabaseDialog';
 import { DatabaseBackup } from '@/components/settings/DatabaseBackup';
 import { DatabaseImport } from '@/components/settings/DatabaseImport';
 import { StorageUsage } from '@/components/settings/StorageUsage';
-import PostgreSQLMigration from '@/components/settings/PostgreSQLMigration';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Shield, Database } from 'lucide-react';
 
@@ -39,18 +37,21 @@ const Settings = () => {
           <Alert className="bg-green-50 border-green-200">
             <Database className="h-4 w-4 text-green-600" />
             <AlertTitle className="text-green-800">
-              PostgreSQL activado
+              Modo PostgreSQL exclusivo
             </AlertTitle>
             <AlertDescription className="text-green-700">
-              La aplicación está utilizando PostgreSQL como sistema de almacenamiento principal de forma permanente.
+              La aplicación está utilizando PostgreSQL como único sistema de almacenamiento. El almacenamiento local ha sido desactivado.
             </AlertDescription>
           </Alert>
           
-          <PostgreSQLMigration />
-          <DatabaseBackup />
-          <DatabaseImport />
           <StorageUsage />
-          <ResetDatabaseDialog />
+          
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Ayuda de administración</h3>
+            <p className="text-sm text-muted-foreground">
+              Para realizar copias de seguridad o restaurar la base de datos PostgreSQL, contacte con el administrador del sistema.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

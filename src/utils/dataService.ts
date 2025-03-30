@@ -1,35 +1,18 @@
 import * as apiService from './apiService';
-import * as localStorageService from './storageService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
-import { DEFAULT_USE_POSTGRESQL, ALLOW_LOCAL_STORAGE } from './dbConfig';
+import { POSTGRESQL_ONLY_MODE } from './dbConfig';
 
 // Always use PostgreSQL, never localStorage
-let useAPI = true;
+const useAPI = true;
 
 export const setUseAPI = (value: boolean) => {
-  // If localStorage is not allowed, always keep useAPI as true
-  if (!ALLOW_LOCAL_STORAGE) {
-    if (!value) {
-      toast({
-        title: 'Operación no permitida',
-        description: 'Esta aplicación sólo puede utilizar PostgreSQL como almacenamiento.',
-        variant: 'destructive',
-      });
-    }
-    // Always keep PostgreSQL regardless of the request
-    useAPI = true;
-    localStorage.setItem('useAPI', 'true');
-  } else {
-    // This block will never execute with current configuration
-    useAPI = value;
-    localStorage.setItem('useAPI', value.toString());
-    
+  // Always keep useAPI as true regardless of the request
+  if (!value) {
     toast({
-      title: value ? 'Usando PostgreSQL' : 'Usando almacenamiento local',
-      description: value 
-        ? 'La aplicación está usando la base de datos PostgreSQL' 
-        : 'La aplicación está usando el almacenamiento local',
+      title: 'Operación no permitida',
+      description: 'Esta aplicación sólo puede utilizar PostgreSQL como almacenamiento.',
+      variant: 'destructive',
     });
   }
 };
@@ -528,15 +511,31 @@ export const getNextTaskId = async (): Promise<number> => {
 export const resetDatabase = (): void => {
   toast({
     title: 'Operación no disponible',
-    description: 'El restablecimiento de la base de datos no está disponible en esta configuración.',
+    description: 'El restablecimiento de la base de datos local no está disponible. Contacte con el administrador de la base de datos PostgreSQL.',
     variant: 'destructive',
   });
   return;
 };
 
-// Re-exportar funciones para mantener compatibilidad
-export { 
-  downloadDatabaseBackup, 
-  importDatabaseFromJSON,
-  getStorageUsage 
-} from './storageService';
+// Create empty replacement functions for localStorage functions
+export const downloadDatabaseBackup = () => {
+  toast({
+    title: 'Operación no disponible',
+    description: 'La función de respaldo local no está disponible en modo PostgreSQL.',
+    variant: 'destructive',
+  });
+};
+
+export const importDatabaseFromJSON = () => {
+  toast({
+    title: 'Operación no disponible',
+    description: 'La importación local no está disponible en modo PostgreSQL.',
+    variant: 'destructive',
+  });
+  return false;
+};
+
+export const getStorageUsage = () => {
+  // Always return 0 as localStorage is not used
+  return 0;
+};

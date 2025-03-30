@@ -3,8 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../../utils/types';
 import { toast } from '@/components/ui/use-toast';
 import { getUserByEmail } from '@/utils/dataService';
-import { mockUsers } from '@/utils/mockData';
-import { defaultUsers, DEFAULT_USE_POSTGRESQL } from '@/utils/dbConfig';
+import { defaultUsers } from '@/utils/dbConfig';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -21,14 +20,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Check if user is stored in localStorage (simulating persistence)
-    const storedUser = localStorage.getItem('currentUser');
+    // Check if session exists in sessionStorage (not localStorage)
+    // This is just for session persistence, not data storage
+    const storedUser = sessionStorage.getItem('currentUser');
     if (storedUser) {
       setCurrentUser(JSON.parse(storedUser));
     }
-    
-    // Always ensure PostgreSQL is used
-    localStorage.setItem('useAPI', 'true');
     
     setLoading(false);
   }, []);
@@ -51,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         setCurrentUser(adminUser);
-        localStorage.setItem('currentUser', JSON.stringify(adminUser));
+        sessionStorage.setItem('currentUser', JSON.stringify(adminUser));
         toast({
           title: 'Benvido/a!',
           description: `Iniciaches sesión como ${adminUser.name}`,
@@ -60,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return adminUser;
       }
       
-      // Try to get user from PostgreSQL
+      // Get user from PostgreSQL
       let user: User | undefined;
       try {
         user = await getUserByEmail(email);
@@ -92,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // This is only for demonstration purposes
       
       setCurrentUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
+      sessionStorage.setItem('currentUser', JSON.stringify(user));
       toast({
         title: 'Benvido/a!',
         description: `Iniciaches sesión como ${user.name}`,
@@ -114,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentUser');
     toast({
       title: 'Sesión pechada',
       description: 'Pecháchela sesión correctamente',
