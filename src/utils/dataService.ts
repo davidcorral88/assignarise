@@ -193,6 +193,20 @@ export const updateTask = async (task: Task): Promise<void> => {
   }
 };
 
+export const deleteTask = async (id: string): Promise<void> => {
+  try {
+    await apiService.deleteTask(id);
+  } catch (error) {
+    console.error(`Error en deleteTask(${id}):`, error);
+    toast({
+      title: 'Error al eliminar tarea',
+      description: 'No se pudo eliminar la tarea en la base de datos PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
+};
+
 // Registros de tiempo
 export const getTimeEntries = async (): Promise<TimeEntry[]> => {
   try {

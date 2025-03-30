@@ -51,7 +51,7 @@ import {
   getUserById,
   deleteTask
 } from '../utils/dataService';
-import { Task } from '../utils/types';
+import { Task, User } from '../utils/types';
 import { format, isAfter, isBefore, parseISO } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -64,8 +64,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
+
+const mockUsers = [
+  { id: 'user1', name: 'Ana Pereira', avatar: null },
+  { id: 'user2', name: 'Carlos Silva', avatar: null },
+  { id: 'user3', name: 'Admin', avatar: null }
+];
 
 const TaskList = () => {
   const { currentUser } = useAuth();
@@ -90,7 +97,6 @@ const TaskList = () => {
       setIsLoading(true);
       let tasksData;
       
-      // Load tasks based on user role
       if (currentUser && currentUser.role === 'worker') {
         tasksData = await getTasksByUserId(currentUser.id);
       } else {
@@ -253,7 +259,6 @@ const TaskList = () => {
         title: 'Tarefa eliminada',
         description: 'A tarefa foi eliminada correctamente.',
       });
-      // Refresh the task list
       loadData();
     } catch (error) {
       console.error(`Error deleting task: ${error}`);
@@ -264,7 +269,12 @@ const TaskList = () => {
       });
     }
   };
-  
+
+  const getUserName = (userId: string): string => {
+    const user = mockUsers.find(u => u.id === userId);
+    return user ? user.name : 'Usuario descoñecido';
+  };
+
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -381,7 +391,7 @@ const TaskList = () => {
                     <span>Creador</span>
                     {creatorFilter && (
                       <Badge variant="outline" className="ml-auto">
-                        {getUserById(creatorFilter)?.name || 'Usuario'}
+                        {getUserName(creatorFilter)}
                       </Badge>
                     )}
                   </DropdownMenuSubTrigger>
@@ -621,38 +631,23 @@ const TaskList = () => {
                       {task.createdBy && (
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                            {task.creatorUser?.avatar ? (
-                              <img 
-                                src={task.creatorUser.avatar} 
-                                alt={task.creatorUser.name} 
-                                className="h-full w-full rounded-full" 
-                              />
-                            ) : (
-                              <span className="text-xs font-medium text-primary-foreground">
-                                {task.creatorUser?.name?.substring(0, 2) || '??'}
-                              </span>
-                            )}
+                            <span className="text-xs font-medium text-primary-foreground">
+                              {getUserName(task.createdBy).substring(0, 2)}
+                            </span>
                           </div>
-                          <span className="text-sm">{task.creatorUser?.name || 'Usuario descoñecido'}</span>
+                          <span className="text-sm">{getUserName(task.createdBy)}</span>
                         </div>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex -space-x-2">
-                        {(task.assignments || []).slice(0, 3).map((assignment) => {
-                          const user = assignment.user;
-                          return (
-                            <div key={assignment.userId} className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" title={user?.name}>
-                              {user?.avatar ? (
-                                <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
-                              ) : (
-                                <span className="text-xs font-medium text-primary-foreground">
-                                  {user?.name?.substring(0, 2) || '??'}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
+                        {(task.assignments || []).slice(0, 3).map((assignment) => (
+                          <div key={assignment.userId} className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" title={assignment.userId}>
+                            <span className="text-xs font-medium text-primary-foreground">
+                              {assignment.userId.substring(0, 2)}
+                            </span>
+                          </div>
+                        ))}
                         {(task.assignments || []).length > 3 && (
                           <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
                             <span className="text-xs">+{task.assignments.length - 3}</span>
