@@ -35,5 +35,5 @@ export const defaultUsers = [
   }
 ];
 
-// Force PostgreSQL as the only storage option - no way to change this
+// Force PostgreSQL as the only storage option - this is now enforced
 export const POSTGRESQL_ONLY_MODE = true;

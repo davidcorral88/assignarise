@@ -46,12 +46,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { 
-  mockTasks, 
-  mockUsers, 
+  getTasks, 
   getTasksByUserId, 
   getUserById,
   deleteTask
-} from '../utils/mockData';
+} from '../utils/dataService';
 import { Task } from '../utils/types';
 import { format, isAfter, isBefore, parseISO } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -65,7 +64,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
 
@@ -84,15 +82,37 @@ const TaskList = () => {
   const [dueDateEndFilter, setDueDateEndFilter] = useState<Date | undefined>(undefined);
   const [dateFilterType, setDateFilterType] = useState<'creation' | 'due'>('creation');
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState<any[]>([]);
+  
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      let tasksData;
+      
+      // Load tasks based on user role
+      if (currentUser && currentUser.role === 'worker') {
+        tasksData = await getTasksByUserId(currentUser.id);
+      } else {
+        tasksData = await getTasks();
+      }
+      
+      setTasks(tasksData);
+      setFilteredTasks(tasksData);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar las tareas desde PostgreSQL',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   useEffect(() => {
-    if (currentUser) {
-      if (currentUser.role === 'worker') {
-        setTasks(getTasksByUserId(currentUser.id));
-      } else {
-        setTasks(mockTasks);
-      }
-    }
+    loadData();
   }, [currentUser]);
   
   useEffect(() => {
@@ -226,20 +246,22 @@ const TaskList = () => {
     return count;
   };
 
-  const handleDeleteTask = () => {
-    if (taskToDelete) {
-      deleteTask(taskToDelete);
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
       toast({
         title: 'Tarefa eliminada',
         description: 'A tarefa foi eliminada correctamente.',
       });
       // Refresh the task list
-      if (currentUser?.role === 'worker') {
-        setTasks(getTasksByUserId(currentUser.id));
-      } else {
-        setTasks(mockTasks);
-      }
-      setTaskToDelete(null);
+      loadData();
+    } catch (error) {
+      console.error(`Error deleting task: ${error}`);
+      toast({
+        title: 'Error',
+        description: 'No se pudo eliminar la tarea',
+        variant: 'destructive'
+      });
     }
   };
   
@@ -569,7 +591,16 @@ const TaskList = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTasks.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center">
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                      <p className="mt-2 text-sm text-muted-foreground">Cargando tarefas...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredTasks.length > 0 ? (
                 filteredTasks.map((task) => (
                   <TableRow key={task.id}>
                     <TableCell className="font-mono text-xs">
@@ -590,39 +621,39 @@ const TaskList = () => {
                       {task.createdBy && (
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                            {getUserById(task.createdBy)?.avatar ? (
+                            {task.creatorUser?.avatar ? (
                               <img 
-                                src={getUserById(task.createdBy)?.avatar} 
-                                alt={getUserById(task.createdBy)?.name} 
+                                src={task.creatorUser.avatar} 
+                                alt={task.creatorUser.name} 
                                 className="h-full w-full rounded-full" 
                               />
                             ) : (
                               <span className="text-xs font-medium text-primary-foreground">
-                                {getUserById(task.createdBy)?.name?.substring(0, 2) || '??'}
+                                {task.creatorUser?.name?.substring(0, 2) || '??'}
                               </span>
                             )}
                           </div>
-                          <span className="text-sm">{getUserById(task.createdBy)?.name || 'Usuario descoñecido'}</span>
+                          <span className="text-sm">{task.creatorUser?.name || 'Usuario descoñecido'}</span>
                         </div>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex -space-x-2">
-                        {task.assignments.slice(0, 3).map((assignment) => {
-                          const user = getUserById(assignment.userId);
+                        {(task.assignments || []).slice(0, 3).map((assignment) => {
+                          const user = assignment.user;
                           return (
                             <div key={assignment.userId} className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" title={user?.name}>
                               {user?.avatar ? (
                                 <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
                               ) : (
                                 <span className="text-xs font-medium text-primary-foreground">
-                                  {user?.name.substring(0, 2)}
+                                  {user?.name?.substring(0, 2) || '??'}
                                 </span>
                               )}
                             </div>
                           );
                         })}
-                        {task.assignments.length > 3 && (
+                        {(task.assignments || []).length > 3 && (
                           <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
                             <span className="text-xs">+{task.assignments.length - 3}</span>
                           </div>
@@ -645,7 +676,7 @@ const TaskList = () => {
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">Editar</span>
                         </Button>
-                        {currentUser?.role === 'director' && (
+                        {(currentUser?.role === 'director' || currentUser?.role === 'admin') && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon" className="text-red-500">
@@ -662,19 +693,9 @@ const TaskList = () => {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => {
-                                  deleteTask(task.id);
-                                  toast({
-                                    title: 'Tarefa eliminada',
-                                    description: 'A tarefa foi eliminada correctamente.',
-                                  });
-                                  // Refresh the task list
-                                  if (currentUser?.role === 'worker') {
-                                    setTasks(getTasksByUserId(currentUser.id));
-                                  } else {
-                                    setTasks(mockTasks);
-                                  }
-                                }}>Eliminar</AlertDialogAction>
+                                <AlertDialogAction onClick={() => handleDeleteTask(task.id)}>
+                                  Eliminar
+                                </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -697,21 +718,6 @@ const TaskList = () => {
           </Table>
         </div>
       </div>
-      
-      <AlertDialog open={taskToDelete !== null} onOpenChange={(open) => !open && setTaskToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción non se pode desfacer. Eliminarás permanentemente esta tarefa.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteTask}>Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Layout>
   );
 };

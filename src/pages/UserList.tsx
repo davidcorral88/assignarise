@@ -50,7 +50,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
-import { mockUsers, getUsers, updateUser, getUserById } from '../utils/mockData';
+import { getUsers, getUserById, updateUser, deleteUser } from '../utils/dataService';
 import { User } from '../utils/types';
 import ImportUsersButton from '../components/users/ImportUsersButton';
 import ResetPasswordDialog from '../components/users/ResetPasswordDialog';
@@ -64,10 +64,24 @@ const UserList = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const loadUsers = () => {
-    const loadedUsers = getUsers();
-    setUsers(loadedUsers);
+  const loadUsers = async () => {
+    try {
+      setIsLoading(true);
+      const loadedUsers = await getUsers();
+      setUsers(loadedUsers);
+      setFilteredUsers(loadedUsers);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los usuarios desde PostgreSQL',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   useEffect(() => {
@@ -107,40 +121,55 @@ const UserList = () => {
     setShowDeleteDialog(true);
   };
   
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!selectedUser) return;
     
-    // Mock delete - in a real app this would call an API
-    // For now, we'll just remove it from our local state
-    const updatedUsers = users.filter(user => user.id !== selectedUser.id);
-    setUsers(updatedUsers);
-    
-    toast({
-      title: "Usuario eliminado",
-      description: `${selectedUser.name} foi eliminado correctamente.`,
-    });
+    try {
+      await deleteUser(selectedUser.id);
+      toast({
+        title: "Usuario eliminado",
+        description: `${selectedUser.name} foi eliminado correctamente.`,
+      });
+      
+      // Refresh the users list
+      loadUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el usuario",
+        variant: "destructive"
+      });
+    }
     
     setShowDeleteDialog(false);
     setSelectedUser(null);
   };
   
-  const handleToggleActive = (userId: string, currentActive?: boolean) => {
-    const user = getUserById(userId);
-    if (user) {
-      const updatedUser = {
-        ...user,
-        active: currentActive === undefined ? true : !currentActive
-      };
-      updateUser(updatedUser);
-      
-      // Update local state
-      setUsers(prevUsers => 
-        prevUsers.map(u => u.id === userId ? updatedUser : u)
-      );
-      
+  const handleToggleActive = async (userId: string, currentActive?: boolean) => {
+    try {
+      const user = await getUserById(userId);
+      if (user) {
+        const updatedUser = {
+          ...user,
+          active: currentActive === undefined ? true : !currentActive
+        };
+        await updateUser(updatedUser);
+        
+        // Refresh the user list
+        loadUsers();
+        
+        toast({
+          title: updatedUser.active ? "Usuario activado" : "Usuario desactivado",
+          description: `${user.name} foi ${updatedUser.active ? 'activado' : 'desactivado'} correctamente.`,
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling user active state:', error);
       toast({
-        title: updatedUser.active ? "Usuario activado" : "Usuario desactivado",
-        description: `${user.name} foi ${updatedUser.active ? 'activado' : 'desactivado'} correctamente.`,
+        title: "Error",
+        description: "No se pudo cambiar el estado del usuario",
+        variant: "destructive"
       });
     }
   };
@@ -198,7 +227,16 @@ const UserList = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.length > 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                      <p className="mt-2 text-sm text-muted-foreground">Cargando usuarios...</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>

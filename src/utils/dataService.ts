@@ -3,7 +3,7 @@ import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSched
 import { toast } from '@/components/ui/use-toast';
 import { POSTGRESQL_ONLY_MODE } from './dbConfig';
 
-// Always use PostgreSQL, never localStorage
+// Always true - PostgreSQL is the only storage option
 const useAPI = true;
 
 export const setUseAPI = (value: boolean) => {
@@ -21,7 +21,6 @@ export const getUseAPI = () => useAPI;
 
 // Funciones para usuarios
 export const getUsers = async (): Promise<User[]> => {
-  // Always use API (PostgreSQL)
   try {
     return await apiService.getUsers();
   } catch (error) {
@@ -133,7 +132,8 @@ export const getTasks = async (): Promise<Task[]> => {
       description: 'No se pudieron obtener las tareas desde la base de datos.',
       variant: 'destructive',
     });
-    throw error;
+    // Return empty array to avoid app crash
+    return [];
   }
 };
 

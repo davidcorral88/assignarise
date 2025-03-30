@@ -12,8 +12,12 @@ export const StorageUsage: React.FC = () => {
       </div>
       <p className="text-sm text-muted-foreground">
         La aplicación utiliza exclusivamente PostgreSQL como sistema de almacenamiento.
-        El almacenamiento local (localStorage) ha sido desactivado.
+        El almacenamiento local (localStorage) ha sido completamente desactivado.
       </p>
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>PostgreSQL</span>
+        <span>100%</span>
+      </div>
       <Progress value={100} className="h-2 bg-primary/20" />
     </div>
   );
