@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../../utils/types';
 import { toast } from '@/components/ui/use-toast';
@@ -26,10 +27,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(JSON.parse(storedUser));
     }
     
-    // Ensure PostgreSQL is used by default when application loads
-    if (DEFAULT_USE_POSTGRESQL && localStorage.getItem('useAPI') !== 'false') {
-      localStorage.setItem('useAPI', 'true');
-    }
+    // Always ensure PostgreSQL is used
+    localStorage.setItem('useAPI', 'true');
     
     setLoading(false);
   }, []);
@@ -61,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return adminUser;
       }
       
-      // First try to get user from PostgreSQL via adapter
+      // Try to get user from PostgreSQL
       let user: User | undefined;
       try {
         user = await getUserByEmail(email);
@@ -71,17 +70,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user.role = 'director';
         }
       } catch (error) {
-        console.log("Error getting user from PostgreSQL, falling back to mockUsers", error);
-      }
-      
-      // If user not found in PostgreSQL, fallback to mockUsers only for existing users
-      if (!user) {
-        user = mockUsers.find(u => u.email === email);
-        
-        // Update any 'manager' roles to 'director' in mockUsers too
-        if (user && user.role === 'director') {
-          user.role = 'director';
-        }
+        console.log("Error getting user from PostgreSQL", error);
+        toast({
+          title: 'Error de conexión',
+          description: 'No se pudo conectar a la base de datos PostgreSQL',
+          variant: 'destructive'
+        });
+        throw new Error('Error de conexión a la base de datos');
       }
       
       if (!user) {

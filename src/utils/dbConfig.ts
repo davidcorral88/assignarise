@@ -35,5 +35,6 @@ export const defaultUsers = [
   }
 ];
 
-// PostgreSQL should be the default storage option
+// Force PostgreSQL as the only storage option
 export const DEFAULT_USE_POSTGRESQL = true;
+export const ALLOW_LOCAL_STORAGE = false; // New constant to disable localStorage completely

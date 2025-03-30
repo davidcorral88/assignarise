@@ -2,185 +2,140 @@ import * as apiService from './apiService';
 import * as localStorageService from './storageService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
-import { DEFAULT_USE_POSTGRESQL } from './dbConfig';
+import { DEFAULT_USE_POSTGRESQL, ALLOW_LOCAL_STORAGE } from './dbConfig';
 
-// Initialize API usage from localStorage (if exists) or use the default from dbConfig
-let useAPI = localStorage.getItem('useAPI') === 'false' ? false : DEFAULT_USE_POSTGRESQL;
+// Always use PostgreSQL, never localStorage
+let useAPI = true;
 
 export const setUseAPI = (value: boolean) => {
-  useAPI = value;
-  localStorage.setItem('useAPI', value.toString());
-  
-  // Notificar al usuario sobre el cambio
-  toast({
-    title: value ? 'Usando PostgreSQL' : 'Usando almacenamiento local',
-    description: value 
-      ? 'La aplicación está usando la base de datos PostgreSQL' 
-      : 'La aplicación está usando el almacenamiento local',
-  });
+  // If localStorage is not allowed, always keep useAPI as true
+  if (!ALLOW_LOCAL_STORAGE) {
+    if (!value) {
+      toast({
+        title: 'Operación no permitida',
+        description: 'Esta aplicación sólo puede utilizar PostgreSQL como almacenamiento.',
+        variant: 'destructive',
+      });
+    }
+    // Always keep PostgreSQL regardless of the request
+    useAPI = true;
+    localStorage.setItem('useAPI', 'true');
+  } else {
+    // This block will never execute with current configuration
+    useAPI = value;
+    localStorage.setItem('useAPI', value.toString());
+    
+    toast({
+      title: value ? 'Usando PostgreSQL' : 'Usando almacenamiento local',
+      description: value 
+        ? 'La aplicación está usando la base de datos PostgreSQL' 
+        : 'La aplicación está usando el almacenamiento local',
+    });
+  }
 };
 
 export const getUseAPI = () => useAPI;
 
 // Funciones para usuarios
 export const getUsers = async (): Promise<User[]> => {
-  if (!useAPI) {
-    return localStorageService.getFromStorage<User[]>('mockUsers', []);
-  }
-  
+  // Always use API (PostgreSQL)
   try {
     return await apiService.getUsers();
   } catch (error) {
     console.error('Error en getUsers:', error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudo conectar con PostgreSQL. Cambiando a almacenamiento local.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudo conectar con la base de datos. Contacte con el administrador.',
       variant: 'destructive',
     });
-    // Cambiar automáticamente a almacenamiento local cuando falla
-    setUseAPI(false);
-    return localStorageService.getFromStorage<User[]>('mockUsers', []);
+    // Return empty array to avoid app crash
+    return [];
   }
 };
 
 export const getUserById = async (id: string): Promise<User | undefined> => {
-  if (!useAPI) {
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    return users.find(u => u.id === id);
-  }
-  
   try {
     return await apiService.getUserById(id);
   } catch (error) {
     console.error(`Error en getUserById(${id}):`, error);
-    // Cambiar automáticamente a almacenamiento local cuando falla
-    setUseAPI(false);
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    return users.find(u => u.id === id);
+    toast({
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudo obtener el usuario desde la base de datos.',
+      variant: 'destructive',
+    });
+    return undefined;
   }
 };
 
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
-  if (!useAPI) {
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    return users.find(u => u.email === email);
-  }
-  
   try {
     return await apiService.getUserByEmail(email);
   } catch (error) {
     console.error(`Error en getUserByEmail(${email}):`, error);
-    // Cambiar automáticamente a almacenamiento local cuando falla
-    setUseAPI(false);
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    return users.find(u => u.email === email);
+    toast({
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudo obtener el usuario desde la base de datos.',
+      variant: 'destructive',
+    });
+    return undefined;
   }
 };
 
 export const addUser = async (user: User): Promise<void> => {
-  if (!useAPI) {
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    users.push(user);
-    localStorageService.saveToStorage('mockUsers', users);
-    return;
-  }
-  
   try {
     await apiService.addUser(user);
   } catch (error) {
     console.error('Error en addUser:', error);
     toast({
       title: 'Error al crear usuario',
-      description: 'No se pudo guardar el usuario en PostgreSQL. Cambiando a almacenamiento local.',
+      description: 'No se pudo guardar el usuario en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
-    // Cambiar automáticamente a almacenamiento local y guardar ahí
-    setUseAPI(false);
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    users.push(user);
-    localStorageService.saveToStorage('mockUsers', users);
+    throw error;
   }
 };
 
 export const updateUser = async (user: User): Promise<void> => {
-  if (!useAPI) {
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    const index = users.findIndex(u => u.id === user.id);
-    if (index !== -1) {
-      users[index] = user;
-      localStorageService.saveToStorage('mockUsers', users);
-    }
-    return;
-  }
-  
   try {
     await apiService.updateUser(user);
   } catch (error) {
     console.error('Error en updateUser:', error);
     toast({
       title: 'Error al actualizar usuario',
-      description: 'No se pudo actualizar el usuario en PostgreSQL. Cambiando a almacenamiento local.',
+      description: 'No se pudo actualizar el usuario en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
-    // Cambiar automáticamente a almacenamiento local y guardar ahí
-    setUseAPI(false);
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    const index = users.findIndex(u => u.id === user.id);
-    if (index !== -1) {
-      users[index] = user;
-      localStorageService.saveToStorage('mockUsers', users);
-    }
+    throw error;
   }
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
-  if (!useAPI) {
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    const filteredUsers = users.filter(u => u.id !== id);
-    localStorageService.saveToStorage('mockUsers', filteredUsers);
-    return;
-  }
-  
   try {
     await apiService.deleteUser(id);
   } catch (error) {
     console.error(`Error en deleteUser(${id}):`, error);
     toast({
       title: 'Error al eliminar usuario',
-      description: 'No se pudo eliminar el usuario en PostgreSQL. Cambiando a almacenamiento local.',
+      description: 'No se pudo eliminar el usuario en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
-    // Cambiar automáticamente a almacenamiento local y eliminar ahí
-    setUseAPI(false);
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    const filteredUsers = users.filter(u => u.id !== id);
-    localStorageService.saveToStorage('mockUsers', filteredUsers);
+    throw error;
   }
 };
 
 // Nueva función para obtener el siguiente ID de usuario
 export const getNextUserId = async (): Promise<number> => {
-  if (!useAPI) {
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    const maxId = users.reduce((max, user) => {
-      const userId = parseInt(user.id);
-      return isNaN(userId) ? max : Math.max(max, userId);
-    }, 0);
-    return maxId + 1;
-  }
-  
   try {
     return await apiService.getNextUserId();
   } catch (error) {
     console.error('Error al obtener próximo ID de usuario:', error);
-    // Cambiar automáticamente a almacenamiento local
-    setUseAPI(false);
-    const users = localStorageService.getFromStorage<User[]>('mockUsers', []);
-    const maxId = users.reduce((max, user) => {
-      const userId = parseInt(user.id);
-      return isNaN(userId) ? max : Math.max(max, userId);
-    }, 0);
-    return maxId + 1 || Date.now();
+    toast({
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudo obtener el siguiente ID de usuario.',
+      variant: 'destructive',
+    });
+    // Fallback to timestamp to avoid conflicts
+    return Date.now();
   }
 };
 
@@ -191,8 +146,8 @@ export const getTasks = async (): Promise<Task[]> => {
   } catch (error) {
     console.error('Error en getTasks:', error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudieron obtener las tareas desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudieron obtener las tareas desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -205,8 +160,8 @@ export const getTaskById = async (id: string): Promise<Task | undefined> => {
   } catch (error) {
     console.error(`Error en getTaskById(${id}):`, error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudo obtener la tarea desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudo obtener la tarea desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -219,8 +174,8 @@ export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
   } catch (error) {
     console.error(`Error en getTasksByUserId(${userId}):`, error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudieron obtener las tareas por usuario desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudieron obtener las tareas por usuario desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -234,7 +189,7 @@ export const addTask = async (task: Task): Promise<void> => {
     console.error('Error en addTask:', error);
     toast({
       title: 'Error al crear tarea',
-      description: 'No se pudo guardar la tarea en PostgreSQL.',
+      description: 'No se pudo guardar la tarea en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -248,7 +203,7 @@ export const updateTask = async (task: Task): Promise<void> => {
     console.error('Error en updateTask:', error);
     toast({
       title: 'Error al actualizar tarea',
-      description: 'No se pudo actualizar la tarea en PostgreSQL.',
+      description: 'No se pudo actualizar la tarea en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -262,8 +217,8 @@ export const getTimeEntries = async (): Promise<TimeEntry[]> => {
   } catch (error) {
     console.error('Error en getTimeEntries:', error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudieron obtener los registros de tiempo desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudieron obtener los registros de tiempo desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -276,8 +231,8 @@ export const getTimeEntryById = async (id: string): Promise<TimeEntry | undefine
   } catch (error) {
     console.error(`Error en getTimeEntryById(${id}):`, error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudo obtener el registro de tiempo desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudo obtener el registro de tiempo desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -290,8 +245,8 @@ export const getTimeEntriesByUserId = async (userId: string): Promise<TimeEntry[
   } catch (error) {
     console.error(`Error en getTimeEntriesByUserId(${userId}):`, error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudieron obtener los registros de tiempo por usuario desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudieron obtener los registros de tiempo por usuario desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -304,8 +259,8 @@ export const getTimeEntriesByTaskId = async (taskId: string): Promise<TimeEntry[
   } catch (error) {
     console.error(`Error en getTimeEntriesByTaskId(${taskId}):`, error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudieron obtener los registros de tiempo por tarea desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudieron obtener los registros de tiempo por tarea desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -319,7 +274,7 @@ export const addTimeEntry = async (entry: TimeEntry): Promise<void> => {
     console.error('Error en addTimeEntry:', error);
     toast({
       title: 'Error al registrar tiempo',
-      description: 'No se pudo guardar el registro de tiempo en PostgreSQL.',
+      description: 'No se pudo guardar el registro de tiempo en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -333,7 +288,7 @@ export const updateTimeEntry = async (entry: TimeEntry): Promise<void> => {
     console.error('Error en updateTimeEntry:', error);
     toast({
       title: 'Error al actualizar registro',
-      description: 'No se pudo actualizar el registro de tiempo en PostgreSQL.',
+      description: 'No se pudo actualizar el registro de tiempo en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -347,8 +302,8 @@ export const getHolidays = async (): Promise<Holiday[]> => {
   } catch (error) {
     console.error('Error en getHolidays:', error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudieron obtener los días festivos desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudieron obtener los días festivos desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -362,7 +317,7 @@ export const addHoliday = async (holiday: Holiday): Promise<void> => {
     console.error('Error en addHoliday:', error);
     toast({
       title: 'Error al añadir festivo',
-      description: 'No se pudo guardar el día festivo en PostgreSQL.',
+      description: 'No se pudo guardar el día festivo en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -376,7 +331,7 @@ export const removeHoliday = async (holiday: Holiday): Promise<void> => {
     console.error('Error en removeHoliday:', error);
     toast({
       title: 'Error al eliminar festivo',
-      description: 'No se pudo eliminar el día festivo en PostgreSQL.',
+      description: 'No se pudo eliminar el día festivo en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -390,8 +345,8 @@ export const getVacationDays = async (userId?: string): Promise<VacationDay[]> =
   } catch (error) {
     console.error('Error en getVacationDays:', error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudieron obtener los días de vacaciones desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudieron obtener los días de vacaciones desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -405,7 +360,7 @@ export const addVacationDay = async (vacationDay: VacationDay): Promise<void> =>
     console.error('Error en addVacationDay:', error);
     toast({
       title: 'Error al añadir vacaciones',
-      description: 'No se pudo guardar el día de vacaciones en PostgreSQL.',
+      description: 'No se pudo guardar el día de vacaciones en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -419,7 +374,7 @@ export const removeVacationDay = async (vacationDay: VacationDay): Promise<void>
     console.error('Error en removeVacationDay:', error);
     toast({
       title: 'Error al eliminar vacaciones',
-      description: 'No se pudo eliminar el día de vacaciones en PostgreSQL.',
+      description: 'No se pudo eliminar el día de vacaciones en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -433,8 +388,8 @@ export const getWorkdaySchedules = async (): Promise<WorkdaySchedule[]> => {
   } catch (error) {
     console.error('Error en getWorkdaySchedules:', error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudieron obtener los horarios desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudieron obtener los horarios desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -447,8 +402,8 @@ export const getWorkdayScheduleById = async (id: string): Promise<WorkdaySchedul
   } catch (error) {
     console.error(`Error en getWorkdayScheduleById(${id}):`, error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudo obtener el horario desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudo obtener el horario desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -462,7 +417,7 @@ export const addWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<voi
     console.error('Error en addWorkdaySchedule:', error);
     toast({
       title: 'Error al añadir horario',
-      description: 'No se pudo guardar el horario en PostgreSQL.',
+      description: 'No se pudo guardar el horario en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -476,7 +431,7 @@ export const updateWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<
     console.error('Error en updateWorkdaySchedule:', error);
     toast({
       title: 'Error al actualizar horario',
-      description: 'No se pudo actualizar el horario en PostgreSQL.',
+      description: 'No se pudo actualizar el horario en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -490,7 +445,7 @@ export const deleteWorkdaySchedule = async (id: string): Promise<void> => {
     console.error(`Error en deleteWorkdaySchedule(${id}):`, error);
     toast({
       title: 'Error al eliminar horario',
-      description: 'No se pudo eliminar el horario en PostgreSQL.',
+      description: 'No se pudo eliminar el horario en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -504,8 +459,8 @@ export const getWorkSchedule = async (): Promise<WorkSchedule> => {
   } catch (error) {
     console.error('Error en getWorkSchedule:', error);
     toast({
-      title: 'Error de conexión',
-      description: 'No se pudo obtener la configuración de horarios desde PostgreSQL.',
+      title: 'Error de conexión a PostgreSQL',
+      description: 'No se pudo obtener la configuración de horarios desde la base de datos.',
       variant: 'destructive',
     });
     throw error;
@@ -519,7 +474,7 @@ export const updateWorkSchedule = async (schedule: WorkSchedule): Promise<void> 
     console.error('Error en updateWorkSchedule:', error);
     toast({
       title: 'Error al actualizar configuración',
-      description: 'No se pudo actualizar la configuración de horarios en PostgreSQL.',
+      description: 'No se pudo actualizar la configuración de horarios en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -571,27 +526,12 @@ export const getNextTaskId = async (): Promise<number> => {
 
 // Esta función ya no es relevante en modo PostgreSQL
 export const resetDatabase = (): void => {
-  if (useAPI) {
-    toast({
-      title: 'Operación no disponible',
-      description: 'El restablecimiento de la base de datos no está disponible en modo PostgreSQL.',
-      variant: 'destructive',
-    });
-    return;
-  }
-  
-  // Reiniciar todas las colecciones en localStorage
-  localStorageService.saveToStorage('mockUsers', []);
-  localStorageService.saveToStorage('mockTasks', []);
-  localStorageService.saveToStorage('mockTimeEntries', []);
-  localStorageService.saveToStorage('mockHolidays', []);
-  localStorageService.saveToStorage('mockVacationDays', []);
-  localStorageService.saveToStorage('mockWorkdaySchedules', []);
-  
   toast({
-    title: 'Base de datos reiniciada',
-    description: 'Se han eliminado todos los datos del almacenamiento local.',
+    title: 'Operación no disponible',
+    description: 'El restablecimiento de la base de datos no está disponible en esta configuración.',
+    variant: 'destructive',
   });
+  return;
 };
 
 // Re-exportar funciones para mantener compatibilidad
