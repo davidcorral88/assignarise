@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { CheckSquare, ArrowLeft, Trash2, Plus, Search, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2 } from 'lucide-react';
-import { FileUploader } from '@/components/files/FileUploader';
+import FileUploader from '@/components/files/FileUploader';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,8 +49,8 @@ const TaskForm = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   
-  // Updated to handle synchronous data
-  const availableUsers = useState<User[]>([]);
+  // Updated to handle users as state instead of as a Promise
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   
   useEffect(() => {
     const fetchUsers = async () => {
@@ -63,7 +63,7 @@ const TaskForm = () => {
             return user.role === 'worker' && user.active !== false;
           }
         });
-        availableUsers[1](filteredUsers);
+        setAvailableUsers(filteredUsers);
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -127,7 +127,7 @@ const TaskForm = () => {
     
     setSubmitting(true);
     
-    const task: Task = {
+    const taskData: Task = {
       id: String(taskId),
       title: tarefa,
       description,
@@ -144,13 +144,13 @@ const TaskForm = () => {
     
     try {
       if (isEditMode || searchMode) {
-        await updateTask(task);
+        await updateTask(taskData);
         toast({
           title: 'Tarefa actualizada',
           description: 'A tarefa foi actualizada correctamente.',
         });
       } else {
-        await addTask(task);
+        await addTask(taskData);
         toast({
           title: 'Tarefa creada',
           description: 'A tarefa foi creada correctamente.',
