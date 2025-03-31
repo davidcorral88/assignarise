@@ -151,6 +151,18 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// Add endpoint to get next task ID
+app.get('/api/tasks/next-id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT MAX(CAST(id AS INTEGER)) as max_id FROM tasks');
+    const nextId = result.rows[0].max_id ? parseInt(result.rows[0].max_id) + 1 : 1;
+    res.json({ nextId });
+  } catch (error) {
+    console.error('Error getting next task ID:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Task endpoints
 app.get('/api/tasks', async (req, res) => {
   try {
@@ -187,18 +199,6 @@ app.get('/api/tasks/:id', async (req, res) => {
     res.json(task);
   } catch (error) {
     console.error('Error fetching task:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Add endpoint to get next task ID
-app.get('/api/tasks/next-id', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT MAX(CAST(id AS INTEGER)) as max_id FROM tasks');
-    const nextId = result.rows[0].max_id ? parseInt(result.rows[0].max_id) + 1 : 1;
-    res.json({ nextId });
-  } catch (error) {
-    console.error('Error getting next task ID:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

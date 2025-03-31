@@ -124,7 +124,8 @@ export const getTaskById = async (id: string): Promise<Task | undefined> => {
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     return await response.json();
   } catch (error) {
-    return handleFetchError(error, `Error al obtener tarea ${id}`);
+    console.error(`Error al obtener tarea ${id}:`, error);
+    return undefined;
   }
 };
 
@@ -141,10 +142,19 @@ export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
 export const addTask = async (task: Task): Promise<void> => {
   console.log("Guardando tarea en PostgreSQL:", task);
   try {
+    // Convert assignments to the format expected by the API
+    const apiTask = {
+      ...task,
+      assignments: task.assignments?.map(a => ({
+        userId: a.userId,
+        allocatedHours: a.allocatedHours
+      }))
+    };
+    
     const response = await fetch(`${API_URL}/tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(task)
+      body: JSON.stringify(apiTask)
     });
     
     if (!response.ok) {
@@ -502,6 +512,7 @@ export const getNextUserId = async (): Promise<number> => {
   }
 };
 
+// Mejorar la función getNextTaskId para manejar mejor los errores
 export const getNextTaskId = async (): Promise<number> => {
   try {
     const response = await fetch(`${API_URL}/tasks/next-id`);
@@ -511,18 +522,23 @@ export const getNextTaskId = async (): Promise<number> => {
       
       // Fallback: calculate next ID based on existing tasks
       console.log("Falling back to calculating next task ID from all tasks");
-      const tasksResponse = await fetch(`${API_URL}/tasks`);
-      if (!tasksResponse.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
+      try {
+        const tasksResponse = await fetch(`${API_URL}/tasks`);
+        if (!tasksResponse.ok) {
+          throw new Error(`Error HTTP: ${tasksResponse.status}`);
+        }
+        
+        const tasks = await tasksResponse.json();
+        const maxId = tasks.reduce((max: number, task: Task) => {
+          const taskId = parseInt(task.id);
+          return isNaN(taskId) ? max : Math.max(max, taskId);
+        }, 0);
+        
+        return maxId + 1;
+      } catch (tasksError) {
+        console.error('Error al obtener tareas para calcular ID:', tasksError);
+        return 1; // Si todo falla, comenzar con ID 1
       }
-      
-      const tasks = await tasksResponse.json();
-      const maxId = tasks.reduce((max: number, task: Task) => {
-        const taskId = parseInt(task.id);
-        return isNaN(taskId) ? max : Math.max(max, taskId);
-      }, 0);
-      
-      return maxId + 1;
     }
     
     const result = await response.json();
