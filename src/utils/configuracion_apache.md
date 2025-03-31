@@ -1,4 +1,3 @@
-
 # Manual de Configuración de Apache para Registro de Tarefas
 
 Este manual detalla cómo configurar correctamente Apache como servidor proxy inverso para permitir que la aplicación web de Registro de Tarefas se comunique con la API y la base de datos PostgreSQL.
@@ -96,6 +95,10 @@ Crea o modifica el archivo de configuración del VirtualHost para tu dominio (`r
     ProxyPass /api http://localhost:3000/api
     ProxyPassReverse /api http://localhost:3000/api
     
+    # IMPORTANTE: Proxy para WebSockets (necesario para HMR en desarrollo)
+    ProxyPass /ws ws://localhost:8080/ws
+    ProxyPassReverse /ws ws://localhost:8080/ws
+    
     # Configuraciones de caché y compresión
     <IfModule mod_deflate.c>
         AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
@@ -146,14 +149,17 @@ Asegúrate de que tu aplicación esté configurada para usar la URL correcta de 
 
 ```typescript
 // API URL that connects to PostgreSQL
-// When accessing remotely, use the same domain as the application with the appropriate port
-const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-
-// Configure the API URL based on the environment
-export const API_URL = isLocalhost 
-  ? 'http://localhost:3000/api' 
-  : 'https://rexistrodetarefas.iplanmovilidad.com/api';
+// When accessing remotely, use the same domain as the application (HTTPS if the site uses HTTPS)
+export const API_URL = typeof window !== 'undefined' ? 
+  (window.location.hostname === 'localhost' 
+    ? "http://localhost:3000/api"
+    : `https://${window.location.hostname}/api`) // Note: No port needed when proxied through Apache
+  : "http://localhost:3000/api";
 ```
+
+### Importante: Configuración de Apache para proxying de la API
+
+Cuando configures Apache como proxy inverso, asegúrate de que las solicitudes a `/api` se redirijan al servidor Node.js correctamente. Con esta configuración, la aplicación web llamará a `https://rexistrodetarefas.iplanmovilidad.com/api` (sin puerto) y Apache redirigirá estas solicitudes a `http://localhost:3000/api`.
 
 ## Configuración de PostgreSQL
 

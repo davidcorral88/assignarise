@@ -10,7 +10,13 @@ const port = 3000;
 
 // Configure middleware
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:5551', 'http://185.166.213.17:8080'], // Allow frontend origins
+  origin: [
+    'http://localhost:8080', 
+    'http://localhost:5551', 
+    'http://185.166.213.17:8080',
+    'https://rexistrodetarefas.iplanmovilidad.com',
+    'https://www.rexistrodetarefas.iplanmovilidad.com'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -690,5 +696,5 @@ app.post('/api/migrate', async (req, res) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`API server running at http://0.0.0.0:${port}/api`);
   console.log(`For remote access, make sure port ${port} is accessible and properly forwarded`);
-  console.log(`CORS enabled for: http://localhost:8080, http://localhost:5551, http://185.166.213.17:8080`);
+  console.log(`CORS enabled for: http://localhost:8080, http://localhost:5551, http://185.166.213.17:8080, https://rexistrodetarefas.iplanmovilidad.com`);
 });

@@ -18,5 +18,13 @@ export default defineConfig(({ mode }) => ({
   server: {
     port: 8080,
     host: "::",
+    hmr: {
+      // Try to use the server hostname for websocket connection
+      host: undefined,
+      // Fallback to ws://localhost:8080 for HMR
+      clientPort: 8080,
+      // Use HTTPS if the page is served over HTTPS
+      protocol: undefined,
+    },
   }
 }))
