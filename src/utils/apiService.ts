@@ -1,4 +1,3 @@
-
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule, TaskAttachment } from './types';
 import { toast } from '@/components/ui/use-toast';
 import { API_URL } from './dbConfig';
@@ -165,6 +164,17 @@ export const updateTask = async (task: Task): Promise<void> => {
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
   } catch (error) {
     handleFetchError(error, `Error al actualizar tarea ${task.id}`);
+  }
+};
+
+export const deleteTask = async (id: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/${id}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+  } catch (error) {
+    handleFetchError(error, `Error al eliminar tarea ${id}`);
   }
 };
 
@@ -435,7 +445,7 @@ export const updateWorkSchedule = async (schedule: WorkSchedule): Promise<void> 
     });
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
   } catch (error) {
-    handleFetchError(error, 'Error al actualizar configuración de horarios');
+    return handleFetchError(error, 'Error al actualizar configuración de horarios');
   }
 };
 
