@@ -4,6 +4,45 @@ import { toast } from '@/components/ui/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import * as apiService from './apiService';
 
+// File utilities
+export const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+export const isImageFile = (fileName: string): boolean => {
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg'];
+  const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+  return imageExtensions.includes(ext);
+};
+
+export const uploadFile = async (file: File, userId: string, isResolution: boolean = false): Promise<TaskAttachment> => {
+  return await uploadTaskAttachment('temp', file, userId, isResolution);
+};
+
+export const downloadFile = async (fileUrl: string, fileName: string): Promise<void> => {
+  try {
+    const response = await fetch(fileUrl);
+    const blob = await response.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error("Error downloading file:", error);
+    toast({
+      title: 'Error al descargar archivo',
+      description: 'No se pudo descargar el archivo solicitado',
+      variant: 'destructive',
+    });
+  }
+};
+
 // Función para subir un archivo adjunto a una tarea
 export const uploadTaskAttachment = async (
   taskId: string,

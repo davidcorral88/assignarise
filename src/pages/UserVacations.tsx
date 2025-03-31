@@ -1,343 +1,340 @@
-
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/auth/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/layout/Layout';
-import { 
-  Calendar as CalendarIcon,
-  Check,
-  Loader2,
-  Heart,
-  Trash2
-} from 'lucide-react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import { useAuth } from '../components/auth/AuthContext';
+import {
+  getUsers,
+  getVacationDays,
+  addVacationDay,
+  removeVacationDay,
+} from '../utils/dataService';
+import { User, VacationDay } from '../utils/types';
+import { format, parseISO } from 'date-fns';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/use-toast';
-import { Calendar } from '@/components/ui/calendar';
-import { 
-  getVacationDays, 
-  addVacationDay, 
-  removeVacationDay 
-} from '../utils/dataService';
-import { VacationDay } from '../utils/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { toast } from '@/components/ui/use-toast';
+import { Trash2, Calendar, Plus, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
+// Fix the vacation types in the relevant places
 const UserVacations = () => {
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedType, setSelectedType] = useState<'vacation' | 'sick_leave'>('vacation');
-  
-  // Redirect if not logged in
-  React.useEffect(() => {
-    if (!currentUser) {
-      navigate('/login');
-    }
-  }, [currentUser, navigate]);
-  
-  // Query for vacation days
-  const { data: vacationDays = [] } = useQuery({
-    queryKey: ['vacationDays', currentUser?.id],
-    queryFn: async () => currentUser ? await getVacationDays(currentUser.id) : [],
-    enabled: !!currentUser
-  });
-  
-  // Mutation for adding vacation day
-  const addVacationMutation = useMutation({
-    mutationFn: addVacationDay,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vacationDays', currentUser?.id] });
-      setSelectedDate(undefined);
-      
-      toast({
-        title: 'Día engadido',
-        description: `Día de ${selectedType === 'vacation' ? 'vacacións' : 'baixa médica'} engadido correctamente.`,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Ocorreu un erro ao engadir o día',
-        variant: 'destructive',
-      });
-    }
-  });
-  
-  // Mutation for removing vacation day
-  const removeVacationMutation = useMutation({
-    mutationFn: removeVacationDay,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vacationDays', currentUser?.id] });
-      
-      toast({
-        title: 'Día eliminado',
-        description: 'Día eliminado correctamente.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Ocorreu un erro ao eliminar o día',
-        variant: 'destructive',
-      });
-    }
-  });
-  
-  const handleAddVacationDay = () => {
-    if (!selectedDate) {
-      toast({
-        title: 'Erro',
-        description: 'Por favor, selecciona unha data',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (!currentUser) {
-      toast({
-        title: 'Erro',
-        description: 'Usuario non identificado',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    const newVacationDay: VacationDay = {
-      userId: currentUser.id,
-      date: format(selectedDate, 'yyyy-MM-dd'),
-      type: selectedType
+  const [users, setUsers] = useState<User[]>([]);
+  const [vacationDays, setVacationDays] = useState<VacationDay[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedType, setSelectedType] = useState<'vacation' | 'personal' | 'sick'>('vacation');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const fetchedUsers = await getUsers();
+        setUsers(fetchedUsers);
+
+        if (currentUser?.role === 'admin') {
+          setSelectedUser(fetchedUsers[0]?.id);
+        } else {
+          setSelectedUser(currentUser?.id);
+        }
+
+        const initialVacationDays = await getVacationDays(selectedUser);
+        setVacationDays(initialVacationDays);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar los datos',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    // Check if date already exists
-    const exists = vacationDays.some(
-      v => v.date === newVacationDay.date && v.type === newVacationDay.type
-    );
-    
-    if (exists) {
+
+    fetchData();
+  }, [currentUser]);
+
+  useEffect(() => {
+    const fetchVacationDays = async () => {
+      if (selectedUser) {
+        try {
+          const fetchedVacationDays = await getVacationDays(selectedUser);
+          setVacationDays(fetchedVacationDays);
+        } catch (error) {
+          console.error('Error fetching vacation days:', error);
+          toast({
+            title: 'Error',
+            description: 'No se pudieron cargar los días libres',
+            variant: 'destructive',
+          });
+        }
+      }
+    };
+
+    fetchVacationDays();
+  }, [selectedUser]);
+
+  // Update the form submission to use the correct types
+  const handleVacationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedDate || !selectedType || !selectedUser) {
       toast({
-        title: 'Data xa rexistrada',
-        description: 'Esta data xa está rexistrada co mesmo tipo de ausencia.',
+        title: 'Campos incompletos',
+        description: 'Por favor selecciona una fecha, tipo y usuario.',
         variant: 'destructive',
       });
       return;
     }
-    
-    addVacationMutation.mutate(newVacationDay);
-  };
-  
-  const handleRemoveVacationDay = (day: VacationDay) => {
-    removeVacationMutation.mutate(day);
-  };
-  
-  // Function to render dates in calendar
-  const handleCalendarRender = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    
-    // Check if date is a vacation or sick leave
-    const isVacation = vacationDays.some(v => v.date === dateStr && v.type === 'vacation');
-    const isSickLeave = vacationDays.some(v => v.date === dateStr && v.type === 'sick_leave');
-    
-    if (isVacation) {
-      return {
-        className: cn('bg-green-100 hover:bg-green-200 text-green-800')
+
+    try {
+      // Convert sick_leave to sick to match the type definition
+      const vacationType = selectedType === 'sick_leave' ? 'sick' : selectedType;
+
+      const vacationDay: VacationDay = {
+        userId: selectedUser,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        type: vacationType as 'vacation' | 'personal' | 'sick',
       };
+
+      await addVacationDay(vacationDay);
+
+      setVacationDays([...vacationDays, vacationDay]);
+
+      toast({
+        title: 'Día libre añadido',
+        description: 'El día libre ha sido registrado correctamente.',
+      });
+
+      // Reset form
+      setSelectedDate(undefined);
+      setSelectedType('vacation');
+
+    } catch (error) {
+      console.error('Error al añadir día libre:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo registrar el día libre.',
+        variant: 'destructive',
+      });
     }
-    
-    if (isSickLeave) {
-      return {
-        className: cn('bg-amber-100 hover:bg-amber-200 text-amber-800')
-      };
-    }
-    
-    return {};
   };
-  
-  if (!currentUser) {
-    return null; // Will redirect to login
+
+  const handleRemoveVacationDay = async (vacationDay: VacationDay) => {
+    try {
+      await removeVacationDay(vacationDay);
+      setVacationDays(vacationDays.filter(vd => vd.date !== vacationDay.date || vd.userId !== vacationDay.userId));
+      toast({
+        title: 'Día libre eliminado',
+        description: 'El día libre ha sido eliminado correctamente.',
+      });
+    } catch (error) {
+      console.error('Error al eliminar día libre:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo eliminar el día libre.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Update the getVacationTypeText function to handle the type conversions
+  const getVacationTypeText = (type: string): string => {
+    switch (type) {
+      case 'vacation':
+        return 'Vacaciones';
+      case 'personal':
+        return 'Asuntos propios';
+      case 'sick':
+      case 'sick_leave':
+        return 'Baja médica';
+      default:
+        return type;
+    }
+  };
+
+  const getVacationTypeColor = (type: string): string => {
+    switch (type) {
+      case 'vacation':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'personal':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      case 'sick':
+      case 'sick_leave':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-96">
+          <div>Cargando...</div>
+        </div>
+      </Layout>
+    );
   }
-  
+
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">As miñas vacacións e baixas</h1>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Engadir día de vacacións ou baixa</CardTitle>
-              <CardDescription>
-                Selecciona un día e indica se é vacacións ou baixa médica
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Selecciona a data</Label>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className="border rounded-md p-3 bg-white"
-                  locale={es}
-                  modifiers={{
-                    vacation: vacationDays
-                      .filter(v => v.type === 'vacation')
-                      .map(v => parseISO(v.date)),
-                    sickLeave: vacationDays
-                      .filter(v => v.type === 'sick_leave')
-                      .map(v => parseISO(v.date))
-                  }}
-                  modifiersClassNames={{
-                    vacation: 'bg-green-100 text-green-800 hover:bg-green-200',
-                    sickLeave: 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-                  }}
-                  components={{
-                    DayContent: ({ date }) => (
-                      <div
+      <div className="container mx-auto py-10">
+        <h1 className="text-2xl font-bold mb-4">Gestión de días libres</h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Formulario para añadir días libres */}
+          <div className="md:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Añadir día libre</CardTitle>
+                <CardDescription>Selecciona los detalles del día libre.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {currentUser?.role === 'admin' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="user">Usuario</Label>
+                    <Select value={selectedUser} onValueChange={setSelectedUser}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar usuario" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.map(user => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Fecha</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
                         className={cn(
-                          'relative flex h-8 w-8 items-center justify-center p-0'
+                          "w-full justify-start text-left font-normal",
+                          !selectedDate && "text-muted-foreground"
                         )}
                       >
-                        {date.getDate()}
-                      </div>
-                    )
-                  }}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Tipo de ausencia</Label>
-                <RadioGroup 
-                  value={selectedType} 
-                  onValueChange={(value) => setSelectedType(value as 'vacation' | 'sick_leave')}
-                  className="flex space-x-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="vacation" id="vacation" />
-                    <Label htmlFor="vacation" className="flex items-center cursor-pointer">
-                      <CalendarIcon className="mr-1.5 h-4 w-4" />
-                      Vacacións
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="sick_leave" id="sick_leave" />
-                    <Label htmlFor="sick_leave" className="flex items-center cursor-pointer">
-                      <Heart className="mr-1.5 h-4 w-4" />
-                      Baixa médica
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-              
-              <Button 
-                className="w-full mt-2" 
-                onClick={handleAddVacationDay}
-                disabled={addVacationMutation.isPending || !selectedDate}
-              >
-                {addVacationMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Engadindo...
-                  </>
-                ) : (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Engadir día
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Días rexistrados</CardTitle>
-              <CardDescription>
-                Lista de días de vacacións e baixas médicas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Vacacións</h3>
-                  {vacationDays.filter(v => v.type === 'vacation').length > 0 ? (
-                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                      {vacationDays
-                        .filter(v => v.type === 'vacation')
-                        .sort((a, b) => a.date.localeCompare(b.date))
-                        .map(vacation => (
-                          <div 
-                            key={`vacation-${vacation.date}`} 
-                            className="flex items-center justify-between p-3 rounded-md border border-green-200 bg-green-50"
-                          >
-                            <div className="flex items-center">
-                              <CalendarIcon className="h-4 w-4 mr-2 text-green-600" />
-                              <span>{format(parseISO(vacation.date), 'dd/MM/yyyy')}</span>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => handleRemoveVacationDay(vacation)}
-                              disabled={removeVacationMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Non hai días de vacacións rexistrados.</p>
-                  )}
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {selectedDate ? format(selectedDate, "PPP") : <span>Seleccionar fecha</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Baixas médicas</h3>
-                  {vacationDays.filter(v => v.type === 'sick_leave').length > 0 ? (
-                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                      {vacationDays
-                        .filter(v => v.type === 'sick_leave')
-                        .sort((a, b) => a.date.localeCompare(b.date))
-                        .map(sickLeave => (
-                          <div 
-                            key={`sick-leave-${sickLeave.date}`} 
-                            className="flex items-center justify-between p-3 rounded-md border border-amber-200 bg-amber-50"
-                          >
-                            <div className="flex items-center">
-                              <Heart className="h-4 w-4 mr-2 text-amber-600" />
-                              <span>{format(parseISO(sickLeave.date), 'dd/MM/yyyy')}</span>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => handleRemoveVacationDay(sickLeave)}
-                              disabled={removeVacationMutation.isPending}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Non hai días de baixa médica rexistrados.</p>
-                  )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">Tipo</Label>
+                  <Select value={selectedType} onValueChange={(value) => setSelectedType(value as 'vacation' | 'personal' | 'sick')}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vacation">Vacaciones</SelectItem>
+                      <SelectItem value="personal">Asuntos propios</SelectItem>
+                      <SelectItem value="sick_leave">Baja médica</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                <Button className="w-full" onClick={handleVacationSubmit}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir día libre
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Listado de días libres */}
+          <div className="md:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Lista de días libres</CardTitle>
+                <CardDescription>Días libres registrados para este usuario.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Fecha
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tipo
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {vacationDays.map(vacationDay => (
+                        <tr key={`${vacationDay.userId}-${vacationDay.date}`}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {format(parseISO(vacationDay.date), 'PPP')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge variant="outline" className={getVacationTypeColor(vacationDay.type)}>
+                              {getVacationTypeText(vacationDay.type)}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                            <Button variant="ghost" size="icon" onClick={() => handleRemoveVacationDay(vacationDay)}>
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                              <span className="sr-only">Eliminar</span>
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                      {vacationDays.length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="px-6 py-4 whitespace-nowrap text-center">
+                            No hay días libres registrados.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </Layout>

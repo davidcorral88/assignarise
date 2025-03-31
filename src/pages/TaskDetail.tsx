@@ -33,13 +33,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { 
-  getTaskById, 
+  getTaskByIdForState,
   getUserById, 
-  getTimeEntriesByTaskId,
+  getTimeEntriesByTaskIdForState,
   getTotalHoursByTask,
   getTotalHoursAllocatedByTask
-} from '../utils/mockData';
-import { Task, TimeEntry } from '../utils/types';
+} from '../utils/dataService';
+import { Task, TimeEntry, User } from '../utils/types';
 import { format, parseISO } from 'date-fns';
 
 const TaskDetail = () => {
@@ -49,17 +49,40 @@ const TaskDetail = () => {
   const [task, setTask] = useState<Task | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalHoursWorked, setTotalHoursWorked] = useState(0);
+  const [totalHoursAllocated, setTotalHoursAllocated] = useState(0);
+  const [creator, setCreator] = useState<User | null>(null);
   
   useEffect(() => {
-    if (id) {
-      const fetchedTask = getTaskById(id);
-      if (fetchedTask) {
-        setTask(fetchedTask);
-        setTimeEntries(getTimeEntriesByTaskId(id));
+    const fetchData = async () => {
+      if (id) {
+        await getTaskByIdForState(id, setTask);
+        await getTimeEntriesByTaskIdForState(id, setTimeEntries);
+        
+        // Fetch statistics
+        const hoursWorked = await getTotalHoursByTask(id);
+        setTotalHoursWorked(hoursWorked);
+        
+        const hoursAllocated = await getTotalHoursAllocatedByTask(id);
+        setTotalHoursAllocated(hoursAllocated);
+        
+        setLoading(false);
       }
-      setLoading(false);
-    }
+    };
+    
+    fetchData();
   }, [id]);
+  
+  useEffect(() => {
+    const getCreator = async () => {
+      if (task && task.createdBy) {
+        const user = await getUserById(task.createdBy);
+        setCreator(user || null);
+      }
+    };
+    
+    getCreator();
+  }, [task]);
   
   if (loading) {
     return (
@@ -140,12 +163,23 @@ const TaskDetail = () => {
     }
   };
   
-  const creator = getUserById(task.createdBy);
-  const totalHoursWorked = getTotalHoursByTask(task.id);
-  const totalHoursAllocated = getTotalHoursAllocatedByTask(task.id);
   const progressPercentage = totalHoursAllocated > 0 
     ? Math.min(Math.round((totalHoursWorked / totalHoursAllocated) * 100), 100) 
     : 0;
+  
+  const getUserDetail = (user: User | null | undefined) => {
+    return (
+      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+        {user?.avatar ? (
+          <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
+        ) : (
+          <span className="text-xs font-medium text-primary-foreground">
+            {user?.name ? user.name.substring(0, 2) : 'UN'}
+          </span>
+        )}
+      </div>
+    );
+  };
   
   return (
     <Layout>
@@ -362,16 +396,7 @@ const TaskDetail = () => {
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Creado por</h3>
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                      {creator?.avatar ? (
-                        <img src={creator.avatar} alt={creator.name} className="h-full w-full rounded-full" />
-                      ) : (
-                        <span className="text-xs font-medium text-primary-foreground">
-                          {creator?.name.substring(0, 2)}
-                        </span>
-                      )}
-                    </div>
-                    <span>{creator?.name}</span>
+                    {getUserDetail(creator)}
                   </div>
                 </div>
                 

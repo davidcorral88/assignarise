@@ -43,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: 'admin-user',
           name: 'Administrador ATSXPTPG',
           email: 'admin@ticmoveo.com',
+          password: '', // Empty password for security
           role: 'admin', // Explicitly set as admin role
           active: true
         };
@@ -118,11 +119,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
   
+  const updateCurrentUser = (user: User) => {
+    setCurrentUser(user);
+    sessionStorage.setItem('currentUser', JSON.stringify(user));
+  };
+  
   const value = {
     currentUser,
     isAuthenticated: !!currentUser,
     login,
     logout,
+    updateCurrentUser,
     loading
   };
   

@@ -114,8 +114,9 @@ export interface WorkSchedule {
 
 export interface AuthContextType {
   currentUser: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<User | boolean>;
   logout: () => void;
   isAuthenticated: boolean;
   updateCurrentUser: (user: User) => void;
+  loading?: boolean;
 }

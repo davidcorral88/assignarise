@@ -19,6 +19,16 @@ export const setUseAPI = (value: boolean) => {
 
 export const getUseAPI = () => useAPI;
 
+// Utility function to handle promises in async functions for useState
+const resolvePromise = async <T>(promise: Promise<T>): Promise<T> => {
+  try {
+    return await promise;
+  } catch (error) {
+    console.error('Error resolving promise:', error);
+    throw error;
+  }
+};
+
 // Funciones para usuarios
 export const getUsers = async (): Promise<User[]> => {
   try {
@@ -147,7 +157,20 @@ export const getTaskById = async (id: string): Promise<Task | undefined> => {
       description: 'No se pudo obtener la tarea desde la base de datos.',
       variant: 'destructive',
     });
-    throw error;
+    return undefined;
+  }
+};
+
+// Helper functions for React useState
+export const getTaskByIdForState = async (id: string, setState: React.Dispatch<React.SetStateAction<Task | null>>) => {
+  try {
+    const task = await getTaskById(id);
+    setState(task || null);
+    return task;
+  } catch (error) {
+    console.error(`Error en getTaskByIdForState(${id}):`, error);
+    setState(null);
+    return null;
   }
 };
 
@@ -161,7 +184,7 @@ export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
       description: 'No se pudieron obtener las tareas por usuario desde la base de datos.',
       variant: 'destructive',
     });
-    throw error;
+    return [];
   }
 };
 
@@ -218,7 +241,7 @@ export const getTimeEntries = async (): Promise<TimeEntry[]> => {
       description: 'No se pudieron obtener los registros de tiempo desde la base de datos.',
       variant: 'destructive',
     });
-    throw error;
+    return [];
   }
 };
 
@@ -232,7 +255,7 @@ export const getTimeEntryById = async (id: string): Promise<TimeEntry | undefine
       description: 'No se pudo obtener el registro de tiempo desde la base de datos.',
       variant: 'destructive',
     });
-    throw error;
+    return undefined;
   }
 };
 
@@ -246,7 +269,7 @@ export const getTimeEntriesByUserId = async (userId: string): Promise<TimeEntry[
       description: 'No se pudieron obtener los registros de tiempo por usuario desde la base de datos.',
       variant: 'destructive',
     });
-    throw error;
+    return [];
   }
 };
 
@@ -260,7 +283,22 @@ export const getTimeEntriesByTaskId = async (taskId: string): Promise<TimeEntry[
       description: 'No se pudieron obtener los registros de tiempo por tarea desde la base de datos.',
       variant: 'destructive',
     });
-    throw error;
+    return [];
+  }
+};
+
+export const getTimeEntriesByTaskIdForState = async (
+  taskId: string, 
+  setState: React.Dispatch<React.SetStateAction<TimeEntry[]>>
+) => {
+  try {
+    const entries = await getTimeEntriesByTaskId(taskId);
+    setState(entries);
+    return entries;
+  } catch (error) {
+    console.error(`Error en getTimeEntriesByTaskIdForState(${taskId}):`, error);
+    setState([]);
+    return [];
   }
 };
 
@@ -272,6 +310,101 @@ export const addTimeEntry = async (entry: TimeEntry): Promise<void> => {
     toast({
       title: 'Error al registrar tiempo',
       description: 'No se pudo guardar el registro de tiempo en la base de datos PostgreSQL.',
+      variant: 'destructive',
+    });
+    throw error;
+  }
+};
+
+// Utility functions for tasks and statistics
+export const getTotalHoursByTask = async (taskId: string): Promise<number> => {
+  try {
+    return await apiService.getTotalHoursByTask(taskId);
+  } catch (error) {
+    console.error(`Error en getTotalHoursByTask(${taskId}):`, error);
+    return 0;
+  }
+};
+
+export const getTotalHoursAllocatedByTask = async (taskId: string): Promise<number> => {
+  try {
+    return await apiService.getTotalHoursAllocatedByTask(taskId);
+  } catch (error) {
+    console.error(`Error en getTotalHoursAllocatedByTask(${taskId}):`, error);
+    return 0;
+  }
+};
+
+export const getNextTaskId = async (): Promise<number> => {
+  try {
+    return await apiService.getNextTaskId();
+  } catch (error) {
+    console.error('Error en getNextTaskId:', error);
+    return Date.now(); // Fallback to timestamp
+  }
+};
+
+// Helper for setting states from promises
+export const setStateFromPromise = async <T>(
+  promise: Promise<T>, 
+  setState: React.Dispatch<React.SetStateAction<T>>
+) => {
+  try {
+    const data = await promise;
+    setState(data);
+    return data;
+  } catch (error) {
+    console.error('Error setting state from promise:', error);
+    throw error;
+  }
+};
+
+// Holiday functions
+export const getHolidays = async (): Promise<Holiday[]> => {
+  try {
+    return await apiService.getHolidays();
+  } catch (error) {
+    console.error('Error en getHolidays:', error);
+    return [];
+  }
+};
+
+export const addHoliday = async (holiday: Holiday): Promise<void> => {
+  try {
+    await apiService.addHoliday(holiday);
+  } catch (error) {
+    console.error('Error en addHoliday:', error);
+    throw error;
+  }
+};
+
+// WorkSchedule functions
+export const getWorkSchedule = async (): Promise<WorkSchedule> => {
+  try {
+    return await apiService.getWorkSchedule();
+  } catch (error) {
+    console.error('Error en getWorkSchedule:', error);
+    throw error;
+  }
+};
+
+export const updateWorkSchedule = async (schedule: WorkSchedule): Promise<void> => {
+  try {
+    await apiService.updateWorkSchedule(schedule);
+  } catch (error) {
+    console.error('Error en updateWorkSchedule:', error);
+    throw error;
+  }
+};
+
+export const deleteWorkdaySchedule = async (id: string): Promise<void> => {
+  try {
+    await apiService.deleteWorkdaySchedule(id);
+  } catch (error) {
+    console.error(`Error en deleteWorkdaySchedule(${id}):`, error);
+    toast({
+      title: 'Error al eliminar horario',
+      description: 'No se pudo eliminar el horario en la base de datos PostgreSQL.',
       variant: 'destructive',
     });
     throw error;
@@ -292,35 +425,6 @@ export const updateTimeEntry = async (entry: TimeEntry): Promise<void> => {
   }
 };
 
-// Días festivos
-export const getHolidays = async (): Promise<Holiday[]> => {
-  try {
-    return await apiService.getHolidays();
-  } catch (error) {
-    console.error('Error en getHolidays:', error);
-    toast({
-      title: 'Error de conexión a PostgreSQL',
-      description: 'No se pudieron obtener los días festivos desde la base de datos.',
-      variant: 'destructive',
-    });
-    throw error;
-  }
-};
-
-export const addHoliday = async (holiday: Holiday): Promise<void> => {
-  try {
-    await apiService.addHoliday(holiday);
-  } catch (error) {
-    console.error('Error en addHoliday:', error);
-    toast({
-      title: 'Error al añadir festivo',
-      description: 'No se pudo guardar el día festivo en la base de datos PostgreSQL.',
-      variant: 'destructive',
-    });
-    throw error;
-  }
-};
-
 export const removeHoliday = async (holiday: Holiday): Promise<void> => {
   try {
     await apiService.removeHoliday(holiday);
@@ -335,7 +439,6 @@ export const removeHoliday = async (holiday: Holiday): Promise<void> => {
   }
 };
 
-// Días de vacaciones
 export const getVacationDays = async (userId?: string): Promise<VacationDay[]> => {
   try {
     return await apiService.getVacationDays(userId);
@@ -378,7 +481,6 @@ export const removeVacationDay = async (vacationDay: VacationDay): Promise<void>
   }
 };
 
-// Horarios de trabajo
 export const getWorkdaySchedules = async (): Promise<WorkdaySchedule[]> => {
   try {
     return await apiService.getWorkdaySchedules();
@@ -421,7 +523,7 @@ export const addWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<voi
   }
 };
 
-export const updateWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<void> => {
+export const updateWorkSchedule = async (schedule: WorkdaySchedule): Promise<void> => {
   try {
     await apiService.updateWorkdaySchedule(schedule);
   } catch (error) {
@@ -432,92 +534,6 @@ export const updateWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<
       variant: 'destructive',
     });
     throw error;
-  }
-};
-
-export const deleteWorkdaySchedule = async (id: string): Promise<void> => {
-  try {
-    await apiService.deleteWorkdaySchedule(id);
-  } catch (error) {
-    console.error(`Error en deleteWorkdaySchedule(${id}):`, error);
-    toast({
-      title: 'Error al eliminar horario',
-      description: 'No se pudo eliminar el horario en la base de datos PostgreSQL.',
-      variant: 'destructive',
-    });
-    throw error;
-  }
-};
-
-// Configuración de horarios
-export const getWorkSchedule = async (): Promise<WorkSchedule> => {
-  try {
-    return await apiService.getWorkSchedule();
-  } catch (error) {
-    console.error('Error en getWorkSchedule:', error);
-    toast({
-      title: 'Error de conexión a PostgreSQL',
-      description: 'No se pudo obtener la configuración de horarios desde la base de datos.',
-      variant: 'destructive',
-    });
-    throw error;
-  }
-};
-
-export const updateWorkSchedule = async (schedule: WorkSchedule): Promise<void> => {
-  try {
-    await apiService.updateWorkSchedule(schedule);
-  } catch (error) {
-    console.error('Error en updateWorkSchedule:', error);
-    toast({
-      title: 'Error al actualizar configuración',
-      description: 'No se pudo actualizar la configuración de horarios en la base de datos PostgreSQL.',
-      variant: 'destructive',
-    });
-    throw error;
-  }
-};
-
-// Funciones auxiliares para estadísticas y cálculos
-export const getTotalHoursByTask = async (taskId: string): Promise<number> => {
-  try {
-    return await apiService.getTotalHoursByTask(taskId);
-  } catch (error) {
-    console.error(`Error en getTotalHoursByTask(${taskId}):`, error);
-    toast({
-      title: 'Error de cálculo',
-      description: 'No se pudieron calcular las horas totales por tarea.',
-      variant: 'destructive',
-    });
-    throw error;
-  }
-};
-
-export const getTotalHoursAllocatedByTask = async (taskId: string): Promise<number> => {
-  try {
-    return await apiService.getTotalHoursAllocatedByTask(taskId);
-  } catch (error) {
-    console.error(`Error en getTotalHoursAllocatedByTask(${taskId}):`, error);
-    toast({
-      title: 'Error de cálculo',
-      description: 'No se pudieron calcular las horas asignadas a la tarea.',
-      variant: 'destructive',
-    });
-    throw error;
-  }
-};
-
-export const getNextTaskId = async (): Promise<number> => {
-  try {
-    return await apiService.getNextTaskId();
-  } catch (error) {
-    console.error('Error en getNextTaskId:', error);
-    toast({
-      title: 'Error de secuencia',
-      description: 'No se pudo obtener el próximo ID de tarea.',
-      variant: 'destructive',
-    });
-    return Date.now();
   }
 };
 

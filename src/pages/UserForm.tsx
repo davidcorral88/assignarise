@@ -36,6 +36,8 @@ const UserForm = () => {
   const [emailATSXPTPG, setEmailATSXPTPG] = useState('');
   const [organism, setOrganism] = useState<OrganismType>('');
   const [active, setActive] = useState(true);
+  const [password, setPassword] = useState('');
+  const [avatar, setAvatar] = useState('');
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -57,6 +59,8 @@ const UserForm = () => {
           setEmailATSXPTPG(user.emailATSXPTPG || '');
           setOrganism(user.organism || '');
           setActive(user.active !== false);
+          setPassword(user.password || '');
+          setAvatar(user.avatar || '');
         }
       } else {
         try {
@@ -76,29 +80,10 @@ const UserForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name.trim() || !email.trim()) {
+    if (!name || !email || !role) {
       toast({
-        title: 'Erro',
-        description: 'Por favor, completa todos os campos requiridos',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast({
-        title: 'Erro',
-        description: 'Por favor, introduce un email válido',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (emailATSXPTPG && !emailRegex.test(emailATSXPTPG)) {
-      toast({
-        title: 'Erro',
-        description: 'Por favor, introduce un email ATSXPTPG válido',
+        title: 'Campos obligatorios',
+        description: 'Por favor completa todos los campos obligatorios.',
         variant: 'destructive',
       });
       return;
@@ -108,39 +93,41 @@ const UserForm = () => {
     
     try {
       const user: User = {
-        id: isEditing && id ? id : nextId || String(Date.now()),
+        id: isEditing ? id! : String(nextUserId || Date.now()),
         name,
         email,
-        role,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`,
-        phone: phone || undefined,
-        emailATSXPTPG: emailATSXPTPG || undefined,
-        organism: organism as 'Xunta' | 'iPlan' | undefined,
-        active: active
+        password: password || 'default_password',
+        role: role as UserRole,
+        avatar: avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff`,
+        phone: phone || '',
+        emailATSXPTPG: emailATSXPTPG || '',
+        organism: organism,
+        active: active,
       };
       
       if (isEditing) {
         await updateUser(user);
+        toast({
+          title: 'Usuario actualizado',
+          description: 'El usuario ha sido actualizado correctamente.',
+        });
       } else {
         await addUser(user);
+        toast({
+          title: 'Usuario creado',
+          description: 'El usuario ha sido creado correctamente.',
+        });
       }
       
-      toast({
-        title: isEditing ? 'Usuario actualizado' : 'Usuario creado',
-        description: isEditing ? 'O usuario foi actualizado correctamente.' : 'O usuario foi creado correctamente.',
-      });
-      
-      setTimeout(() => {
-        navigate('/users');
-        setSubmitting(false);
-      }, 800);
+      navigate('/users');
     } catch (error) {
       console.error('Error al guardar usuario:', error);
       toast({
         title: 'Error',
-        description: 'Ocurrió un error al guardar el usuario. Consulte la consola para más detalles.',
+        description: 'Ocurrió un error al guardar el usuario. Inténtalo de nuevo.',
         variant: 'destructive',
       });
+    } finally {
       setSubmitting(false);
     }
   };

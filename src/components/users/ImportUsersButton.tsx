@@ -157,6 +157,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
           id: item.id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: item.name,
           email: item.email,
+          password: item.password || 'default_password', // Add default password if not provided
           role: item.role,
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=0D8ABC&color=fff`,
           organism: item.organism,

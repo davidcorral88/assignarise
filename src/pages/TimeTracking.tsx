@@ -1,26 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/auth/AuthContext';
 import { Layout } from '../components/layout/Layout';
 import { 
-  Clock, 
-  Calendar, 
-  PlusCircle,
-  Timer,
-  Save,
-  Eye,
-  Edit,
-  MoreHorizontal,
-  Trash2
-} from 'lucide-react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
+  getTasks, getTimeEntriesByUserId, addTimeEntry, 
+  setStateFromPromise 
+} from '../utils/dataService';
+import { useAuth } from '../components/auth/AuthContext';
+import { Task, TimeEntry } from '../utils/types';
+import { format } from 'date-fns';
+import { v4 as uuidv4 } from 'uuid';
+import { toast } from '@/components/ui/use-toast';
+import { Clock, Calendar, PlusCircle, Timer, Save, Eye, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,57 +36,58 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import { 
-  getTasksByUserId, 
-  getTimeEntriesByUserId,
-  mockTimeEntries
-} from '../utils/mockData';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { toast } from '@/components/ui/use-toast';
-import { TimeEntry, Task } from '../utils/types';
 
 const TimeTracking = () => {
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
-  
-  const [userTasks, setUserTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [selectedTask, setSelectedTask] = useState<string>('');
+  const [hours, setHours] = useState<number>(1);
+  const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   
-  const [selectedTaskId, setSelectedTaskId] = useState<string>('');
-  const [hours, setHours] = useState<number>(1);
-  const [date, setDate] = useState<Date>(new Date());
-  const [notes, setNotes] = useState<string>('');
-  const [isAddingEntry, setIsAddingEntry] = useState(false);
-  
   useEffect(() => {
-    if (currentUser?.role !== 'worker') {
-      navigate('/dashboard');
-    } else {
-      setUserTasks(getTasksByUserId(currentUser.id));
-      setTimeEntries(getTimeEntriesByUserId(currentUser.id));
-      setLoading(false);
-    }
-  }, [currentUser, navigate]);
+    const fetchData = async () => {
+      if (currentUser) {
+        try {
+          const fetchedTasks = await getTasks();
+          const userTasks = currentUser.role === 'worker'
+            ? fetchedTasks.filter(task => task.assignments.some(a => a.userId === currentUser.id))
+            : fetchedTasks;
+          
+          setTasks(userTasks);
+          
+          const fetchedEntries = await getTimeEntriesByUserId(currentUser.id);
+          setTimeEntries(fetchedEntries);
+        } catch (error) {
+          console.error('Error fetching data:', error);
+          toast({
+            title: 'Error',
+            description: 'No se pudieron cargar los datos',
+            variant: 'destructive',
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    fetchData();
+  }, [currentUser]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedTaskId || hours <= 0 || !date) {
+    if (!selectedTask || hours <= 0 || !date) {
       toast({
-        title: 'Erro',
-        description: 'Por favor, completa todos os campos requiridos',
+        title: 'Campos incompletos',
+        description: 'Por favor complete todos los campos requeridos',
         variant: 'destructive',
       });
       return;
@@ -104,30 +95,40 @@ const TimeTracking = () => {
     
     setSubmitting(true);
     
-    setTimeout(() => {
-      const newEntry: TimeEntry = {
-        id: String(mockTimeEntries.length + 1),
-        taskId: selectedTaskId,
+    try {
+      const timeEntry: TimeEntry = {
+        id: uuidv4(),
+        taskId: selectedTask,
         userId: currentUser?.id || '',
-        hours,
-        date: format(date, 'yyyy-MM-dd'),
-        notes: notes.trim() || undefined
+        hours: hours,
+        date: date,
+        notes: notes,
+        description: `Registro de ${hours} horas para la tarea`,
       };
       
-      setTimeEntries([newEntry, ...timeEntries]);
+      await addTimeEntry(timeEntry);
+      
+      setTimeEntries([...timeEntries, timeEntry]);
+      
+      setSelectedTask('');
+      setHours(1);
+      setDate(format(new Date(), 'yyyy-MM-dd'));
+      setNotes('');
       
       toast({
-        title: 'Horas rexistradas',
-        description: 'Rexistráronse as túas horas correctamente.',
+        title: 'Tiempo registrado',
+        description: 'El registro de horas se ha guardado correctamente',
       });
-      
-      setSelectedTaskId('');
-      setHours(1);
-      setDate(new Date());
-      setNotes('');
-      setIsAddingEntry(false);
+    } catch (error) {
+      console.error('Error al registrar tiempo:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar el registro de tiempo',
+        variant: 'destructive',
+      });
+    } finally {
       setSubmitting(false);
-    }, 800);
+    }
   };
   
   if (loading) {
@@ -174,15 +175,15 @@ const TimeTracking = () => {
                 <div className="space-y-2">
                   <Label htmlFor="task">Tarefa *</Label>
                   <Select 
-                    value={selectedTaskId} 
-                    onValueChange={setSelectedTaskId}
+                    value={selectedTask} 
+                    onValueChange={setSelectedTask}
                     required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar tarefa" />
                     </SelectTrigger>
                     <SelectContent>
-                      {userTasks.map(task => (
+                      {tasks.map(task => (
                         <SelectItem key={task.id} value={task.id}>
                           {task.title}
                         </SelectItem>
@@ -287,7 +288,7 @@ const TimeTracking = () => {
                 <TableBody>
                   {timeEntries.length > 0 ? (
                     timeEntries.map((entry) => {
-                      const task = userTasks.find(t => t.id === entry.taskId);
+                      const task = tasks.find(t => t.id === entry.taskId);
                       return (
                         <TableRow key={entry.id}>
                           <TableCell className="font-medium">

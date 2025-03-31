@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -28,95 +27,104 @@ const HolidaysCalendar: React.FC<HolidaysCalendarProps> = ({ isEditable }) => {
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [holidayName, setHolidayName] = useState<string>('');
-  
-  // Obtener festivos con React Query
+  const [holidayDescription, setHolidayDescription] = useState<string>('');
+
   const { data: holidays = [] } = useQuery({
     queryKey: ['holidays'],
     queryFn: getHolidays
   });
-  
-  // Mutación para añadir festivo
+
   const addHolidayMutation = useMutation({
     mutationFn: addHoliday,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['holidays'] });
       setHolidayName('');
+      setHolidayDescription('');
       toast({
-        title: 'Festivo engadido',
-        description: 'O día festivo foi engadido correctamente.',
+        title: 'Día festivo añadido',
+        description: 'El día festivo ha sido registrado correctamente.',
       });
     },
     onError: (error) => {
       toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro ao engadir o festivo',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo registrar el día festivo.',
         variant: 'destructive',
       });
     }
   });
-  
-  // Mutación para eliminar festivo
+
   const removeHolidayMutation = useMutation({
     mutationFn: removeHoliday,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['holidays'] });
       toast({
-        title: 'Festivo eliminado',
-        description: 'O día festivo foi eliminado correctamente.',
+        title: 'Día festivo eliminado',
+        description: 'El día festivo ha sido eliminado correctamente.',
       });
     },
     onError: (error) => {
       toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro ao eliminar o festivo',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo eliminar el día festivo.',
         variant: 'destructive',
       });
     }
   });
-  
-  const handleAddHoliday = () => {
-    if (!selectedDate) {
+
+  const handleAddHoliday = async () => {
+    if (!selectedDate || !holidayName.trim()) {
       toast({
-        title: 'Erro',
-        description: 'Por favor, selecciona unha data',
+        title: 'Campos incompletos',
+        description: 'Por favor selecciona una fecha e introduce un nombre para el día festivo.',
         variant: 'destructive',
       });
       return;
     }
     
-    if (!holidayName.trim()) {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    
+    if (holidays.some(h => h.date === dateStr)) {
       toast({
-        title: 'Erro',
-        description: 'Por favor, introduce un nome para o festivo',
+        title: 'Fecha duplicada',
+        description: 'Ya existe un día festivo en esta fecha.',
         variant: 'destructive',
       });
       return;
     }
     
-    const newHoliday: Holiday = {
-      date: format(selectedDate, 'yyyy-MM-dd'),
-      name: holidayName.trim()
+    const newHoliday = {
+      date: dateStr,
+      name: holidayName,
+      description: holidayDescription || holidayName
     };
     
-    // Verificar si ya existe
-    const exists = holidays.some(h => h.date === newHoliday.date);
-    if (exists) {
+    try {
+      await addHoliday(newHoliday);
+      setHolidays([...holidays, newHoliday]);
+      
+      setSelectedDate(undefined);
+      setHolidayName('');
+      setHolidayDescription('');
+      
       toast({
-        title: 'Festivo xa existe',
-        description: 'Xa existe un festivo para esta data',
+        title: 'Día festivo añadido',
+        description: 'El día festivo ha sido registrado correctamente.',
+      });
+    } catch (error) {
+      console.error('Error al añadir día festivo:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo registrar el día festivo.',
         variant: 'destructive',
       });
-      return;
     }
-    
-    addHolidayMutation.mutate(newHoliday);
   };
-  
+
   const handleRemoveHoliday = (holiday: Holiday) => {
     removeHolidayMutation.mutate(holiday);
   };
-  
-  // Función para renderizar festivos en el calendario
+
   const handleCalendarRender = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const isHoliday = holidays.some(h => h.date === dateStr);
@@ -129,7 +137,7 @@ const HolidaysCalendar: React.FC<HolidaysCalendarProps> = ({ isEditable }) => {
     
     return {};
   };
-  
+
   return (
     <div className={cn("space-y-6", isEditable ? "" : "pointer-events-none")}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -165,6 +173,13 @@ const HolidaysCalendar: React.FC<HolidaysCalendarProps> = ({ isEditable }) => {
                   value={holidayName}
                   onChange={(e) => setHolidayName(e.target.value)}
                   placeholder="Ex: Día Nacional de Galicia"
+                  className="flex-1"
+                />
+                <Input
+                  id="holidayDescription"
+                  value={holidayDescription}
+                  onChange={(e) => setHolidayDescription(e.target.value)}
+                  placeholder="Descripción"
                   className="flex-1"
                 />
                 <Button 
