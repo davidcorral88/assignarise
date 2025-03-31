@@ -102,11 +102,14 @@ export const updateUser = async (user: User): Promise<void> => {
 };
 
 export const deleteUser = async (id: string): Promise<void> => {
-  await fetchWithErrorHandling(
-    `${API_URL}/users/${id}`,
-    { method: 'DELETE' },
-    `Error al eliminar usuario ${id}`
-  );
+  try {
+    const response = await fetch(`${API_URL}/users/${id}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+  } catch (error) {
+    return handleFetchError(error, `Error al eliminar usuario ${id}`);
+  }
 };
 
 // Funciones para tareas
@@ -174,7 +177,7 @@ export const deleteTask = async (id: string): Promise<void> => {
     });
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
   } catch (error) {
-    handleFetchError(error, `Error al eliminar tarea ${id}`);
+    return handleFetchError(error, `Error al eliminar tarea ${id}`);
   }
 };
 

@@ -27,6 +27,7 @@ import {
 import { Task } from '../utils/types';
 import { format } from 'date-fns';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { toast } from '@/components/ui/use-toast';
 
 const Dashboard = () => {
   const { currentUser } = useAuth();
@@ -96,9 +97,9 @@ const Dashboard = () => {
     if (currentUser?.role === 'director' || currentUser?.role === 'admin') {
       // For directors and admins: tasks by status
       const statusCounts = {
-        completed: mockTasks.filter(t => t.status === 'completed').length,
-        in_progress: mockTasks.filter(t => t.status === 'in_progress').length,
-        pending: mockTasks.filter(t => t.status === 'pending').length,
+        completed: userTasks.filter(t => t.status === 'completed').length,
+        in_progress: userTasks.filter(t => t.status === 'in_progress').length,
+        pending: userTasks.filter(t => t.status === 'pending').length,
       };
       
       return [
@@ -112,7 +113,7 @@ const Dashboard = () => {
       const taskHours: Record<string, number> = {};
       
       userEntries.forEach(entry => {
-        const task = mockTasks.find(t => t.id === entry.taskId);
+        const task = userTasks.find(t => t.id === entry.taskId);
         if (task) {
           const taskName = task.title.substring(0, 20) + (task.title.length > 20 ? '...' : '');
           taskHours[taskName] = (taskHours[taskName] || 0) + entry.hours;

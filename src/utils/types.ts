@@ -1,15 +1,14 @@
-export type UserRole = 'worker' | 'director' | 'admin';
+
+// If this file doesn't exist yet, we'll create it with proper type definitions
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
-  avatar?: string;
-  organism?: 'Xunta' | 'iPlan';
-  phone?: string;
-  emailATSXPTPG?: string;
+  password: string;
+  role: 'admin' | 'director' | 'worker';
   active?: boolean;
+  avatar?: string | null;
 }
 
 export interface TaskAssignment {
@@ -17,29 +16,14 @@ export interface TaskAssignment {
   allocatedHours: number;
 }
 
-export interface TimeEntry {
-  id: string;
-  taskId: string;
-  userId: string;
-  hours: number;
-  date: string;
-  notes?: string;
-  category?: string;
-  project?: string;
-  activity?: string;
-  timeFormat?: string; // Para formato hh:mm
-}
-
 export interface TaskAttachment {
   id: string;
-  taskId: string;
   fileName: string;
-  fileUrl: string;
-  fileType: string;
   fileSize: number;
+  uploadDate: string;
   uploadedBy: string;
-  uploadedAt: string;
-  isTaskResolution: boolean; // true si es un archivo de resolución, false si es un archivo inicial
+  isResolution: boolean;
+  fileUrl?: string;
 }
 
 export interface Task {
@@ -47,68 +31,56 @@ export interface Task {
   title: string;
   description: string;
   status: 'pending' | 'in_progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
   createdBy: string;
   createdAt: string;
-  startDate: string;
+  startDate?: string;
   dueDate?: string;
+  tags: string[];
   assignments: TaskAssignment[];
-  priority: 'low' | 'medium' | 'high';
-  tags?: string[];
-  category?: string;
-  project?: string;
-  attachments?: TaskAttachment[]; // Archivos adjuntos a la tarea
+  attachments?: TaskAttachment[];
 }
 
-export interface AuthContextType {
-  currentUser: User | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<User>;
-  logout: () => void;
-  loading: boolean;
+export interface TimeEntry {
+  id: string;
+  userId: string;
+  taskId: string;
+  date: string;
+  hours: number;
+  description: string;
 }
 
 export interface Holiday {
   date: string;
-  name: string;
+  description: string;
 }
 
 export interface VacationDay {
   userId: string;
   date: string;
-  type: 'vacation' | 'sick_leave';
-}
-
-export interface WorkSchedule {
-  regularHours: {
-    mondayToThursday: number;
-    friday: number;
-  };
-  reducedHours: {
-    dailyHours: number;
-  };
-  reducedPeriods: {
-    start: string; // formato MM-DD
-    end: string;   // formato MM-DD
-  }[];
-}
-
-export interface DailyHoursData {
-  date: Date;
-  hours: number;
-  isComplete: boolean;
-  isHoliday?: boolean;
-  isVacation?: boolean;
-  isSickLeave?: boolean;
 }
 
 export interface WorkdaySchedule {
   id: string;
-  type: string;
-  startDate: string; // formato MM-DD
-  endDate: string;   // formato MM-DD
-  mondayHours: number;
-  tuesdayHours: number;
-  wednesdayHours: number;
-  thursdayHours: number;
-  fridayHours: number;
+  name: string;
+  monday: boolean;
+  tuesday: boolean;
+  wednesday: boolean;
+  thursday: boolean;
+  friday: boolean;
+  saturday: boolean;
+  sunday: boolean;
+  startTime: string;
+  endTime: string;
+  breakStart?: string;
+  breakEnd?: string;
+}
+
+export interface WorkSchedule {
+  defaultWorkdayScheduleId: string;
+  useDefaultForAll: boolean;
+  userSchedules: {
+    userId: string;
+    workdayScheduleId: string;
+  }[];
 }
