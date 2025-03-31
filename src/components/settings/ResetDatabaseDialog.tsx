@@ -1,22 +1,30 @@
 
-import React, { useState } from 'react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Trash2 } from 'lucide-react';
+import { resetDatabase } from '@/utils/dataService';
 
-export const ResetDatabaseDialog: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface ResetDatabaseDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}
 
+export const ResetDatabaseDialog: React.FC<ResetDatabaseDialogProps> = ({ 
+  open, 
+  onOpenChange,
+  onConfirm 
+}) => {
   const handleReset = async () => {
     try {
-      // Implementation for database reset would go here
+      resetDatabase();
       toast({
         title: "Base de datos reiniciada",
         description: "Todos los datos han sido eliminados correctamente",
       });
-      setIsOpen(false);
+      onConfirm();
     } catch (error) {
+      console.error('Error al reiniciar la base de datos:', error);
       toast({
         title: "Error al reiniciar",
         description: "No se pudo reiniciar la base de datos",
@@ -26,13 +34,7 @@ export const ResetDatabaseDialog: React.FC = () => {
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-      <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="w-full">
-          <Trash2 className="mr-2 h-4 w-4" />
-          Reiniciar base de datos
-        </Button>
-      </AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
