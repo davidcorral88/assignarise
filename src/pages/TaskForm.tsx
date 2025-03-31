@@ -1,10 +1,26 @@
+
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../components/auth/AuthContext';
-import { getTaskById, getUsers, addTask, updateTask, getNextTaskId } from '../utils/dataService';
-import { Task, User, TaskAssignment } from '../utils/types';
+import { getUserById, addUser, updateUser, getNextUserId, getUsers, addTask, updateTask, getTaskById, getNextTaskId, deleteTask } from '../utils/dataService';
+import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
+import { toast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
+import { CheckSquare, ArrowLeft, Trash2, Plus, Search, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2 } from 'lucide-react';
+import { FileUploader } from '@/components/files/FileUploader';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,13 +49,28 @@ const TaskForm = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   
-  const availableUsers = getUsers().filter(user => {
-    if (currentUser?.role === 'director') {
-      return user.active !== false;
-    } else {
-      return user.role === 'worker' && user.active !== false;
-    }
-  });
+  // Updated to handle synchronous data
+  const availableUsers = useState<User[]>([]);
+  
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const users = await getUsers();
+        const filteredUsers = users.filter(user => {
+          if (currentUser?.role === 'director') {
+            return user.active !== false;
+          } else {
+            return user.role === 'worker' && user.active !== false;
+          }
+        });
+        availableUsers[1](filteredUsers);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    
+    fetchUsers();
+  }, [currentUser]);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -63,8 +94,10 @@ const TaskForm = () => {
           const nextId = await getNextTaskId();
           setTaskId(nextId);
         }
+        setLoading(false);
       } catch (error) {
         console.error('Error loading task data:', error);
+        setLoading(false);
       }
     };
     
@@ -101,7 +134,7 @@ const TaskForm = () => {
       status: status as 'pending' | 'in_progress' | 'completed',
       priority: priority as 'low' | 'medium' | 'high',
       createdBy: currentUser?.id || '',
-      createdAt: isEditing || searchMode ? getTaskById(searchMode ? searchTaskId : id!)?.createdAt || new Date().toISOString() : new Date().toISOString(),
+      createdAt: isEditMode || searchMode ? task?.createdAt || new Date().toISOString() : new Date().toISOString(),
       startDate: startDate ? format(startDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0],
       dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined,
       tags,
@@ -110,7 +143,7 @@ const TaskForm = () => {
     };
     
     try {
-      if (isEditing || searchMode) {
+      if (isEditMode || searchMode) {
         await updateTask(task);
         toast({
           title: 'Tarefa actualizada',
@@ -140,8 +173,8 @@ const TaskForm = () => {
   };
 
   const handleDeleteTask = async () => {
-    if ((isEditing && id) || (searchMode && searchTaskId)) {
-      const taskIdToDelete = isEditing ? id : searchTaskId;
+    if ((isEditMode && id) || (searchMode && searchTaskId)) {
+      const taskIdToDelete = isEditMode ? id : searchTaskId;
       try {
         await deleteTask(taskIdToDelete);
         toast({
@@ -163,19 +196,20 @@ const TaskForm = () => {
   const handleSearchTask = async () => {
     if (searchTaskId.trim()) {
       try {
-        const task = await getTaskById(searchTaskId);
-        if (task) {
-          setTaskId(parseInt(task.id));
-          setTarefa(task.title);
-          setDescription(task.description);
-          setStatus(task.status);
-          setPriority(task.priority);
-          setStartDate(task.startDate ? new Date(task.startDate) : new Date());
-          setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
-          setTags(task.tags || []);
-          setAssignments([...task.assignments]);
-          setAttachments(task.attachments || []);
+        const taskData = await getTaskById(searchTaskId);
+        if (taskData) {
+          setTaskId(parseInt(taskData.id));
+          setTarefa(taskData.title);
+          setDescription(taskData.description);
+          setStatus(taskData.status);
+          setPriority(taskData.priority);
+          setStartDate(taskData.startDate ? new Date(taskData.startDate) : new Date());
+          setDueDate(taskData.dueDate ? new Date(taskData.dueDate) : undefined);
+          setTags(taskData.tags || []);
+          setAssignments([...taskData.assignments]);
+          setAttachments(taskData.attachments || []);
           setSearchMode(true);
+          setTask(taskData);
           
           toast({
             title: 'Tarefa atopada',
@@ -190,37 +224,18 @@ const TaskForm = () => {
         }
       } catch (error) {
         console.error("Error searching for task:", error);
-        const mockTask = getTaskById(searchTaskId);
-        if (mockTask) {
-          setTaskId(parseInt(mockTask.id));
-          setTarefa(mockTask.title);
-          setDescription(mockTask.description);
-          setStatus(mockTask.status);
-          setPriority(mockTask.priority);
-          setStartDate(mockTask.startDate ? new Date(mockTask.startDate) : new Date());
-          setDueDate(mockTask.dueDate ? new Date(mockTask.dueDate) : undefined);
-          setTags(mockTask.tags || []);
-          setAssignments([...mockTask.assignments]);
-          setAttachments(mockTask.attachments || []);
-          setSearchMode(true);
-          
-          toast({
-            title: 'Tarefa atopada (datos locais)',
-            description: `Cargouse a tarefa con ID ${searchTaskId} desde datos locais`,
-          });
-        } else {
-          toast({
-            title: 'Tarefa non atopada',
-            description: `Non se atopou ningunha tarefa co ID ${searchTaskId}`,
-            variant: 'destructive',
-          });
-        }
+        toast({
+          title: 'Tarefa non atopada',
+          description: `Non se atopou ningunha tarefa co ID ${searchTaskId}`,
+          variant: 'destructive',
+        });
       }
     }
   };
   
-  const handleResetForm = () => {
-    setTaskId(getNextTaskId());
+  const handleResetForm = async () => {
+    const nextId = await getNextTaskId();
+    setTaskId(nextId);
     setTarefa('');
     setDescription('');
     setStatus('pending');
@@ -232,6 +247,7 @@ const TaskForm = () => {
     setAttachments([]);
     setSearchMode(false);
     setSearchTaskId('');
+    setTask(null);
     
     toast({
       title: 'Formulario restablecido',
@@ -301,8 +317,8 @@ const TaskForm = () => {
   }
   
   const canEdit = currentUser?.role === 'director' || 
-    (isEditMode && getTaskById(id!)?.createdBy === currentUser?.id) ||
-    (searchMode && getTaskById(searchTaskId)?.createdBy === currentUser?.id);
+    (isEditMode && task?.createdBy === currentUser?.id) ||
+    (searchMode && task?.createdBy === currentUser?.id);
   
   const isTaskCompleted = status === 'completed';
   
@@ -436,17 +452,17 @@ const TaskForm = () => {
                             !startDate && "text-muted-foreground"
                           )}
                         >
-                          <Calendar className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="mr-2 h-4 w-4" />
                           {startDate ? format(startDate, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
-                        <CalendarComponent
+                        <Calendar
                           mode="single"
                           selected={startDate}
                           onSelect={setStartDate}
                           initialFocus
-                          className="bg-white pointer-events-auto"
+                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
@@ -592,7 +608,7 @@ const TaskForm = () => {
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
                     {assignments.map(assignment => {
-                      const user = getUsers().find(u => u.id === assignment.userId);
+                      const user = availableUsers[0].find(u => u.id === assignment.userId);
                       return (
                         <div key={assignment.userId} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
                           <div className="flex items-center gap-3">
@@ -632,7 +648,7 @@ const TaskForm = () => {
                             <SelectValue placeholder="Seleccionar usuario" />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableUsers.map(user => (
+                            {availableUsers[0].map(user => (
                               <SelectItem key={user.id} value={user.id}>
                                 {user.name} {user.role === 'director' ? ' (Xerente)' : ''}
                               </SelectItem>
@@ -716,17 +732,17 @@ const TaskForm = () => {
                             !dueDate && "text-muted-foreground"
                           )}
                         >
-                          <Calendar className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="mr-2 h-4 w-4" />
                           {dueDate ? format(dueDate, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
-                        <CalendarComponent
+                        <Calendar
                           mode="single"
                           selected={dueDate}
                           onSelect={setDueDate}
                           initialFocus
-                          className="bg-white pointer-events-auto"
+                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>

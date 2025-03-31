@@ -36,7 +36,7 @@ import {
   FormMessage 
 } from '@/components/ui/form';
 import { Calendar } from '@/components/ui/calendar';
-import { TimePickerDemo } from '@/components/ui/time-picker';
+import { TimePicker } from '@/components/ui/time-picker';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
   getWorkdaySchedules, 
@@ -129,7 +129,7 @@ const WorkdayScheduleTable: React.FC = () => {
   
   useEffect(() => {
     if (selectedSchedule) {
-      const formValues: FormValues = {
+      const formValues = {
         name: selectedSchedule.name,
         monday: selectedSchedule.monday,
         tuesday: selectedSchedule.tuesday,
@@ -448,7 +448,7 @@ const WorkdayScheduleTable: React.FC = () => {
                       <FormItem>
                         <FormLabel>Hora de inicio</FormLabel>
                         <FormControl>
-                          <TimePickerDemo
+                          <TimePicker
                             value={field.value}
                             onChange={field.onChange}
                           />
@@ -467,7 +467,7 @@ const WorkdayScheduleTable: React.FC = () => {
                       <FormItem>
                         <FormLabel>Hora de fin</FormLabel>
                         <FormControl>
-                          <TimePickerDemo
+                          <TimePicker
                             value={field.value}
                             onChange={field.onChange}
                           />
@@ -652,7 +652,7 @@ const WorkdayScheduleTable: React.FC = () => {
                       <FormItem>
                         <FormLabel>Hora de inicio</FormLabel>
                         <FormControl>
-                          <TimePickerDemo
+                          <TimePicker
                             value={field.value}
                             onChange={field.onChange}
                           />
@@ -671,7 +671,7 @@ const WorkdayScheduleTable: React.FC = () => {
                       <FormItem>
                         <FormLabel>Hora de fin</FormLabel>
                         <FormControl>
-                          <TimePickerDemo
+                          <TimePicker
                             value={field.value}
                             onChange={field.onChange}
                           />
