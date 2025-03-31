@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -43,16 +44,21 @@ import {
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { 
-  mockTasks, 
-  mockUsers, 
   getTaskById,
   getNextTaskId,
-  addTask,
-  updateTask,
-  deleteTask,
+  // Replace mock data functions with real API functions
   addAttachment,
   removeAttachment
 } from '../utils/mockData';
+// Import the actual API service functions for tasks
+import {
+  addTask,
+  updateTask,
+  deleteTask,
+  getTaskById as apiGetTaskById,
+  getNextTaskId as apiGetNextTaskId
+} from '../utils/apiService';
+import { mockUsers } from '../utils/mockData';
 import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -114,28 +120,58 @@ const TaskForm = () => {
   });
   
   useEffect(() => {
-    if (isEditing && id) {
-      const task = getTaskById(id);
-      if (task) {
-        setTaskId(parseInt(task.id));
-        setTarefa(task.title);
-        setDescription(task.description);
-        setStatus(task.status);
-        setPriority(task.priority);
-        setStartDate(task.startDate ? new Date(task.startDate) : new Date());
-        setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
-        setTags(task.tags || []);
-        setAssignments([...task.assignments]);
-        setAttachments(task.attachments || []);
+    const fetchTaskData = async () => {
+      if (isEditing && id) {
+        try {
+          // Use the API function instead of mock data
+          const task = await apiGetTaskById(id);
+          if (task) {
+            setTaskId(parseInt(task.id));
+            setTarefa(task.title);
+            setDescription(task.description);
+            setStatus(task.status);
+            setPriority(task.priority);
+            setStartDate(task.startDate ? new Date(task.startDate) : new Date());
+            setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
+            setTags(task.tags || []);
+            setAssignments([...task.assignments]);
+            setAttachments(task.attachments || []);
+          }
+        } catch (error) {
+          console.error("Error fetching task data:", error);
+          // Fallback to mock data if API fails
+          const mockTask = getTaskById(id);
+          if (mockTask) {
+            setTaskId(parseInt(mockTask.id));
+            setTarefa(mockTask.title);
+            setDescription(mockTask.description);
+            setStatus(mockTask.status);
+            setPriority(mockTask.priority);
+            setStartDate(mockTask.startDate ? new Date(mockTask.startDate) : new Date());
+            setDueDate(mockTask.dueDate ? new Date(mockTask.dueDate) : undefined);
+            setTags(mockTask.tags || []);
+            setAssignments([...mockTask.assignments]);
+            setAttachments(mockTask.attachments || []);
+          }
+        }
+      } else {
+        // For new tasks, automatically set the next ID and make it read-only
+        try {
+          const nextId = await apiGetNextTaskId();
+          setTaskId(nextId);
+        } catch (error) {
+          console.error("Error fetching next task ID:", error);
+          // Fallback to mock function
+          setTaskId(getNextTaskId());
+        }
       }
-    } else {
-      // For new tasks, automatically set the next ID and make it read-only
-      setTaskId(getNextTaskId());
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+    
+    fetchTaskData();
   }, [id, isEditing]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!tarefa.trim()) {
@@ -174,66 +210,116 @@ const TaskForm = () => {
       attachments,
     };
     
-    // Save the task
-    if (isEditing || searchMode) {
-      updateTask(task);
+    try {
+      // Save the task using the API functions
+      if (isEditing || searchMode) {
+        await updateTask(task);
+        toast({
+          title: 'Tarefa actualizada',
+          description: 'A tarefa foi actualizada correctamente.',
+        });
+      } else {
+        await addTask(task);
+        toast({
+          title: 'Tarefa creada',
+          description: 'A tarefa foi creada correctamente.',
+        });
+      }
+      
+      // Navigate back to tasks list
+      setTimeout(() => {
+        navigate('/tasks');
+        setSubmitting(false);
+      }, 800);
+    } catch (error) {
+      console.error("Error saving task:", error);
       toast({
-        title: 'Tarefa actualizada',
-        description: 'A tarefa foi actualizada correctamente.',
+        title: 'Erro',
+        description: 'Ocorreu un erro ao gardar a tarefa. Por favor, inténtao de novo.',
+        variant: 'destructive',
       });
-    } else {
-      addTask(task);
-      toast({
-        title: 'Tarefa creada',
-        description: 'A tarefa foi creada correctamente.',
-      });
-    }
-    
-    // Navigate back to tasks list
-    setTimeout(() => {
-      navigate('/tasks');
       setSubmitting(false);
-    }, 800);
+    }
   };
 
-  const handleDeleteTask = () => {
+  const handleDeleteTask = async () => {
     if ((isEditing && id) || (searchMode && searchTaskId)) {
       const taskIdToDelete = isEditing ? id : searchTaskId;
-      deleteTask(taskIdToDelete);
-      toast({
-        title: 'Tarefa eliminada',
-        description: 'A tarefa foi eliminada correctamente.',
-      });
-      navigate('/tasks');
+      try {
+        await deleteTask(taskIdToDelete);
+        toast({
+          title: 'Tarefa eliminada',
+          description: 'A tarefa foi eliminada correctamente.',
+        });
+        navigate('/tasks');
+      } catch (error) {
+        console.error("Error deleting task:", error);
+        toast({
+          title: 'Erro',
+          description: 'Ocorreu un erro ao eliminar a tarefa. Por favor, inténtao de novo.',
+          variant: 'destructive',
+        });
+      }
     }
   };
   
-  const handleSearchTask = () => {
+  const handleSearchTask = async () => {
     if (searchTaskId.trim()) {
-      const task = getTaskById(searchTaskId);
-      if (task) {
-        setTaskId(parseInt(task.id));
-        setTarefa(task.title);
-        setDescription(task.description);
-        setStatus(task.status);
-        setPriority(task.priority);
-        setStartDate(task.startDate ? new Date(task.startDate) : new Date());
-        setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
-        setTags(task.tags || []);
-        setAssignments([...task.assignments]);
-        setAttachments(task.attachments || []);
-        setSearchMode(true);
-        
-        toast({
-          title: 'Tarefa atopada',
-          description: `Cargouse a tarefa con ID ${searchTaskId}`,
-        });
-      } else {
-        toast({
-          title: 'Tarefa non atopada',
-          description: `Non se atopou ningunha tarefa co ID ${searchTaskId}`,
-          variant: 'destructive',
-        });
+      try {
+        // Use the API function to search for the task
+        const task = await apiGetTaskById(searchTaskId);
+        if (task) {
+          setTaskId(parseInt(task.id));
+          setTarefa(task.title);
+          setDescription(task.description);
+          setStatus(task.status);
+          setPriority(task.priority);
+          setStartDate(task.startDate ? new Date(task.startDate) : new Date());
+          setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
+          setTags(task.tags || []);
+          setAssignments([...task.assignments]);
+          setAttachments(task.attachments || []);
+          setSearchMode(true);
+          
+          toast({
+            title: 'Tarefa atopada',
+            description: `Cargouse a tarefa con ID ${searchTaskId}`,
+          });
+        } else {
+          toast({
+            title: 'Tarefa non atopada',
+            description: `Non se atopou ningunha tarefa co ID ${searchTaskId}`,
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error("Error searching for task:", error);
+        // Fallback to mock data if API fails
+        const mockTask = getTaskById(searchTaskId);
+        if (mockTask) {
+          setTaskId(parseInt(mockTask.id));
+          setTarefa(mockTask.title);
+          setDescription(mockTask.description);
+          setStatus(mockTask.status);
+          setPriority(mockTask.priority);
+          setStartDate(mockTask.startDate ? new Date(mockTask.startDate) : new Date());
+          setDueDate(mockTask.dueDate ? new Date(mockTask.dueDate) : undefined);
+          setTags(mockTask.tags || []);
+          setAssignments([...mockTask.assignments]);
+          setAttachments(mockTask.attachments || []);
+          setSearchMode(true);
+          
+          toast({
+            title: 'Tarefa atopada (datos locais)',
+            description: `Cargouse a tarefa con ID ${searchTaskId} desde datos locais`,
+          });
+        } else {
+          toast({
+            title: 'Tarefa non atopada',
+            description: `Non se atopou ningunha tarefa co ID ${searchTaskId}`,
+            variant: 'destructive',
+          });
+        }
       }
     }
   };

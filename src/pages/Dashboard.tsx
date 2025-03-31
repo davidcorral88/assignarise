@@ -16,12 +16,14 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
-  mockTasks, 
   mockUsers, 
   mockTimeEntries, 
-  getTasksByUserId, 
   getTimeEntriesByUserId 
 } from '../utils/mockData';
+import {
+  getTasks,
+  getTasksByUserId
+} from '../utils/apiService'; // Use API functions for tasks
 import { Task } from '../utils/types';
 import { format } from 'date-fns';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
@@ -30,17 +32,37 @@ const Dashboard = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [userTasks, setUserTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    if (currentUser) {
-      if (currentUser.role === 'worker') {
-        // Workers only see tasks assigned to them
-        setUserTasks(getTasksByUserId(currentUser.id));
-      } else {
-        // Directors and Admins see all tasks
-        setUserTasks(mockTasks);
+    const fetchTasks = async () => {
+      if (currentUser) {
+        try {
+          let tasksData;
+          if (currentUser.role === 'worker') {
+            // Workers only see tasks assigned to them
+            tasksData = await getTasksByUserId(currentUser.id);
+          } else {
+            // Directors and Admins see all tasks
+            tasksData = await getTasks();
+          }
+          setUserTasks(tasksData);
+        } catch (error) {
+          console.error("Error fetching tasks:", error);
+          // If API fails, fallback to empty array
+          setUserTasks([]);
+          toast({
+            title: 'Error',
+            description: 'Non se puideron cargar as tarefas',
+            variant: 'destructive',
+          });
+        } finally {
+          setLoading(false);
+        }
       }
-    }
+    };
+    
+    fetchTasks();
   }, [currentUser]);
   
   const getStatusIcon = (status: string) => {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -50,7 +51,7 @@ import {
   getTasksByUserId, 
   getUserById,
   deleteTask
-} from '../utils/dataService';
+} from '../utils/apiService'; // Make sure we're using the apiService functions
 import { Task, User } from '../utils/types';
 import { format, isAfter, isBefore, parseISO } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
