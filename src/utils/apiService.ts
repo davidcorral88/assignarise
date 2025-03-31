@@ -145,6 +145,7 @@ export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
 };
 
 export const addTask = async (task: Task): Promise<void> => {
+  console.log("Guardando tarea en PostgreSQL:", task);
   try {
     const response = await fetch(`${API_URL}/tasks`, {
       method: 'POST',

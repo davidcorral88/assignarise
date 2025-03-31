@@ -1,6 +1,8 @@
+
 // This file contains mock data and will be kept but we need to ensure that the API functions are used instead
 import { v4 as uuidv4 } from 'uuid';
 import { User, Task, TimeEntry, TaskAttachment, WorkdaySchedule } from './types';
+import * as dataService from './dataService';
 
 // Mock users data
 export const mockUsers: User[] = [
@@ -12,25 +14,73 @@ export const mockUsers: User[] = [
 // Mock tasks data - left for backward compatibility
 export const mockTasks: Task[] = [];
 
-// Utility functions to interact with mock data
-export const getTaskById = (id: string): Task | undefined => {
-  // Keep this function for fallback
-  return mockTasks.find(task => task.id === id);
+// Utility functions that redirect to the dataService API functions
+export const getTaskById = async (id: string): Promise<Task | undefined> => {
+  // Redirect to dataService
+  return await dataService.getTaskById(id);
 };
 
-export const getNextTaskId = (): number => {
-  // This function is still being called from TaskForm
-  // Fallback method to get next ID if API fails
-  if (mockTasks.length === 0) return 1;
-  
-  const ids = mockTasks.map(task => parseInt(task.id));
-  return Math.max(...ids) + 1;
+export const getNextTaskId = async (): Promise<number> => {
+  // Redirect to dataService
+  return await dataService.getNextTaskId();
 };
 
-export const getTimeEntriesByUserId = (userId: string): TimeEntry[] => {
-  return mockTimeEntries.filter(entry => entry.userId === userId);
+export const getTimeEntriesByUserId = async (userId: string): Promise<TimeEntry[]> => {
+  // Redirect to dataService
+  return await dataService.getTimeEntriesByUserId(userId);
 };
 
+export const getTimeEntriesByTaskId = async (taskId: string): Promise<TimeEntry[]> => {
+  // Redirect to dataService
+  return await dataService.getTimeEntriesByTaskId(taskId);
+};
+
+export const getUserById = async (id: string): Promise<User | undefined> => {
+  // Redirect to dataService
+  return await dataService.getUserById(id);
+};
+
+export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
+  // Redirect to dataService
+  return await dataService.getTasksByUserId(userId);
+};
+
+export const getTotalHoursByTask = async (taskId: string): Promise<number> => {
+  // Redirect to dataService
+  return await dataService.getTotalHoursByTask(taskId);
+};
+
+export const getTotalHoursAllocatedByTask = async (taskId: string): Promise<number> => {
+  // Redirect to dataService
+  return await dataService.getTotalHoursAllocatedByTask(taskId);
+};
+
+export const getHolidays = async (): Promise<Holiday[]> => {
+  // Redirect to dataService
+  return await dataService.getHolidays();
+};
+
+export const getWorkSchedule = async (): Promise<WorkSchedule> => {
+  // Redirect to dataService
+  return await dataService.getWorkSchedule();
+};
+
+export const updateWorkSchedule = async (schedule: WorkSchedule): Promise<void> => {
+  // Redirect to dataService
+  await dataService.updateWorkSchedule(schedule);
+};
+
+export const addHoliday = async (holiday: Holiday): Promise<void> => {
+  // Redirect to dataService
+  await dataService.addHoliday(holiday);
+};
+
+export const removeHoliday = async (holiday: Holiday): Promise<void> => {
+  // Redirect to dataService
+  await dataService.removeHoliday(holiday);
+};
+
+// Esta función será reemplazada por el uso de fileService
 export const addAttachment = (
   taskId: string,
   file: File,
@@ -45,19 +95,12 @@ export const addAttachment = (
       uploadDate: new Date().toISOString(),
       uploadedBy: userId,
       isResolution,
-      fileUrl: URL.createObjectURL(file)
+      fileUrl: URL.createObjectURL(file),
+      taskId
     };
     
-    // Find the task and add the attachment
-    const task = mockTasks.find(t => t.id === taskId);
-    if (task) {
-      if (!task.attachments) {
-        task.attachments = [];
-      }
-      task.attachments.push(attachment);
-    }
-    
-    // Simulate network delay
+    // Redirect to dataService in a real application
+    // For now, just simulate
     setTimeout(() => {
       resolve(attachment);
     }, 500);
@@ -66,20 +109,15 @@ export const addAttachment = (
 
 export const removeAttachment = (taskId: string, attachmentId: string): Promise<void> => {
   return new Promise((resolve) => {
-    // Find the task and remove the attachment
-    const task = mockTasks.find(t => t.id === taskId);
-    if (task && task.attachments) {
-      task.attachments = task.attachments.filter(a => a.id !== attachmentId);
-    }
-    
-    // Simulate network delay
+    // In a real application, this would call dataService
+    // For now, just simulate
     setTimeout(() => {
       resolve();
     }, 500);
   });
 };
 
-// Mock time entries
+// Mock time entries - should be migrated to PostgreSQL
 export const mockTimeEntries: TimeEntry[] = [
   {
     id: 'entry1',
@@ -107,7 +145,7 @@ export const mockTimeEntries: TimeEntry[] = [
   }
 ];
 
-// Mock workday schedules
+// Mock workday schedules - should be migrated to PostgreSQL
 export const mockWorkdaySchedules: WorkdaySchedule[] = [
   {
     id: 'schedule1',
