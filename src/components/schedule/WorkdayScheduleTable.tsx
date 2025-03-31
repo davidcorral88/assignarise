@@ -1,427 +1,696 @@
-
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar as CalendarIcon, Save, Edit, Trash, Plus } from 'lucide-react';
-import { format, parse } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from 'react';
+import { 
+  Card, 
+  CardContent, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
-  Table, 
-  TableHeader, 
-  TableHead, 
-  TableBody, 
-  TableRow, 
-  TableCell 
-} from '@/components/ui/table';
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '@/components/ui/dialog';
 import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+  Form, 
+  FormControl, 
+  FormDescription, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from '@/components/ui/form';
 import { Calendar } from '@/components/ui/calendar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/use-toast';
-import { WorkdaySchedule } from '@/utils/types';
+import { TimePickerDemo } from '@/components/ui/time-picker';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   getWorkdaySchedules, 
   addWorkdaySchedule, 
-  updateWorkSchedule, 
   deleteWorkdaySchedule 
 } from '@/utils/dataService';
+import { WorkdaySchedule } from '@/utils/types';
+import { toast } from '@/components/ui/use-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { format } from 'date-fns';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-const formatDateFromMMDD = (mmdd: string): string => {
-  // Convertir MM-DD a Date y formatear a string legible
-  const year = new Date().getFullYear();
-  const date = parse(`${year}-${mmdd}`, 'yyyy-MM-dd', new Date());
-  return format(date, 'd MMM', { locale: es });
-};
+// Import directly from apiService
+import { updateWorkdaySchedule } from '@/utils/apiService';
+
+const workdayScheduleSchema = z.object({
+  name: z.string().min(2, {
+    message: "El nombre debe tener al menos 2 caracteres.",
+  }),
+  monday: z.boolean().default(false),
+  tuesday: z.boolean().default(false),
+  wednesday: z.boolean().default(false),
+  thursday: z.boolean().default(false),
+  friday: z.boolean().default(false),
+  saturday: z.boolean().default(false),
+  sunday: z.boolean().default(false),
+  startTime: z.string().default('08:00'),
+  endTime: z.string().default('17:00'),
+  breakStart: z.string().optional(),
+  breakEnd: z.string().optional(),
+  mondayHours: z.number().optional(),
+  tuesdayHours: z.number().optional(),
+  wednesdayHours: z.number().optional(),
+  thursdayHours: z.number().optional(),
+  fridayHours: z.number().optional(),
+  saturdayHours: z.number().optional(),
+  sundayHours: z.number().optional(),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
+});
 
 const WorkdayScheduleTable: React.FC = () => {
   const queryClient = useQueryClient();
-  const [editingSchedule, setEditingSchedule] = useState<WorkdaySchedule | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<WorkdaySchedule | null>(null);
   
-  // Store original id for updates
-  const [originalId, setOriginalId] = useState<string | null>(null);
-  
-  // Query para obtener los horarios
-  const { data: schedules = [] } = useQuery({
+  const { data: workdaySchedules = [], isLoading } = useQuery({
     queryKey: ['workdaySchedules'],
     queryFn: getWorkdaySchedules
   });
   
-  // Mutation para añadir horario
-  const addScheduleMutation = useMutation({
+  const form = useForm<z.infer<typeof workdayScheduleSchema>>({
+    resolver: zodResolver(workdayScheduleSchema),
+    defaultValues: {
+      name: "",
+      monday: false,
+      tuesday: false,
+      wednesday: false,
+      thursday: false,
+      friday: false,
+      saturday: false,
+      sunday: false,
+      startTime: '08:00',
+      endTime: '17:00',
+    },
+  });
+  
+  const editForm = useForm<z.infer<typeof workdayScheduleSchema>>({
+    resolver: zodResolver(workdayScheduleSchema),
+    defaultValues: selectedSchedule || {
+      name: "",
+      monday: false,
+      tuesday: false,
+      wednesday: false,
+      thursday: false,
+      friday: false,
+      saturday: false,
+      sunday: false,
+      startTime: '08:00',
+      endTime: '17:00',
+    },
+    mode: "onChange"
+  });
+  
+  useEffect(() => {
+    if (selectedSchedule) {
+      editForm.reset(selectedSchedule);
+    }
+  }, [selectedSchedule, editForm]);
+  
+  const addWorkdayScheduleMutation = useMutation({
     mutationFn: addWorkdaySchedule,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
       toast({
-        title: "Engadido",
-        description: "O novo horario foi engadido correctamente.",
+        title: 'Horario de trabajo añadido',
+        description: 'El horario de trabajo ha sido añadido correctamente.',
       });
-      setIsDialogOpen(false);
-      setEditingSchedule(null);
-      setOriginalId(null);
+      setOpen(false);
+      form.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo añadir el horario de trabajo.',
+        variant: 'destructive',
+      });
     }
   });
   
-  // Mutation para actualizar horario
-  const updateScheduleMutation = useMutation({
-    mutationFn: (schedule: WorkdaySchedule) => updateWorkSchedule(schedule),
+  const updateWorkdayScheduleMutation = useMutation({
+    mutationFn: updateWorkdaySchedule,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
       toast({
-        title: "Actualizado",
-        description: "O horario foi actualizado correctamente.",
+        title: 'Horario de trabajo actualizado',
+        description: 'El horario de trabajo ha sido actualizado correctamente.',
       });
-      setIsDialogOpen(false);
-      setEditingSchedule(null);
-      setOriginalId(null);
+      setEditOpen(false);
+      setSelectedSchedule(null);
+      editForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo actualizar el horario de trabajo.',
+        variant: 'destructive',
+      });
     }
   });
   
-  // Mutation para eliminar horario
-  const deleteScheduleMutation = useMutation({
+  const deleteWorkdayScheduleMutation = useMutation({
     mutationFn: deleteWorkdaySchedule,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
       toast({
-        title: "Eliminado",
-        description: "O horario foi eliminado correctamente.",
+        title: 'Horario de trabajo eliminado',
+        description: 'El horario de trabajo ha sido eliminado correctamente.',
+      });
+      setSelectedSchedule(null);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo eliminar el horario de trabajo.',
+        variant: 'destructive',
       });
     }
   });
   
-  const handleEdit = (schedule: WorkdaySchedule) => {
-    setEditingSchedule({ ...schedule });
-    setOriginalId(schedule.id);
-    setIsDialogOpen(true);
+  const onSubmit = (values: z.infer<typeof workdayScheduleSchema>) => {
+    addWorkdayScheduleMutation.mutate(values);
   };
   
-  const handleAddNew = () => {
-    const newSchedule: WorkdaySchedule = {
-      id: '',
-      name: '',
-      monday: true,
-      tuesday: true,
-      wednesday: true,
-      thursday: true,
-      friday: true,
-      saturday: false,
-      sunday: false,
-      startTime: '09:00',
-      endTime: '17:00',
-      type: '',
-      startDate: '01-01',
-      endDate: '12-31',
-      mondayHours: 8,
-      tuesdayHours: 8,
-      wednesdayHours: 8,
-      thursdayHours: 8,
-      fridayHours: 8,
-    };
-    setEditingSchedule(newSchedule);
-    setOriginalId(null);
-    setIsDialogOpen(true);
-  };
-  
-  const handleDelete = (id: string) => {
-    deleteScheduleMutation.mutate(id);
-  };
-  
-  const handleDateSelect = (field: 'startDate' | 'endDate', date: Date | undefined) => {
-    if (!date || !editingSchedule) return;
-    
-    const dateStr = format(date, 'MM-dd');
-    setEditingSchedule({ 
-      ...editingSchedule, 
-      [field]: dateStr 
-    });
-  };
-  
-  const handleSave = () => {
-    if (!editingSchedule) return;
-    
-    if (!editingSchedule.type?.trim()) {
-      toast({
-        title: "Erro",
-        description: "O tipo de xornada non pode estar vacío",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (originalId) {
-      // Update existing schedule
-      const updatedSchedule = { ...editingSchedule, id: originalId };
-      updateScheduleMutation.mutate(updatedSchedule);
-    } else {
-      // Add new schedule
-      addScheduleMutation.mutate(editingSchedule);
+  const onEditSubmit = (values: z.infer<typeof workdayScheduleSchema>) => {
+    if (selectedSchedule) {
+      updateWorkdayScheduleMutation.mutate({ ...values, id: selectedSchedule.id });
     }
   };
   
-  const isPending = addScheduleMutation.isPending || updateScheduleMutation.isPending || deleteScheduleMutation.isPending;
+  const handleDelete = (schedule: WorkdaySchedule) => {
+    deleteWorkdayScheduleMutation.mutate(schedule.id);
+  };
   
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Horarios de traballo</h3>
-        <Button onClick={handleAddNew} className="flex items-center" disabled={isPending}>
-          <Plus className="mr-2 h-4 w-4" />
-          Engadir horario
-        </Button>
-      </div>
-      
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Tipo de xornada</TableHead>
-            <TableHead>Data inicio</TableHead>
-            <TableHead>Data fin</TableHead>
-            <TableHead>Luns</TableHead>
-            <TableHead>Martes</TableHead>
-            <TableHead>Mércores</TableHead>
-            <TableHead>Xoves</TableHead>
-            <TableHead>Venres</TableHead>
-            <TableHead className="text-right">Accións</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {schedules.map((schedule) => (
-            <TableRow key={schedule.id}>
-              <TableCell className="font-medium">{schedule.type}</TableCell>
-              <TableCell>{formatDateFromMMDD(schedule.startDate)}</TableCell>
-              <TableCell>{formatDateFromMMDD(schedule.endDate)}</TableCell>
-              <TableCell>{schedule.mondayHours}h</TableCell>
-              <TableCell>{schedule.tuesdayHours}h</TableCell>
-              <TableCell>{schedule.wednesdayHours}h</TableCell>
-              <TableCell>{schedule.thursdayHours}h</TableCell>
-              <TableCell>{schedule.fridayHours}h</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => handleEdit(schedule)}
-                    disabled={isPending}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleDelete(schedule.id)}
-                    disabled={isPending}
-                  >
-                    <Trash className="h-4 w-4 text-red-500" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-          
-          {schedules.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={9} className="text-center py-6 text-muted-foreground">
-                Non hai horarios configurados. Engade un horario para comezar.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      
-      {/* Dialog for adding/editing schedules */}
-      {editingSchedule && (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-md">
+    <Card>
+      <CardHeader>
+        <CardTitle>Horarios de trabajo</CardTitle>
+        <CardDescription>
+          Gestiona los horarios de trabajo de la empresa.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Añadir horario de trabajo
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[625px]">
             <DialogHeader>
-              <DialogTitle>
-                {originalId ? "Editar horario" : "Engadir novo horario"}
-              </DialogTitle>
+              <DialogTitle>Añadir horario de trabajo</DialogTitle>
+              <DialogDescription>
+                Añade un nuevo horario de trabajo a la lista.
+              </DialogDescription>
             </DialogHeader>
-            
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="type">Tipo de xornada</Label>
-                <Input 
-                  id="type" 
-                  value={editingSchedule.type} 
-                  onChange={(e) => setEditingSchedule({
-                    ...editingSchedule,
-                    type: e.target.value
-                  })}
-                  placeholder="Ex: Normal, Reducida, Verán..."
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nombre del horario" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Este es el nombre del horario de trabajo.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>Data inicio</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !editingSchedule.startDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {editingSchedule.startDate 
-                          ? formatDateFromMMDD(editingSchedule.startDate)
-                          : "Seleccionar data"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={parse(`2024-${editingSchedule.startDate}`, 'yyyy-MM-dd', new Date())}
-                        onSelect={(date) => handleDateSelect('startDate', date)}
-                        initialFocus
-                        locale={es}
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label>Data fin</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !editingSchedule.endDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {editingSchedule.endDate 
-                          ? formatDateFromMMDD(editingSchedule.endDate)
-                          : "Seleccionar data"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={parse(`2024-${editingSchedule.endDate}`, 'yyyy-MM-dd', new Date())}
-                        onSelect={(date) => handleDateSelect('endDate', date)}
-                        initialFocus
-                        locale={es}
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-5 gap-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="mondayHours">Luns</Label>
-                  <Input 
-                    id="mondayHours" 
-                    type="number" 
-                    min="0"
-                    step="0.5"
-                    value={editingSchedule.mondayHours} 
-                    onChange={(e) => setEditingSchedule({
-                      ...editingSchedule,
-                      mondayHours: parseFloat(e.target.value) || 0
-                    })}
+                <div className="grid grid-cols-4 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="monday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Lunes
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tuesday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Martes
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="wednesday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Miércoles
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="thursday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Jueves
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="friday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Viernes
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="saturday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Sábado
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="sunday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Domingo
+                        </FormLabel>
+                      </FormItem>
+                    )}
                   />
                 </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="tuesdayHours">Martes</Label>
-                  <Input 
-                    id="tuesdayHours" 
-                    type="number" 
-                    min="0"
-                    step="0.5"
-                    value={editingSchedule.tuesdayHours} 
-                    onChange={(e) => setEditingSchedule({
-                      ...editingSchedule,
-                      tuesdayHours: parseFloat(e.target.value) || 0
-                    })}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="startTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hora de inicio</FormLabel>
+                        <FormControl>
+                          <TimePickerDemo
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Esta es la hora de inicio del horario de trabajo.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="endTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hora de fin</FormLabel>
+                        <FormControl>
+                          <TimePickerDemo
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Esta es la hora de fin del horario de trabajo.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="wednesdayHours">Mércores</Label>
-                  <Input 
-                    id="wednesdayHours" 
-                    type="number" 
-                    min="0"
-                    step="0.5"
-                    value={editingSchedule.wednesdayHours} 
-                    onChange={(e) => setEditingSchedule({
-                      ...editingSchedule,
-                      wednesdayHours: parseFloat(e.target.value) || 0
-                    })}
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="thursdayHours">Xoves</Label>
-                  <Input 
-                    id="thursdayHours" 
-                    type="number" 
-                    min="0"
-                    step="0.5"
-                    value={editingSchedule.thursdayHours} 
-                    onChange={(e) => setEditingSchedule({
-                      ...editingSchedule,
-                      thursdayHours: parseFloat(e.target.value) || 0
-                    })}
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="fridayHours">Venres</Label>
-                  <Input 
-                    id="fridayHours" 
-                    type="number" 
-                    min="0"
-                    step="0.5"
-                    value={editingSchedule.fridayHours} 
-                    onChange={(e) => setEditingSchedule({
-                      ...editingSchedule,
-                      fridayHours: parseFloat(e.target.value) || 0
-                    })}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsDialogOpen(false)}
-                disabled={addScheduleMutation.isPending || updateScheduleMutation.isPending}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleSave}
-                disabled={addScheduleMutation.isPending || updateScheduleMutation.isPending}
-              >
-                {(addScheduleMutation.isPending || updateScheduleMutation.isPending) ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white mr-2" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Gardar
-              </Button>
-            </DialogFooter>
+                <DialogFooter>
+                  <Button type="submit" disabled={addWorkdayScheduleMutation.isPending}>
+                    {addWorkdayScheduleMutation.isPending ? (
+                      <>
+                        Añadiendo...
+                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                      </>
+                    ) : (
+                      "Añadir"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
-      )}
-    </div>
+        
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-[625px]">
+            <DialogHeader>
+              <DialogTitle>Editar horario de trabajo</DialogTitle>
+              <DialogDescription>
+                Edita un horario de trabajo existente.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-8">
+                <FormField
+                  control={editForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nombre del horario" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Este es el nombre del horario de trabajo.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-4 gap-4">
+                  <FormField
+                    control={editForm.control}
+                    name="monday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Lunes
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editForm.control}
+                    name="tuesday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Martes
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editForm.control}
+                    name="wednesday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Miércoles
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editForm.control}
+                    name="thursday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Jueves
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editForm.control}
+                    name="friday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Viernes
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editForm.control}
+                    name="saturday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Sábado
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editForm.control}
+                    name="sunday"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Domingo
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={editForm.control}
+                    name="startTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hora de inicio</FormLabel>
+                        <FormControl>
+                          <TimePickerDemo
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Esta es la hora de inicio del horario de trabajo.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editForm.control}
+                    name="endTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Hora de fin</FormLabel>
+                        <FormControl>
+                          <TimePickerDemo
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Esta es la hora de fin del horario de trabajo.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={updateWorkdayScheduleMutation.isPending}>
+                    {updateWorkdayScheduleMutation.isPending ? (
+                      <>
+                        Actualizando...
+                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                      </>
+                    ) : (
+                      "Actualizar"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+        
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">Nombre</TableHead>
+                <TableHead>Lunes</TableHead>
+                <TableHead>Martes</TableHead>
+                <TableHead>Miércoles</TableHead>
+                <TableHead>Jueves</TableHead>
+                <TableHead>Viernes</TableHead>
+                <TableHead>Sábado</TableHead>
+                <TableHead>Domingo</TableHead>
+                <TableHead>Inicio</TableHead>
+                <TableHead>Fin</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center">
+                    Cargando...
+                  </TableCell>
+                </TableRow>
+              ) : workdaySchedules.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center">
+                    No hay horarios de trabajo.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                workdaySchedules.map((schedule) => (
+                  <TableRow key={schedule.id}>
+                    <TableCell className="font-medium">{schedule.name}</TableCell>
+                    <TableCell>{schedule.monday ? "Sí" : "No"}</TableCell>
+                    <TableCell>{schedule.tuesday ? "Sí" : "No"}</TableCell>
+                    <TableCell>{schedule.wednesday ? "Sí" : "No"}</TableCell>
+                    <TableCell>{schedule.thursday ? "Sí" : "No"}</TableCell>
+                    <TableCell>{schedule.friday ? "Sí" : "No"}</TableCell>
+                    <TableCell>{schedule.saturday ? "Sí" : "No"}</TableCell>
+                    <TableCell>{schedule.sunday ? "Sí" : "No"}</TableCell>
+                    <TableCell>{schedule.startTime}</TableCell>
+                    <TableCell>{schedule.endTime}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => {
+                        setSelectedSchedule(schedule);
+                        setEditOpen(true);
+                      }}>
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Editar</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(schedule)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <span className="sr-only">Eliminar</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from '@/components/ui/use-toast';
-import { UserVacationsCalendar } from '@/components/calendar/UserVacationsCalendar';
-import { AllUsersVacationsCalendar } from '@/components/calendar/AllUsersVacationsCalendar';
+import UserVacationsCalendar from '@/components/calendar/UserVacationsCalendar';
+import AllUsersVacationsCalendar from '@/components/calendar/AllUsersVacationsCalendar';
 import { useAuth } from '@/components/auth/AuthContext';
 import { getVacationDays, addVacationDay, removeVacationDay, getUsers } from '@/utils/dataService';
 import { VacationDay, User, VacationType } from '@/utils/types';
+import { Label } from '@/components/ui/label';
 
 const UserVacations = () => {
   const { currentUser } = useAuth();

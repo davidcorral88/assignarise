@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import { es } from 'date-fns/locale';
-import { HolidaysCalendar } from '@/components/calendar/HolidaysCalendar';
+import HolidaysCalendar from '@/components/calendar/HolidaysCalendar';
 import WorkdayScheduleTable from '@/components/schedule/WorkdayScheduleTable';
 import {
   getHolidays,
@@ -37,7 +37,7 @@ import { DatabaseBackup } from '@/components/settings/DatabaseBackup';
 import { DatabaseImport } from '@/components/settings/DatabaseImport';
 import { StorageUsage } from '@/components/settings/StorageUsage';
 import { POSTGRESQL_ONLY_MODE } from '@/utils/dbConfig';
-import { PostgreSQLMigration } from '@/components/settings/PostgreSQLMigration';
+import PostgreSQLMigration from '@/components/settings/PostgreSQLMigration';
 
 const WorkScheduleConfig = () => {
   const { currentUser } = useAuth();

@@ -170,8 +170,8 @@ const PostgreSQLMigration: React.FC = () => {
     toast({
       title: checked ? "PostgreSQL activado" : "Almacenamiento local activado",
       description: checked 
-        ? "La aplicación está usando la base de datos PostgreSQL" 
-        : "La aplicación está usando el almacenamiento local",
+        ? "La aplicación está usando la base de datos PostgreSQL para almacenar datos." 
+        : "La aplicación está usando el almacenamiento local del navegador.",
     });
   };
   

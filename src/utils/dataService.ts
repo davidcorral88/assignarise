@@ -1,3 +1,4 @@
+
 import * as apiService from './apiService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
@@ -48,10 +49,10 @@ export const {
   getTimeEntriesByUserId,
   getTimeEntriesByTaskId,
   addTimeEntry,
+  updateTimeEntry,
   getTotalHoursByTask,
   getTotalHoursAllocatedByTask,
   getNextTaskId,
-  updateTimeEntry,
   getHolidays,
   addHoliday,
   removeHoliday,
