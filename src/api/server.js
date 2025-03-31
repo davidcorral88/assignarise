@@ -1,3 +1,4 @@
+
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
@@ -9,9 +10,10 @@ const port = 3000;
 
 // Configure middleware
 app.use(cors({
-  origin: '*', // Allow all origins for development, consider restricting this in production
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: ['http://localhost:8080', 'http://localhost:5551', 'http://185.166.213.17:8080'], // Allow frontend origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 app.use(bodyParser.json());
 
@@ -688,4 +690,5 @@ app.post('/api/migrate', async (req, res) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`API server running at http://0.0.0.0:${port}/api`);
   console.log(`For remote access, make sure port ${port} is accessible and properly forwarded`);
+  console.log(`CORS enabled for: http://localhost:8080, http://localhost:5551, http://185.166.213.17:8080`);
 });

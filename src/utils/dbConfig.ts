@@ -1,6 +1,9 @@
 
 // Database configuration
-export const API_URL = "http://localhost:3000/api";
+export const API_URL = window?.location?.hostname === 'localhost' 
+  ? "http://localhost:3000/api"
+  : `http://${window.location.hostname}:3000/api`;
+  
 export const DEFAULT_USE_POSTGRESQL = true;
 export const POSTGRESQL_ONLY_MODE = true;
 
