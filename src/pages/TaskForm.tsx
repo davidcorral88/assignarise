@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -49,7 +48,6 @@ const TaskForm = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   
-  // Updated to handle users as state instead of as a Promise
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   
   useEffect(() => {
@@ -608,7 +606,7 @@ const TaskForm = () => {
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
                     {assignments.map(assignment => {
-                      const user = availableUsers[0].find(u => u.id === assignment.userId);
+                      const user = availableUsers.find(u => u.id === assignment.userId);
                       return (
                         <div key={assignment.userId} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
                           <div className="flex items-center gap-3">
@@ -648,7 +646,7 @@ const TaskForm = () => {
                             <SelectValue placeholder="Seleccionar usuario" />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableUsers[0].map(user => (
+                            {availableUsers.map(user => (
                               <SelectItem key={user.id} value={user.id}>
                                 {user.name} {user.role === 'director' ? ' (Xerente)' : ''}
                               </SelectItem>
