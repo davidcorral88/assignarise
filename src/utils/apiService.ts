@@ -114,13 +114,7 @@ export const deleteUser = async (id: string): Promise<void> => {
 
 // Funciones para tareas
 export const getTasks = async (): Promise<Task[]> => {
-  try {
-    const response = await fetch(`${API_URL}/tasks`);
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    return handleFetchError(error, 'Error al obtener tareas');
-  }
+  return fetchWithErrorHandling(`${API_URL}/tasks`, {}, 'Error al obtener tareas');
 };
 
 export const getTaskById = async (id: string): Promise<Task | undefined> => {
@@ -147,28 +141,10 @@ export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
 export const addTask = async (task: Task): Promise<void> => {
   console.log("Guardando tarea en PostgreSQL:", task);
   try {
-    // Convert from client model to API model
-    const apiTask = {
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      createdBy: task.createdBy,
-      createdAt: task.createdAt,
-      startDate: task.startDate,
-      dueDate: task.dueDate,
-      priority: task.priority,
-      tags: task.tags,
-      assignments: task.assignments?.map(a => ({
-        userId: a.userId,
-        allocatedHours: a.allocatedHours
-      }))
-    };
-    
     const response = await fetch(`${API_URL}/tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(apiTask)
+      body: JSON.stringify(task)
     });
     
     if (!response.ok) {
