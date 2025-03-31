@@ -52,6 +52,7 @@ const TaskDetail = () => {
   const [totalHoursWorked, setTotalHoursWorked] = useState(0);
   const [totalHoursAllocated, setTotalHoursAllocated] = useState(0);
   const [creator, setCreator] = useState<User | null>(null);
+  const [assignedUsers, setAssignedUsers] = useState<Record<string, User | null>>({});
   
   useEffect(() => {
     const fetchData = async () => {
@@ -83,6 +84,45 @@ const TaskDetail = () => {
     
     getCreator();
   }, [task]);
+  
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (task?.assignments) {
+        const users: Record<string, User | null> = {};
+        
+        for (const assignment of task.assignments) {
+          const user = await getUserById(assignment.userId);
+          users[assignment.userId] = user || null;
+        }
+        
+        setAssignedUsers(users);
+      }
+    };
+    
+    fetchUsers();
+  }, [task]);
+  
+  useEffect(() => {
+    const fetchTimeEntryUsers = async () => {
+      if (timeEntries.length > 0) {
+        const userIds = timeEntries.map(entry => entry.userId);
+        const uniqueUserIds = [...new Set(userIds)];
+        
+        const users: Record<string, User | null> = { ...assignedUsers };
+        
+        for (const userId of uniqueUserIds) {
+          if (!users[userId]) {
+            const user = await getUserById(userId);
+            users[userId] = user || null;
+          }
+        }
+        
+        setAssignedUsers(users);
+      }
+    };
+    
+    fetchTimeEntryUsers();
+  }, [timeEntries, assignedUsers]);
   
   if (loading) {
     return (
@@ -264,7 +304,7 @@ const TaskDetail = () => {
                     {task.assignments.length > 0 ? (
                       <div className="space-y-4">
                         {task.assignments.map(assignment => {
-                          const user = getUserById(assignment.userId);
+                          const user = assignedUsers[assignment.userId];
                           const hoursWorked = timeEntries
                             .filter(entry => entry.userId === assignment.userId)
                             .reduce((sum, entry) => sum + entry.hours, 0);
@@ -281,13 +321,13 @@ const TaskDetail = () => {
                                     <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
                                   ) : (
                                     <span className="text-sm font-medium text-primary-foreground">
-                                      {user?.name.substring(0, 2)}
+                                      {user?.name ? user.name.substring(0, 2) : 'UN'}
                                     </span>
                                   )}
                                 </div>
                                 <div>
-                                  <p className="font-medium">{user?.name}</p>
-                                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                                  <p className="font-medium">{user?.name || 'Usuario desconocido'}</p>
+                                  <p className="text-sm text-muted-foreground">{user?.email || ''}</p>
                                 </div>
                               </div>
                               
@@ -338,7 +378,7 @@ const TaskDetail = () => {
                     {timeEntries.length > 0 ? (
                       <div className="space-y-4">
                         {timeEntries.map(entry => {
-                          const user = getUserById(entry.userId);
+                          const user = assignedUsers[entry.userId];
                           return (
                             <div key={entry.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg bg-muted/50">
                               <div className="flex items-center gap-3 flex-1">
@@ -347,12 +387,12 @@ const TaskDetail = () => {
                                     <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
                                   ) : (
                                     <span className="text-sm font-medium text-primary-foreground">
-                                      {user?.name.substring(0, 2)}
+                                      {user?.name ? user.name.substring(0, 2) : 'UN'}
                                     </span>
                                   )}
                                 </div>
                                 <div>
-                                  <p className="font-medium">{user?.name}</p>
+                                  <p className="font-medium">{user?.name || 'Usuario desconocido'}</p>
                                   <p className="text-sm text-muted-foreground">{format(new Date(entry.date), 'dd/MM/yyyy')}</p>
                                 </div>
                               </div>

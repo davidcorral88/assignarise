@@ -99,6 +99,7 @@ const CalendarView = () => {
       userId: currentUser?.id || '',
       hours: hoursNumber,
       date: format(selectedDate, 'yyyy-MM-dd'),
+      description: '',
       notes: notes || undefined,
       category: category || undefined,
       project: project || undefined,

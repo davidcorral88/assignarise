@@ -1,69 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/layout/Layout';
-import { 
-  Calendar, 
-  Clock, 
-  Tag, 
-  Users,
-  ArrowLeft,
-  Edit,
-  CheckCircle2,
-  Circle,
-  Timer,
-  PlusCircle,
-  Save,
-  Database,
-  AlertTriangle
-} from 'lucide-react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  getHolidays, 
-  getWorkSchedule, 
-  updateWorkSchedule,
-  getWorkdaySchedules,
-  addHoliday,
-  getUsers,
-} from '../utils/dataService';
-import { WorkSchedule, Holiday, WorkdaySchedule, User } from '../utils/types';
-import { format, parseISO } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { toast } from '@/components/ui/use-toast';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -71,384 +12,525 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { format } from 'date-fns';
+import { toast } from '@/components/ui/use-toast';
+import { es } from 'date-fns/locale';
+import { HolidaysCalendar } from '@/components/calendar/HolidaysCalendar';
+import WorkdayScheduleTable from '@/components/schedule/WorkdayScheduleTable';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Switch } from "@/components/ui/switch"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { mockWorkdaySchedule } from '@/utils/mockData';
-import { useNavigate } from 'react-router-dom';
-import { StorageUsage } from '@/components/settings/StorageUsage';
+  getHolidays,
+  addHoliday,
+  removeHoliday,
+  getWorkSchedule,
+  updateWorkSchedule,
+  getUsers
+} from '@/utils/dataService';
+import { Holiday, WorkSchedule } from '@/utils/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/components/auth/AuthContext';
+import { ResetDatabaseDialog } from '@/components/settings/ResetDatabaseDialog';
+import ImportUsersButton from '@/components/users/ImportUsersButton';
 import { DatabaseBackup } from '@/components/settings/DatabaseBackup';
-import { ImportUsersButton } from '@/components/users/ImportUsersButton';
-import { ResetDatabaseButton } from '@/components/settings/ResetDatabaseButton';
-
-const FormSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-})
+import { DatabaseImport } from '@/components/settings/DatabaseImport';
+import { StorageUsage } from '@/components/settings/StorageUsage';
+import { POSTGRESQL_ONLY_MODE } from '@/utils/dbConfig';
+import { PostgreSQLMigration } from '@/components/settings/PostgreSQLMigration';
 
 const WorkScheduleConfig = () => {
+  const { currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState("holidays");
+  
+  // Holiday states
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [isHolidayDialogOpen, setIsHolidayDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [newHolidayName, setNewHolidayName] = useState("");
+  const [newHolidayDescription, setNewHolidayDescription] = useState("");
+  const [isLoadingHolidays, setIsLoadingHolidays] = useState(true);
+  
+  // Work schedule states
   const [workSchedule, setWorkSchedule] = useState<WorkSchedule>({
     defaultWorkdayScheduleId: '',
     useDefaultForAll: true,
     userSchedules: [],
+    reducedHours: 0,
+    reducedPeriods: []
   });
-  const [workdaySchedules, setWorkdaySchedules] = useState<WorkdaySchedule[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newHolidayDate, setNewHolidayDate] = useState<Date | undefined>(undefined);
-  const [newHolidayName, setNewHolidayName] = useState<string>('');
-  const [defaultScheduleId, setDefaultScheduleId] = useState<string>('');
-  const [useDefaultForAll, setUseDefaultForAll] = useState<boolean>(true);
-  const [reducedHours, setReducedHours] = useState<number>(6);
-  const navigate = useNavigate();
+  const [isLoadingSchedule, setIsLoadingSchedule] = useState(true);
+  
+  // PostgreSQL mode state
+  const [useAPI, setUseAPI] = useState(POSTGRESQL_ONLY_MODE);
   
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchHolidays = async () => {
       try {
-        const fetchedHolidays = await getHolidays();
-        setHolidays(fetchedHolidays);
-        
-        const fetchedSchedule = await getWorkSchedule();
-        setWorkSchedule(fetchedSchedule);
-        
-        setReducedHours(fetchedSchedule.reducedHours || 6);
-        setDefaultScheduleId(fetchedSchedule.defaultWorkdayScheduleId);
-        setUseDefaultForAll(fetchedSchedule.useDefaultForAll);
-        
-        const fetchedSchedules = await getWorkdaySchedules();
-        setWorkdaySchedules(fetchedSchedules);
-        
-        const fetchedUsers = await getUsers();
-        setUsers(fetchedUsers);
+        const holidaysData = await getHolidays();
+        setHolidays(holidaysData);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching holidays:", error);
         toast({
-          title: 'Error',
-          description: 'No se pudieron cargar los datos.',
-          variant: 'destructive',
+          title: "Error",
+          description: "Non se puideron cargar os festivos",
+          variant: "destructive",
         });
       } finally {
-        setLoading(false);
+        setIsLoadingHolidays(false);
       }
     };
     
-    fetchData();
+    const fetchWorkSchedule = async () => {
+      try {
+        const scheduleData = await getWorkSchedule();
+        setWorkSchedule(scheduleData);
+      } catch (error) {
+        console.error("Error fetching work schedule:", error);
+        toast({
+          title: "Error",
+          description: "Non se puido cargar a configuración de horarios",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingSchedule(false);
+      }
+    };
+    
+    fetchHolidays();
+    fetchWorkSchedule();
   }, []);
   
-  const [newHolidayDescription, setNewHolidayName] = useState<string>('');
-  const handleAddHoliday = () => {
-    if (!newHolidayDate || !newHolidayName) {
+  const handleAddHoliday = async () => {
+    if (!selectedDate) {
       toast({
-        title: 'Campos incompletos',
-        description: 'Por favor introduce una fecha y un nombre para el día festivo.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Selecciona unha data para o festivo",
+        variant: "destructive",
       });
       return;
     }
     
-    const holiday = {
-      date: format(newHolidayDate, 'yyyy-MM-dd'),
-      name: newHolidayName,
-      description: newHolidayName // Use name as description if not provided
-    };
-    
-    addHoliday(holiday)
-      .then(() => {
-        setHolidays([...holidays, holiday]);
-        setNewHolidayDate(undefined);
-        setNewHolidayName('');
-        
-        toast({
-          title: 'Día festivo añadido',
-          description: 'El día festivo ha sido registrado correctamente.',
-        });
-      })
-      .catch(error => {
-        console.error('Error adding holiday:', error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo añadir el día festivo.',
-          variant: 'destructive',
-        });
-      });
-  };
-  
-  const handleSaveSettings = async () => {
-    if (!defaultScheduleId) {
+    if (!newHolidayName) {
       toast({
-        title: 'Horario por defecto requerido',
-        description: 'Por favor selecciona un horario por defecto.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Introduce un nome para o festivo",
+        variant: "destructive",
       });
       return;
     }
     
-    // Update any reducedPeriods that have 'start' and 'end' properties to use 'startDate' and 'endDate'
-    const normalizedReducedPeriods = workSchedule.reducedPeriods?.map(period => {
-      if ('start' in period && 'end' in period) {
-        return {
-          startDate: period.start,
-          endDate: period.end
-        };
-      }
-      return period;
-    });
-    
-    const updatedWorkSchedule: WorkSchedule = {
-      ...workSchedule,
-      defaultWorkdayScheduleId: defaultScheduleId,
-      useDefaultForAll: useDefaultForAll,
-      reducedHours: reducedHours,
-      reducedPeriods: normalizedReducedPeriods
-    };
+    const formattedDate = format(selectedDate, "yyyy-MM-dd");
     
     try {
-      await updateWorkSchedule(updatedWorkSchedule);
-      setWorkSchedule(updatedWorkSchedule);
+      const newHoliday: Holiday = {
+        date: formattedDate,
+        name: newHolidayName,
+        description: newHolidayDescription || newHolidayName
+      };
+      
+      await addHoliday(newHoliday);
+      
+      // Update local state
+      setHolidays([...holidays, newHoliday]);
+      
+      // Reset form
+      setNewHolidayName("");
+      setNewHolidayDescription("");
+      setIsHolidayDialogOpen(false);
       
       toast({
-        title: 'Configuración guardada',
-        description: 'La configuración de horarios ha sido guardada correctamente.',
+        title: "Festivo engadido",
+        description: `Festivo ${newHolidayName} engadido para o ${format(selectedDate, "dd/MM/yyyy")}`,
       });
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error("Error adding holiday:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudo guardar la configuración.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Non se puido engadir o festivo",
+        variant: "destructive",
       });
     }
   };
   
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center h-96">
-          <div className="animate-spin">
-            <Clock className="h-8 w-8 text-primary" />
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const handleRemoveHoliday = async (holiday: Holiday) => {
+    try {
+      await removeHoliday(holiday);
+      
+      // Update local state
+      setHolidays(holidays.filter(h => h.date !== holiday.date));
+      
+      toast({
+        title: "Festivo eliminado",
+        description: `O festivo foi eliminado correctamente`,
+      });
+    } catch (error) {
+      console.error("Error removing holiday:", error);
+      toast({
+        title: "Erro",
+        description: "Non se puido eliminar o festivo",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleUpdateReducedHours = (hours: number) => {
+    const updatedSchedule = {
+      ...workSchedule,
+      reducedHours: hours
+    };
+    
+    setWorkSchedule(updatedSchedule);
+    saveWorkSchedule(updatedSchedule);
+  };
+  
+  const handleAddReducedPeriod = (period: { startDate: string; endDate: string }) => {
+    const updatedPeriods = [
+      ...(workSchedule.reducedPeriods || []),
+      period
+    ];
+    
+    const updatedSchedule = {
+      ...workSchedule,
+      reducedPeriods: updatedPeriods
+    };
+    
+    setWorkSchedule(updatedSchedule);
+    saveWorkSchedule(updatedSchedule);
+  };
+  
+  const handleRemoveReducedPeriod = (index: number) => {
+    if (!workSchedule.reducedPeriods) return;
+    
+    const updatedPeriods = [...workSchedule.reducedPeriods];
+    updatedPeriods.splice(index, 1);
+    
+    const updatedSchedule = {
+      ...workSchedule,
+      reducedPeriods: updatedPeriods
+    };
+    
+    setWorkSchedule(updatedSchedule);
+    saveWorkSchedule(updatedSchedule);
+  };
+  
+  const saveWorkSchedule = async (schedule: WorkSchedule) => {
+    try {
+      await updateWorkSchedule(schedule);
+      toast({
+        title: "Configuración actualizada",
+        description: "A configuración de horarios foi actualizada correctamente",
+      });
+    } catch (error) {
+      console.error("Error updating work schedule:", error);
+      toast({
+        title: "Erro",
+        description: "Non se puido actualizar a configuración de horarios",
+        variant: "destructive",
+      });
+    }
+  };
   
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            className="pl-0 hover:pl-0 hover:bg-transparent" 
-            onClick={() => navigate('/dashboard')}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver al panel
-          </Button>
-          
-          <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
-            Configuración de horarios
-          </h1>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Configuración de horarios</h1>
+            <p className="text-muted-foreground">
+              Configura os días festivos, horas de xornada reducida e outros axustes relacionados co tempo.
+            </p>
+          </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <Tabs
+          defaultValue="holidays"
+          className="space-y-4"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
+          <TabsList>
+            <TabsTrigger value="holidays">Festivos</TabsTrigger>
+            <TabsTrigger value="schedule">Horarios</TabsTrigger>
+            <TabsTrigger value="reduced">Xornada reducida</TabsTrigger>
+            {currentUser?.role === 'admin' && (
+              <TabsTrigger value="database">Base de datos</TabsTrigger>
+            )}
+          </TabsList>
+          
+          <TabsContent value="holidays" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle style={{ color: '#007bc4' }}>Días festivos</CardTitle>
+                <CardTitle>Festivos</CardTitle>
                 <CardDescription>
-                  Administra los días festivos que afectarán a todos los usuarios
+                  Engade e xestiona os días festivos.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {holidays.map(holiday => (
-                    <Badge key={holiday.date} variant="secondary" className="px-3 py-1 text-sm">
-                      {holiday.name} ({format(parseISO(holiday.date), 'dd/MM/yyyy')})
-                    </Badge>
-                  ))}
-                  
-                  {holidays.length === 0 && (
-                    <div className="text-sm text-muted-foreground">
-                      No hay días festivos aún
-                    </div>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {isLoadingHolidays ? (
                   <div className="space-y-2">
-                    <Label htmlFor="date">Fecha</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newHolidayDate && "text-muted-foreground"
-                          )}
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {newHolidayDate ? format(newHolidayDate, "dd/MM/yyyy") : <span>Seleccionar fecha</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <CalendarComponent
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
+                    <Skeleton className="h-4 w-[250px]" />
+                  </div>
+                ) : (
+                  <HolidaysCalendar
+                    holidays={holidays}
+                    onRemoveHoliday={handleRemoveHoliday}
+                  />
+                )}
+                
+                <Dialog open={isHolidayDialogOpen} onOpenChange={setIsHolidayDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      Engadir festivo
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Engadir festivo</DialogTitle>
+                      <DialogDescription>
+                        Selecciona unha data e introduce os detalles do festivo.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">
+                          Data
+                        </Label>
+                        <Calendar
                           mode="single"
-                          selected={newHolidayDate}
-                          onSelect={setNewHolidayDate}
-                          initialFocus
-                          className="bg-white pointer-events-auto"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          className="col-span-3"
+                          locale={es}
                         />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nombre</Label>
-                    <Input
-                      id="name"
-                      value={newHolidayName}
-                      onChange={(e) => setNewHolidayName(e.target.value)}
-                      placeholder="Nombre del día festivo"
-                    />
-                  </div>
-                </div>
-                
-                <Button type="button" className="w-full" variant="outline" onClick={handleAddHoliday}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Añadir día festivo
-                </Button>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">
+                          Nome
+                        </Label>
+                        <Input
+                          id="name"
+                          value={newHolidayName}
+                          onChange={(e) => setNewHolidayName(e.target.value)}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="description" className="text-right">
+                          Descripción
+                        </Label>
+                        <Input
+                          id="description"
+                          value={newHolidayDescription}
+                          onChange={(e) => setNewHolidayDescription(e.target.value)}
+                          className="col-span-3"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="secondary" onClick={() => setIsHolidayDialogOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button type="submit" onClick={handleAddHoliday}>
+                        Engadir
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
-            
+          </TabsContent>
+          
+          <TabsContent value="schedule" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle style={{ color: '#007bc4' }}>Horario por defecto</CardTitle>
+                <CardTitle>Horarios de traballo</CardTitle>
                 <CardDescription>
-                  Selecciona el horario por defecto para todos los usuarios
+                  Configura os horarios de traballo predeterminados.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingSchedule ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
+                    <Skeleton className="h-4 w-[250px]" />
+                  </div>
+                ) : (
+                  <WorkdayScheduleTable />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="reduced" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Xornada reducida</CardTitle>
+                <CardDescription>
+                  Configura as horas de xornada reducida e os períodos nos que se aplica.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="schedule">Horario</Label>
-                  <Select value={defaultScheduleId} onValueChange={setDefaultScheduleId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar horario" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {workdaySchedules.map(schedule => (
-                        <SelectItem key={schedule.id} value={schedule.id}>
-                          {schedule.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-                  <div className="space-y-1 leading-none">
-                    <h3 className="text-sm font-medium leading-none">Usar horario por defecto para todos</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Si está activado, todos los usuarios usarán el horario por defecto.
-                    </p>
-                  </div>
-                  <Switch id="default" checked={useDefaultForAll} onCheckedChange={setUseDefaultForAll} />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="reducedHours">Horas reducidas</Label>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="reducedHours" className="text-right">
+                    Horas de xornada reducida
+                  </Label>
                   <Input
                     id="reducedHours"
                     type="number"
-                    value={reducedHours}
-                    onChange={(e) => setReducedHours(Number(e.target.value))}
-                    placeholder="Horas reducidas"
+                    defaultValue={workSchedule.reducedHours || 0}
+                    onChange={(e) => handleUpdateReducedHours(Number(e.target.value))}
+                    className="col-span-3"
                   />
                 </div>
+                
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle>Períodos de xornada reducida</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {workSchedule.reducedPeriods && workSchedule.reducedPeriods.length > 0 ? (
+                      <ul className="list-none space-y-2">
+                        {workSchedule.reducedPeriods.map((period, index) => (
+                          <li key={index} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                            <span>
+                              {format(new Date(period.startDate), "dd/MM/yyyy")} - {format(new Date(period.endDate), "dd/MM/yyyy")}
+                            </span>
+                            <Button variant="outline" size="sm" onClick={() => handleRemoveReducedPeriod(index)}>
+                              Eliminar
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-muted-foreground">Non hai períodos de xornada reducida configurados.</p>
+                    )}
+                  </CardContent>
+                  <CardFooter>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>
+                          Engadir período
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Engadir período de xornada reducida</DialogTitle>
+                          <DialogDescription>
+                            Selecciona as datas de inicio e fin do período.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <ReducedPeriodForm onAddPeriod={handleAddReducedPeriod} />
+                      </DialogContent>
+                    </Dialog>
+                  </CardFooter>
+                </Card>
               </CardContent>
             </Card>
-          </div>
+          </TabsContent>
           
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle style={{ color: '#007bc4' }}>Acciones</CardTitle>
-                <CardDescription>
-                  Guarda la configuración actual
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button className="w-full" onClick={handleSaveSettings}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Guardar configuración
-                </Button>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle style={{ color: '#007bc4' }}>Almacenamiento</CardTitle>
-                <CardDescription>
-                  Información sobre el uso del almacenamiento
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <StorageUsage />
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle style={{ color: '#007bc4' }}>Copia de seguridad</CardTitle>
-                <CardDescription>
-                  Realiza una copia de seguridad de la base de datos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <DatabaseBackup />
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle style={{ color: '#007bc4' }}>Importar usuarios</CardTitle>
-                <CardDescription>
-                  Importa usuarios desde un archivo JSON
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ImportUsersButton onImportComplete={() => {}} />
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle style={{ color: '#007bc4' }}>Restablecer base de datos</CardTitle>
-                <CardDescription>
-                  Elimina todos los datos de la base de datos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ResetDatabaseButton />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          {currentUser?.role === 'admin' && (
+            <TabsContent value="database" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Base de datos</CardTitle>
+                  <CardDescription>
+                    Xestiona a base de datos da aplicación.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ImportUsersButton />
+                  <DatabaseBackup />
+                  <DatabaseImport />
+                  <StorageUsage />
+                  {useAPI && <PostgreSQLMigration />}
+                  <ResetDatabaseDialog />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
     </Layout>
+  );
+};
+
+interface ReducedPeriodFormProps {
+  onAddPeriod: (period: { startDate: string; endDate: string }) => void;
+}
+
+const ReducedPeriodForm: React.FC<ReducedPeriodFormProps> = ({ onAddPeriod }) => {
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  
+  const handleAddPeriod = () => {
+    if (!startDate || !endDate) {
+      toast({
+        title: "Erro",
+        description: "Selecciona as datas de inicio e fin do período",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (startDate > endDate) {
+      toast({
+        title: "Erro",
+        description: "A data de inicio debe ser anterior á data de fin",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    onAddPeriod({
+      startDate: format(startDate, "yyyy-MM-dd"),
+      endDate: format(endDate, "yyyy-MM-dd")
+    });
+    
+    toast({
+      title: "Período engadido",
+      description: `Período de xornada reducida engadido do ${format(startDate, "dd/MM/yyyy")} ao ${format(endDate, "dd/MM/yyyy")}`,
+    });
+  };
+  
+  return (
+    <div className="grid gap-4 py-4">
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="startDate" className="text-right">
+          Data de inicio
+        </Label>
+        <Calendar
+          mode="single"
+          selected={startDate}
+          onSelect={setStartDate}
+          className="col-span-3"
+          locale={es}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="endDate" className="text-right">
+          Data de fin
+        </Label>
+        <Calendar
+          mode="single"
+          selected={endDate}
+          onSelect={setEndDate}
+          className="col-span-3"
+          locale={es}
+        />
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="secondary" onClick={() => {}}>
+          Cancelar
+        </Button>
+        <Button type="submit" onClick={handleAddPeriod}>
+          Engadir
+        </Button>
+      </DialogFooter>
+    </div>
   );
 };
 

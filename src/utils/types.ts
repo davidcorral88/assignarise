@@ -56,6 +56,10 @@ export interface TimeEntry {
   hours: number;
   description: string;
   notes?: string;
+  category?: string;
+  project?: string;
+  activity?: string;
+  timeFormat?: string;
 }
 
 export interface Holiday {
@@ -64,10 +68,12 @@ export interface Holiday {
   name: string;
 }
 
+export type VacationType = 'vacation' | 'personal' | 'sick' | 'sick_leave';
+
 export interface VacationDay {
   userId: string;
   date: string;
-  type: 'vacation' | 'personal' | 'sick' | 'sick_leave';
+  type: VacationType;
 }
 
 export interface WorkdaySchedule {

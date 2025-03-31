@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -15,16 +14,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  mockUsers, 
-  mockTimeEntries, 
-  getTimeEntriesByUserId 
-} from '../utils/mockData';
-import {
-  getTasks,
-  getTasksByUserId
-} from '../utils/apiService'; // Use API functions for tasks
-import { Task } from '../utils/types';
+import { getTasks, getTasksByUserId, getTimeEntriesByUserId, getUsers } from '../utils/apiService';
+import { Task, TimeEntry } from '../utils/types';
 import { format } from 'date-fns';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { toast } from '@/components/ui/use-toast';
@@ -33,12 +24,19 @@ const Dashboard = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [userTasks, setUserTasks] = useState<Task[]>([]);
+  const [userTimeEntries, setUserTimeEntries] = useState<TimeEntry[]>([]);
+  const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchData = async () => {
       if (currentUser) {
         try {
+          // Fetch users count
+          const users = await getUsers();
+          setUserCount(users.length);
+          
+          // Fetch tasks
           let tasksData;
           if (currentUser.role === 'worker') {
             // Workers only see tasks assigned to them
@@ -48,13 +46,17 @@ const Dashboard = () => {
             tasksData = await getTasks();
           }
           setUserTasks(tasksData);
+          
+          // Fetch time entries for the user
+          if (currentUser.role === 'worker') {
+            const entries = await getTimeEntriesByUserId(currentUser.id);
+            setUserTimeEntries(entries);
+          }
         } catch (error) {
-          console.error("Error fetching tasks:", error);
-          // If API fails, fallback to empty array
-          setUserTasks([]);
+          console.error("Error fetching data:", error);
           toast({
             title: 'Error',
-            description: 'Non se puideron cargar as tarefas',
+            description: 'Non se puideron cargar os datos',
             variant: 'destructive',
           });
         } finally {
@@ -63,7 +65,7 @@ const Dashboard = () => {
       }
     };
     
-    fetchTasks();
+    fetchData();
   }, [currentUser]);
   
   const getStatusIcon = (status: string) => {
@@ -109,10 +111,9 @@ const Dashboard = () => {
       ];
     } else {
       // For workers: hours by task for their tasks
-      const userEntries = getTimeEntriesByUserId(currentUser?.id || '');
       const taskHours: Record<string, number> = {};
       
-      userEntries.forEach(entry => {
+      userTimeEntries.forEach(entry => {
         const task = userTasks.find(t => t.id === entry.taskId);
         if (task) {
           const taskName = task.title.substring(0, 20) + (task.title.length > 20 ? '...' : '');
@@ -190,7 +191,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">
-                  {mockUsers.length}
+                  {userCount}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Usuarios rexistrados no sistema
@@ -207,7 +208,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">
-                  {getTimeEntriesByUserId(currentUser?.id || '').reduce((sum, entry) => sum + entry.hours, 0)}
+                  {userTimeEntries.reduce((sum, entry) => sum + entry.hours, 0).toFixed(1)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Total de horas rexistradas

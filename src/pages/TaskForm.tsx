@@ -1,92 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../components/auth/AuthContext';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  CheckSquare, 
-  Plus, 
-  Tag, 
-  Trash2, 
-  X,
-  Clock,
-  Save,
-  Search,
-  FileUp,
-  FilePlus2
-} from 'lucide-react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Badge } from '@/components/ui/badge';
-import { 
-  getTaskById,
-  getNextTaskId,
-  // Replace mock data functions with real API functions
-  addAttachment,
-  removeAttachment
-} from '../utils/mockData';
-// Import the actual API service functions for tasks
-import {
-  addTask,
-  updateTask,
-  deleteTask,
-  getTaskById as apiGetTaskById,
-  getNextTaskId as apiGetNextTaskId
-} from '../utils/apiService';
-import { mockUsers } from '../utils/mockData';
-import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
+import { useAuth } from '../components/auth/AuthContext';
+import { getTaskById, getUsers, addTask, updateTask, getNextTaskId } from '../utils/dataService';
+import { Task, User, TaskAssignment } from '../utils/types';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { toast } from '@/components/ui/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import FileUploader from '@/components/files/FileUploader';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
-  const { currentUser } = useAuth();
+  const isEditMode = !!id;
   const navigate = useNavigate();
-  const isEditing = !!id;
+  const { currentUser } = useAuth();
+  const [task, setTask] = useState<Task | null>(null);
   
   const [taskId, setTaskId] = useState<number | undefined>(undefined);
   const [searchTaskId, setSearchTaskId] = useState('');
@@ -108,68 +33,43 @@ const TaskForm = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   
-  // Get all available users for assignment, including directors when the current user is a director
-  const availableUsers = mockUsers.filter(user => {
+  const availableUsers = getUsers().filter(user => {
     if (currentUser?.role === 'director') {
-      // Directors can assign to all workers and directors (including themselves)
       return user.active !== false;
     } else {
-      // Workers can only assign to workers
       return user.role === 'worker' && user.active !== false;
     }
   });
   
   useEffect(() => {
-    const fetchTaskData = async () => {
-      if (isEditing && id) {
-        try {
-          // Use the API function instead of mock data
-          const task = await apiGetTaskById(id);
-          if (task) {
-            setTaskId(parseInt(task.id));
-            setTarefa(task.title);
-            setDescription(task.description);
-            setStatus(task.status);
-            setPriority(task.priority);
-            setStartDate(task.startDate ? new Date(task.startDate) : new Date());
-            setDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
-            setTags(task.tags || []);
-            setAssignments([...task.assignments]);
-            setAttachments(task.attachments || []);
+    const fetchData = async () => {
+      try {
+        if (isEditMode && id) {
+          const taskData = await getTaskById(id);
+          if (taskData) {
+            setTask(taskData);
+            setTaskId(parseInt(taskData.id));
+            setTarefa(taskData.title);
+            setDescription(taskData.description);
+            setStatus(taskData.status);
+            setPriority(taskData.priority);
+            setStartDate(taskData.startDate ? new Date(taskData.startDate) : new Date());
+            setDueDate(taskData.dueDate ? new Date(taskData.dueDate) : undefined);
+            setTags(taskData.tags || []);
+            setAssignments([...taskData.assignments]);
+            setAttachments(taskData.attachments || []);
           }
-        } catch (error) {
-          console.error("Error fetching task data:", error);
-          // Fallback to mock data if API fails
-          const mockTask = getTaskById(id);
-          if (mockTask) {
-            setTaskId(parseInt(mockTask.id));
-            setTarefa(mockTask.title);
-            setDescription(mockTask.description);
-            setStatus(mockTask.status);
-            setPriority(mockTask.priority);
-            setStartDate(mockTask.startDate ? new Date(mockTask.startDate) : new Date());
-            setDueDate(mockTask.dueDate ? new Date(mockTask.dueDate) : undefined);
-            setTags(mockTask.tags || []);
-            setAssignments([...mockTask.assignments]);
-            setAttachments(mockTask.attachments || []);
-          }
-        }
-      } else {
-        // For new tasks, automatically set the next ID and make it read-only
-        try {
-          const nextId = await apiGetNextTaskId();
+        } else {
+          const nextId = await getNextTaskId();
           setTaskId(nextId);
-        } catch (error) {
-          console.error("Error fetching next task ID:", error);
-          // Fallback to mock function
-          setTaskId(getNextTaskId());
         }
+      } catch (error) {
+        console.error('Error loading task data:', error);
       }
-      setLoading(false);
     };
     
-    fetchTaskData();
-  }, [id, isEditing]);
+    fetchData();
+  }, [id, isEditMode]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,7 +94,6 @@ const TaskForm = () => {
     
     setSubmitting(true);
     
-    // Prepare the task object
     const task: Task = {
       id: String(taskId),
       title: tarefa,
@@ -211,7 +110,6 @@ const TaskForm = () => {
     };
     
     try {
-      // Save the task using the API functions
       if (isEditing || searchMode) {
         await updateTask(task);
         toast({
@@ -226,7 +124,6 @@ const TaskForm = () => {
         });
       }
       
-      // Navigate back to tasks list
       setTimeout(() => {
         navigate('/tasks');
         setSubmitting(false);
@@ -266,8 +163,7 @@ const TaskForm = () => {
   const handleSearchTask = async () => {
     if (searchTaskId.trim()) {
       try {
-        // Use the API function to search for the task
-        const task = await apiGetTaskById(searchTaskId);
+        const task = await getTaskById(searchTaskId);
         if (task) {
           setTaskId(parseInt(task.id));
           setTarefa(task.title);
@@ -294,7 +190,6 @@ const TaskForm = () => {
         }
       } catch (error) {
         console.error("Error searching for task:", error);
-        // Fallback to mock data if API fails
         const mockTask = getTaskById(searchTaskId);
         if (mockTask) {
           setTaskId(parseInt(mockTask.id));
@@ -357,14 +252,12 @@ const TaskForm = () => {
   
   const handleAddAssignment = () => {
     if (selectedUserId && allocatedHours > 0) {
-      // Check if user is already assigned
       if (!assignments.some(a => a.userId === selectedUserId)) {
         setAssignments([
           ...assignments,
           { userId: selectedUserId, allocatedHours }
         ]);
         
-        // Reset form fields
         setSelectedUserId('');
         setAllocatedHours(0);
       } else {
@@ -407,23 +300,19 @@ const TaskForm = () => {
     );
   }
   
-  // Access control: only directors and task owners can edit
   const canEdit = currentUser?.role === 'director' || 
-    (isEditing && getTaskById(id!)?.createdBy === currentUser?.id) ||
+    (isEditMode && getTaskById(id!)?.createdBy === currentUser?.id) ||
     (searchMode && getTaskById(searchTaskId)?.createdBy === currentUser?.id);
   
-  // Para tareas completadas, solo se puede añadir archivos de resolución
   const isTaskCompleted = status === 'completed';
   
-  // Comprobar si el usuario actual está asignado a esta tarea
   const isUserAssignedToTask = currentUser && assignments.some(a => a.userId === currentUser.id);
   
-  // Solo los usuarios asignados y directors pueden añadir adjuntos de resolución
   const canAddResolutionAttachments = currentUser && (
     currentUser.role === 'director' || isUserAssignedToTask
   );
   
-  if ((isEditing || searchMode) && !canEdit) {
+  if ((isEditMode || searchMode) && !canEdit) {
     navigate('/tasks');
     return null;
   }
@@ -442,7 +331,7 @@ const TaskForm = () => {
           </Button>
           
           <div className="flex space-x-2">
-            {(isEditing || searchMode) && (
+            {(isEditMode || searchMode) && (
               <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive">
@@ -465,7 +354,7 @@ const TaskForm = () => {
               </AlertDialog>
             )}
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
-              {isEditing ? 'Editar tarefa' : searchMode ? 'Editar tarefa (buscada)' : 'Nova tarefa'}
+              {isEditMode ? 'Editar tarefa' : searchMode ? 'Editar tarefa (buscada)' : 'Nova tarefa'}
             </h1>
           </div>
         </div>
@@ -498,7 +387,7 @@ const TaskForm = () => {
                       </p>
                     </div>
 
-                    {!isEditing && !searchMode && (
+                    {!isEditMode && !searchMode && (
                       <div className="w-2/3 space-y-2">
                         <Label htmlFor="searchId">Buscar tarefa por ID</Label>
                         <div className="flex space-x-2">
@@ -667,7 +556,7 @@ const TaskForm = () => {
                         isResolution={false}
                         onAttachmentAdded={handleAttachmentAdded}
                         onAttachmentRemoved={handleAttachmentRemoved}
-                        readOnly={isEditing && !canEdit}
+                        readOnly={isEditMode && !canEdit}
                       />
                     </TabsContent>
                     
@@ -703,7 +592,7 @@ const TaskForm = () => {
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
                     {assignments.map(assignment => {
-                      const user = mockUsers.find(u => u.id === assignment.userId);
+                      const user = getUsers().find(u => u.id === assignment.userId);
                       return (
                         <div key={assignment.userId} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
                           <div className="flex items-center gap-3">
@@ -848,12 +737,12 @@ const TaskForm = () => {
                     {submitting ? (
                       <>
                         <Clock className="mr-2 h-4 w-4 animate-spin" />
-                        {isEditing || searchMode ? 'Actualizando...' : 'Creando...'}
+                        {isEditMode || searchMode ? 'Actualizando...' : 'Creando...'}
                       </>
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        {isEditing || searchMode ? 'Actualizar tarefa' : 'Crear tarefa'}
+                        {isEditMode || searchMode ? 'Actualizar tarefa' : 'Crear tarefa'}
                       </>
                     )}
                   </Button>
