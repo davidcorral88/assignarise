@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -80,6 +81,8 @@ const workdayScheduleSchema = z.object({
   endDate: z.date().optional(),
 });
 
+type FormValues = z.infer<typeof workdayScheduleSchema>;
+
 const WorkdayScheduleTable: React.FC = () => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -91,7 +94,7 @@ const WorkdayScheduleTable: React.FC = () => {
     queryFn: getWorkdaySchedules
   });
   
-  const form = useForm<z.infer<typeof workdayScheduleSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(workdayScheduleSchema),
     defaultValues: {
       name: "",
@@ -107,9 +110,9 @@ const WorkdayScheduleTable: React.FC = () => {
     },
   });
   
-  const editForm = useForm<z.infer<typeof workdayScheduleSchema>>({
+  const editForm = useForm<FormValues>({
     resolver: zodResolver(workdayScheduleSchema),
-    defaultValues: selectedSchedule || {
+    defaultValues: {
       name: "",
       monday: false,
       tuesday: false,
@@ -126,12 +129,59 @@ const WorkdayScheduleTable: React.FC = () => {
   
   useEffect(() => {
     if (selectedSchedule) {
-      editForm.reset(selectedSchedule);
+      const formValues: FormValues = {
+        name: selectedSchedule.name,
+        monday: selectedSchedule.monday,
+        tuesday: selectedSchedule.tuesday,
+        wednesday: selectedSchedule.wednesday,
+        thursday: selectedSchedule.thursday,
+        friday: selectedSchedule.friday,
+        saturday: selectedSchedule.saturday,
+        sunday: selectedSchedule.sunday,
+        startTime: selectedSchedule.startTime,
+        endTime: selectedSchedule.endTime,
+        breakStart: selectedSchedule.breakStart,
+        breakEnd: selectedSchedule.breakEnd,
+        mondayHours: selectedSchedule.mondayHours,
+        tuesdayHours: selectedSchedule.tuesdayHours,
+        wednesdayHours: selectedSchedule.wednesdayHours,
+        thursdayHours: selectedSchedule.thursdayHours,
+        fridayHours: selectedSchedule.fridayHours,
+        // Convert string dates to Date objects if they exist
+        startDate: selectedSchedule.startDate ? new Date(selectedSchedule.startDate) : undefined,
+        endDate: selectedSchedule.endDate ? new Date(selectedSchedule.endDate) : undefined,
+      };
+      editForm.reset(formValues);
     }
   }, [selectedSchedule, editForm]);
   
   const addWorkdayScheduleMutation = useMutation({
-    mutationFn: addWorkdaySchedule,
+    mutationFn: (data: FormValues) => {
+      // Generate a random ID for the new schedule
+      const newSchedule: WorkdaySchedule = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: data.name,
+        monday: data.monday,
+        tuesday: data.tuesday,
+        wednesday: data.wednesday,
+        thursday: data.thursday,
+        friday: data.friday,
+        saturday: data.saturday,
+        sunday: data.sunday,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        breakStart: data.breakStart,
+        breakEnd: data.breakEnd,
+        mondayHours: data.mondayHours,
+        tuesdayHours: data.tuesdayHours,
+        wednesdayHours: data.wednesdayHours,
+        thursdayHours: data.thursdayHours,
+        fridayHours: data.fridayHours,
+        startDate: data.startDate ? format(data.startDate, 'yyyy-MM-dd') : undefined,
+        endDate: data.endDate ? format(data.endDate, 'yyyy-MM-dd') : undefined,
+      };
+      return addWorkdaySchedule(newSchedule);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
       toast({
@@ -151,7 +201,31 @@ const WorkdayScheduleTable: React.FC = () => {
   });
   
   const updateWorkdayScheduleMutation = useMutation({
-    mutationFn: updateWorkdaySchedule,
+    mutationFn: (data: FormValues & { id: string }) => {
+      const updatedSchedule: WorkdaySchedule = {
+        id: data.id,
+        name: data.name,
+        monday: data.monday,
+        tuesday: data.tuesday,
+        wednesday: data.wednesday,
+        thursday: data.thursday,
+        friday: data.friday,
+        saturday: data.saturday,
+        sunday: data.sunday,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        breakStart: data.breakStart,
+        breakEnd: data.breakEnd,
+        mondayHours: data.mondayHours,
+        tuesdayHours: data.tuesdayHours,
+        wednesdayHours: data.wednesdayHours,
+        thursdayHours: data.thursdayHours,
+        fridayHours: data.fridayHours,
+        startDate: data.startDate ? format(data.startDate, 'yyyy-MM-dd') : undefined,
+        endDate: data.endDate ? format(data.endDate, 'yyyy-MM-dd') : undefined,
+      };
+      return updateWorkdaySchedule(updatedSchedule);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
       toast({
@@ -190,11 +264,11 @@ const WorkdayScheduleTable: React.FC = () => {
     }
   });
   
-  const onSubmit = (values: z.infer<typeof workdayScheduleSchema>) => {
+  const onSubmit = (values: FormValues) => {
     addWorkdayScheduleMutation.mutate(values);
   };
   
-  const onEditSubmit = (values: z.infer<typeof workdayScheduleSchema>) => {
+  const onEditSubmit = (values: FormValues) => {
     if (selectedSchedule) {
       updateWorkdayScheduleMutation.mutate({ ...values, id: selectedSchedule.id });
     }
@@ -208,9 +282,9 @@ const WorkdayScheduleTable: React.FC = () => {
     <Card>
       <CardHeader>
         <CardTitle>Horarios de trabajo</CardTitle>
-        <CardDescription>
+        <FormDescription>
           Gestiona los horarios de trabajo de la empresa.
-        </CardDescription>
+        </FormDescription>
       </CardHeader>
       <CardContent>
         <Dialog open={open} onOpenChange={setOpen}>

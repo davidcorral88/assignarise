@@ -126,3 +126,19 @@ export interface AuthContextType {
   updateCurrentUser: (user: User) => void;
   loading?: boolean;
 }
+
+// Define types for calendar components
+export interface UserVacationsCalendarProps {
+  vacationDays: VacationDay[];
+  onRemoveVacationDay: (vacationDay: VacationDay) => Promise<void>;
+}
+
+export interface AllUsersVacationsCalendarProps {
+  vacationDays: VacationDay[];
+  onRemoveVacationDay: (vacationDay: VacationDay) => Promise<void>;
+}
+
+export interface HolidaysCalendarProps {
+  holidays: Holiday[];
+  onRemoveHoliday: (holiday: Holiday) => Promise<void>;
+}
