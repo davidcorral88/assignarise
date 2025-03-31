@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { 
   getTasks, getTimeEntriesByUserId, addTimeEntry, 
@@ -12,21 +14,9 @@ import { toast } from '@/components/ui/use-toast';
 import { Clock, Calendar, PlusCircle, Timer, Save, Eye, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,22 +25,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import TimeTrackingForm from '@/components/TimeTracking/TimeTrackingForm';
 
 const TimeTracking = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const [selectedTask, setSelectedTask] = useState<string>('');
-  const [hours, setHours] = useState<number>(1);
-  const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [notes, setNotes] = useState<string>('');
-  const [submitting, setSubmitting] = useState(false);
+  const [isAddingEntry, setIsAddingEntry] = useState(false);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -81,56 +64,11 @@ const TimeTracking = () => {
     fetchData();
   }, [currentUser]);
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedTask || hours <= 0 || !date) {
-      toast({
-        title: 'Campos incompletos',
-        description: 'Por favor complete todos los campos requeridos',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    setSubmitting(true);
-    
-    try {
-      const timeEntry: TimeEntry = {
-        id: uuidv4(),
-        taskId: selectedTask,
-        userId: currentUser?.id || '',
-        hours: hours,
-        date: date,
-        notes: notes,
-        description: `Registro de ${hours} horas para la tarea`,
-      };
-      
-      await addTimeEntry(timeEntry);
-      
-      setTimeEntries([...timeEntries, timeEntry]);
-      
-      setSelectedTask('');
-      setHours(1);
-      setDate(format(new Date(), 'yyyy-MM-dd'));
-      setNotes('');
-      
-      toast({
-        title: 'Tiempo registrado',
-        description: 'El registro de horas se ha guardado correctamente',
-      });
-    } catch (error) {
-      console.error('Error al registrar tiempo:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar el registro de tiempo',
-        variant: 'destructive',
-      });
-    } finally {
-      setSubmitting(false);
-    }
+  const handleTimeEntryAdded = (entry: TimeEntry) => {
+    setTimeEntries([...timeEntries, entry]);
+    setIsAddingEntry(false);
   };
-  
+
   if (loading) {
     return (
       <Layout>
@@ -163,107 +101,12 @@ const TimeTracking = () => {
         </div>
         
         {isAddingEntry && (
-          <Card className="animate-scale-in">
-            <CardHeader>
-              <CardTitle>Novo rexistro de horas</CardTitle>
-              <CardDescription>
-                Introduce as horas traballadas nunha tarefa asignada
-              </CardDescription>
-            </CardHeader>
-            <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="task">Tarefa *</Label>
-                  <Select 
-                    value={selectedTask} 
-                    onValueChange={setSelectedTask}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar tarefa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tasks.map(task => (
-                        <SelectItem key={task.id} value={task.id}>
-                          {task.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="hours">Horas traballadas *</Label>
-                    <Input
-                      id="hours"
-                      type="number"
-                      min="0.5"
-                      step="0.5"
-                      value={hours || ''}
-                      onChange={(e) => setHours(Number(e.target.value))}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Data *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !date && "text-muted-foreground"
-                          )}
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {date ? format(date, "dd/MM/yyyy") : <span>Seleccionar data</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <CalendarComponent
-                          mode="single"
-                          selected={date}
-                          onSelect={(date) => date && setDate(date)}
-                          initialFocus
-                          className="bg-white pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notas</Label>
-                  <Textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Engade detalles sobre o traballo realizado"
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between border-t pt-6">
-                <Button variant="outline" type="button" onClick={() => setIsAddingEntry(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? (
-                    <>
-                      <Clock className="mr-2 h-4 w-4 animate-spin" />
-                      Gardando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Gardar rexistro
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </form>
-          </Card>
+          <TimeTrackingForm 
+            tasks={tasks}
+            onEntryAdded={handleTimeEntryAdded}
+            onCancel={() => setIsAddingEntry(false)}
+            userId={currentUser?.id || ''}
+          />
         )}
         
         <Card>
@@ -314,7 +157,7 @@ const TimeTracking = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Accións</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => navigate(`/tasks/${task.id}`)}>
+                                <DropdownMenuItem onClick={() => navigate(`/tasks/${task?.id}`)}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   Ver tarefa
                                 </DropdownMenuItem>
@@ -366,7 +209,7 @@ const TimeTracking = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {userTasks.map(task => {
+              {tasks.map(task => {
                 const taskEntries = timeEntries.filter(entry => entry.taskId === task.id);
                 const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
                 const taskAssignment = task.assignments.find(a => a.userId === currentUser?.id);
@@ -413,7 +256,7 @@ const TimeTracking = () => {
                 );
               })}
               
-              {userTasks.length === 0 && (
+              {tasks.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Clock className="h-12 w-12 text-muted-foreground/50 mb-4" />
                   <p className="text-muted-foreground mb-4">Non tes tarefas asignadas</p>

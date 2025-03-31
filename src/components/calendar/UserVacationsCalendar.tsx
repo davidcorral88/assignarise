@@ -34,7 +34,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
     .map(v => parseISO(v.date));
     
   const sickLeaveDates = vacationDays
-    .filter(v => v.type === 'sick_leave')
+    .filter(v => v.type === 'sick_leave' || v.type === 'sick')
     .map(v => parseISO(v.date));
     
   const holidayDates = holidays.map(h => parseISO(h.date));
@@ -60,7 +60,7 @@ const UserVacationsCalendar: React.FC<UserVacationsCalendarProps> = ({ userId })
           DayContent: ({ date }) => {
             const dateStr = format(date, 'yyyy-MM-dd');
             const isVacation = vacationDays.some(v => v.date === dateStr && v.type === 'vacation');
-            const isSickLeave = vacationDays.some(v => v.date === dateStr && v.type === 'sick_leave');
+            const isSickLeave = vacationDays.some(v => v.date === dateStr && (v.type === 'sick_leave' || v.type === 'sick'));
             const isHoliday = holidays.some(h => h.date === dateStr);
             
             return (

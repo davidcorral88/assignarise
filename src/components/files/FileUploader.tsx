@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TaskAttachment } from '@/utils/types';
-import { uploadFile, downloadFile, formatFileSize, isImageFile } from '@/utils/fileService';
+import { uploadTaskAttachment, deleteTaskAttachment, formatFileSize } from '@/utils/fileService';
 import { 
   Card,
   CardContent
@@ -43,7 +43,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   
   // Filtrar los adjuntos según el tipo (inicial o resolución)
   const filteredAttachments = attachments.filter(
-    attachment => attachment.isTaskResolution === isResolution
+    attachment => attachment.isResolution === isResolution
   );
   
   const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,13 +70,15 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     setUploading(true);
     
     try {
-      const attachment = await uploadFile(file, taskId, currentUser.id, isResolution);
-      onAttachmentAdded(attachment);
-      
-      toast({
-        title: "Arquivo cargado",
-        description: `${file.name} foi cargado correctamente.`,
-      });
+      const attachment = await uploadTaskAttachment(taskId, file, currentUser.id, isResolution);
+      if (attachment) {
+        onAttachmentAdded(attachment);
+        
+        toast({
+          title: "Arquivo cargado",
+          description: `${file.name} foi cargado correctamente.`,
+        });
+      }
     } catch (error) {
       console.error('Error al cargar el archivo:', error);
       toast({
@@ -92,17 +94,42 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   }, [taskId, currentUser, isResolution, onAttachmentAdded]);
   
   const handleDownload = useCallback((attachment: TaskAttachment) => {
-    downloadFile(attachment);
+    // Create a direct download link for the attachment
+    if (attachment.fileUrl) {
+      const link = document.createElement('a');
+      link.href = attachment.fileUrl;
+      link.download = attachment.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo descargar el archivo, URL no disponible",
+        variant: "destructive",
+      });
+    }
   }, []);
   
   const handleDelete = useCallback((attachmentId: string) => {
-    onAttachmentRemoved(attachmentId);
-    
-    toast({
-      title: "Archivo eliminado",
-      description: "O arquivo foi eliminado correctamente.",
-    });
-  }, [onAttachmentRemoved]);
+    deleteTaskAttachment(taskId, attachmentId)
+      .then(() => {
+        onAttachmentRemoved(attachmentId);
+        
+        toast({
+          title: "Archivo eliminado",
+          description: "O arquivo foi eliminado correctamente.",
+        });
+      })
+      .catch(error => {
+        console.error('Error al eliminar el archivo:', error);
+        toast({
+          title: "Error",
+          description: "Non se puido eliminar o arquivo.",
+          variant: "destructive",
+        });
+      });
+  }, [taskId, onAttachmentRemoved]);
   
   // Determinar qué ícono mostrar según el tipo de archivo
   const getFileIcon = (fileType: string) => {

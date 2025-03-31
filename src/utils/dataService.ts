@@ -388,9 +388,15 @@ export const getWorkSchedule = async (): Promise<WorkSchedule> => {
   }
 };
 
-export const updateWorkSchedule = async (schedule: WorkSchedule): Promise<void> => {
+export const updateWorkSchedule = async (schedule: WorkSchedule | WorkdaySchedule): Promise<void> => {
   try {
-    await apiService.updateWorkSchedule(schedule);
+    if ('monday' in schedule) {
+      // It's a WorkdaySchedule
+      await apiService.updateWorkdaySchedule(schedule);
+    } else {
+      // It's a WorkSchedule
+      await apiService.updateWorkSchedule(schedule);
+    }
   } catch (error) {
     console.error('Error en updateWorkSchedule:', error);
     throw error;
@@ -523,20 +529,6 @@ export const addWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<voi
   }
 };
 
-export const updateWorkSchedule = async (schedule: WorkdaySchedule): Promise<void> => {
-  try {
-    await apiService.updateWorkdaySchedule(schedule);
-  } catch (error) {
-    console.error('Error en updateWorkdaySchedule:', error);
-    toast({
-      title: 'Error al actualizar horario',
-      description: 'No se pudo actualizar el horario en la base de datos PostgreSQL.',
-      variant: 'destructive',
-    });
-    throw error;
-  }
-};
-
 // Esta función ya no es relevante en modo PostgreSQL
 export const resetDatabase = (): void => {
   toast({
@@ -569,3 +561,28 @@ export const getStorageUsage = () => {
   // Always return 0 as localStorage is not used
   return 0;
 };
+
+// Re-export functions from apiService for direct use
+export const { 
+  getUsers,
+  getUserById,
+  getUserByEmail,
+  addUser,
+  updateUser,
+  deleteUser,
+  getNextUserId,
+  getTasks,
+  getTaskById,
+  getTasksByUserId,
+  addTask,
+  updateTask,
+  deleteTask,
+  getTimeEntries,
+  getTimeEntryById,
+  getTimeEntriesByUserId,
+  getTimeEntriesByTaskId,
+  addTimeEntry,
+  getTotalHoursByTask,
+  getTotalHoursAllocatedByTask,
+  getNextTaskId
+} = apiService;

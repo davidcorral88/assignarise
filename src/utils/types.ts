@@ -67,7 +67,7 @@ export interface Holiday {
 export interface VacationDay {
   userId: string;
   date: string;
-  type: 'vacation' | 'personal' | 'sick';
+  type: 'vacation' | 'personal' | 'sick' | 'sick_leave';
 }
 
 export interface WorkdaySchedule {

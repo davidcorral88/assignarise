@@ -19,30 +19,6 @@ export const isImageFile = (fileName: string): boolean => {
   return imageExtensions.includes(ext);
 };
 
-export const uploadFile = async (file: File, userId: string, isResolution: boolean = false): Promise<TaskAttachment> => {
-  return await uploadTaskAttachment('temp', file, userId, isResolution);
-};
-
-export const downloadFile = async (fileUrl: string, fileName: string): Promise<void> => {
-  try {
-    const response = await fetch(fileUrl);
-    const blob = await response.blob();
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error("Error downloading file:", error);
-    toast({
-      title: 'Error al descargar archivo',
-      description: 'No se pudo descargar el archivo solicitado',
-      variant: 'destructive',
-    });
-  }
-};
-
 // Función para subir un archivo adjunto a una tarea
 export const uploadTaskAttachment = async (
   taskId: string,

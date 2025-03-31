@@ -28,7 +28,7 @@ import { WorkdaySchedule } from '@/utils/types';
 import { 
   getWorkdaySchedules, 
   addWorkdaySchedule, 
-  updateWorkdaySchedule, 
+  updateWorkSchedule, 
   deleteWorkdaySchedule 
 } from '@/utils/dataService';
 
@@ -70,7 +70,7 @@ const WorkdayScheduleTable: React.FC = () => {
   
   // Mutation para actualizar horario
   const updateScheduleMutation = useMutation({
-    mutationFn: updateWorkdaySchedule,
+    mutationFn: (schedule: WorkdaySchedule) => updateWorkSchedule(schedule),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
       toast({
@@ -104,6 +104,16 @@ const WorkdayScheduleTable: React.FC = () => {
   const handleAddNew = () => {
     const newSchedule: WorkdaySchedule = {
       id: '',
+      name: '',
+      monday: true,
+      tuesday: true,
+      wednesday: true,
+      thursday: true,
+      friday: true,
+      saturday: false,
+      sunday: false,
+      startTime: '09:00',
+      endTime: '17:00',
       type: '',
       startDate: '01-01',
       endDate: '12-31',
@@ -135,7 +145,7 @@ const WorkdayScheduleTable: React.FC = () => {
   const handleSave = () => {
     if (!editingSchedule) return;
     
-    if (!editingSchedule.type.trim()) {
+    if (!editingSchedule.type?.trim()) {
       toast({
         title: "Erro",
         description: "O tipo de xornada non pode estar vacío",

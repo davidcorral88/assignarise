@@ -99,26 +99,7 @@ const HolidaysCalendar: React.FC<HolidaysCalendarProps> = ({ isEditable }) => {
       description: holidayDescription || holidayName
     };
     
-    try {
-      await addHoliday(newHoliday);
-      setHolidays([...holidays, newHoliday]);
-      
-      setSelectedDate(undefined);
-      setHolidayName('');
-      setHolidayDescription('');
-      
-      toast({
-        title: 'Día festivo añadido',
-        description: 'El día festivo ha sido registrado correctamente.',
-      });
-    } catch (error) {
-      console.error('Error al añadir día festivo:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo registrar el día festivo.',
-        variant: 'destructive',
-      });
-    }
+    addHolidayMutation.mutate(newHoliday);
   };
 
   const handleRemoveHoliday = (holiday: Holiday) => {
