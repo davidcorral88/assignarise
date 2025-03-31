@@ -147,12 +147,37 @@ export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
 export const addTask = async (task: Task): Promise<void> => {
   console.log("Guardando tarea en PostgreSQL:", task);
   try {
+    // Convert from client model to API model
+    const apiTask = {
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      createdBy: task.createdBy,
+      createdAt: task.createdAt,
+      startDate: task.startDate,
+      dueDate: task.dueDate,
+      priority: task.priority,
+      category: task.category,
+      project: task.project,
+      tags: task.tags,
+      assignments: task.assignments?.map(a => ({
+        user_id: a.userId,
+        allocated_hours: a.allocatedHours
+      }))
+    };
+    
     const response = await fetch(`${API_URL}/tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(task)
+      body: JSON.stringify(apiTask)
     });
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error HTTP ${response.status}: ${errorText}`);
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
   } catch (error) {
     handleFetchError(error, 'Error al crear tarea');
   }
@@ -506,7 +531,11 @@ export const getNextUserId = async (): Promise<number> => {
 export const getNextTaskId = async (): Promise<number> => {
   try {
     const response = await fetch(`${API_URL}/tasks/next-id`);
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error HTTP ${response.status}: ${errorText}`);
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
     const result = await response.json();
     return result.nextId || 1;
   } catch (error) {

@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
@@ -192,6 +191,19 @@ app.get('/api/tasks/:id', async (req, res) => {
   }
 });
 
+// Add endpoint to get next task ID
+app.get('/api/tasks/next-id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT MAX(CAST(id AS INTEGER)) as max_id FROM tasks');
+    const nextId = result.rows[0].max_id ? parseInt(result.rows[0].max_id) + 1 : 1;
+    res.json({ nextId });
+  } catch (error) {
+    console.error('Error getting next task ID:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Fix task creation endpoint
 app.post('/api/tasks', async (req, res) => {
   const client = await pool.connect();
   
@@ -199,17 +211,23 @@ app.post('/api/tasks', async (req, res) => {
     await client.query('BEGIN');
     
     const { 
-      id, title, description, status, created_by, created_at, 
-      start_date, due_date, priority, category, project, tags, assignments 
+      id, title, description, status, createdBy, createdAt, 
+      startDate, dueDate, priority, category, project, tags, assignments 
     } = req.body;
+    
+    console.log('Received task data:', {
+      id, title, status, createdBy, startDate, dueDate, 
+      tags: tags?.length, 
+      assignments: assignments?.length
+    });
     
     // Insert task
     const taskResult = await client.query(
       `INSERT INTO tasks (id, title, description, status, created_by, created_at, 
         start_date, due_date, priority, category, project) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [id, title, description, status, created_by, created_at || new Date(), 
-       start_date, due_date, priority, category, project]
+      [id, title, description, status, createdBy, createdAt || new Date(), 
+       startDate, dueDate, priority, category, project]
     );
     
     const task = taskResult.rows[0];
@@ -229,7 +247,7 @@ app.post('/api/tasks', async (req, res) => {
       for (const assignment of assignments) {
         await client.query(
           'INSERT INTO task_assignments (task_id, user_id, allocated_hours) VALUES ($1, $2, $3)',
-          [task.id, assignment.user_id, assignment.allocated_hours]
+          [task.id, assignment.userId, assignment.allocatedHours]
         );
       }
     }
@@ -244,7 +262,7 @@ app.post('/api/tasks', async (req, res) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error creating task:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   } finally {
     client.release();
   }
