@@ -212,7 +212,7 @@ app.post('/api/tasks', async (req, res) => {
     
     const { 
       id, title, description, status, createdBy, createdAt, 
-      startDate, dueDate, priority, category, project, tags, assignments 
+      startDate, dueDate, priority, tags, assignments 
     } = req.body;
     
     console.log('Received task data:', {
@@ -224,10 +224,10 @@ app.post('/api/tasks', async (req, res) => {
     // Insert task
     const taskResult = await client.query(
       `INSERT INTO tasks (id, title, description, status, created_by, created_at, 
-        start_date, due_date, priority, category, project) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        start_date, due_date, priority) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
       [id, title, description, status, createdBy, createdAt || new Date(), 
-       startDate, dueDate, priority, category, project]
+       startDate, dueDate, priority]
     );
     
     const task = taskResult.rows[0];

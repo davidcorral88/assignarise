@@ -158,12 +158,10 @@ export const addTask = async (task: Task): Promise<void> => {
       startDate: task.startDate,
       dueDate: task.dueDate,
       priority: task.priority,
-      category: task.category,
-      project: task.project,
       tags: task.tags,
       assignments: task.assignments?.map(a => ({
-        user_id: a.userId,
-        allocated_hours: a.allocatedHours
+        userId: a.userId,
+        allocatedHours: a.allocatedHours
       }))
     };
     
@@ -534,8 +532,23 @@ export const getNextTaskId = async (): Promise<number> => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Error HTTP ${response.status}: ${errorText}`);
-      throw new Error(`Error HTTP: ${response.status}`);
+      
+      // Fallback: calculate next ID based on existing tasks
+      console.log("Falling back to calculating next task ID from all tasks");
+      const tasksResponse = await fetch(`${API_URL}/tasks`);
+      if (!tasksResponse.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+      
+      const tasks = await tasksResponse.json();
+      const maxId = tasks.reduce((max: number, task: Task) => {
+        const taskId = parseInt(task.id);
+        return isNaN(taskId) ? max : Math.max(max, taskId);
+      }, 0);
+      
+      return maxId + 1;
     }
+    
     const result = await response.json();
     return result.nextId || 1;
   } catch (error) {
