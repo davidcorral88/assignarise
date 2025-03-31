@@ -163,7 +163,7 @@ export const addTask = async (task: Task): Promise<void> => {
       throw new Error(`Error HTTP: ${response.status}`);
     }
   } catch (error) {
-    handleFetchError(error, 'Error al crear tarea');
+    return handleFetchError(error, 'Error al crear tarea');
   }
 };
 
@@ -515,6 +515,7 @@ export const getNextUserId = async (): Promise<number> => {
 // Mejorar la función getNextTaskId para manejar mejor los errores
 export const getNextTaskId = async (): Promise<number> => {
   try {
+    console.log("Requesting next task ID from API");
     const response = await fetch(`${API_URL}/tasks/next-id`);
     if (!response.ok) {
       const errorText = await response.text();
@@ -542,6 +543,7 @@ export const getNextTaskId = async (): Promise<number> => {
     }
     
     const result = await response.json();
+    console.log("Next task ID from API:", result);
     return result.nextId || 1;
   } catch (error) {
     console.error('Error al obtener siguiente ID de tarea:', error);

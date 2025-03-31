@@ -1,3 +1,4 @@
+
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
@@ -151,11 +152,14 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
-// Add endpoint to get next task ID
+// Add endpoint to get next task ID - THIS ENDPOINT MUST BE DEFINED BEFORE OTHER /tasks endpoints
 app.get('/api/tasks/next-id', async (req, res) => {
   try {
+    console.log('Getting next task ID');
     const result = await pool.query('SELECT MAX(CAST(id AS INTEGER)) as max_id FROM tasks');
+    console.log('Max ID result:', result.rows[0]);
     const nextId = result.rows[0].max_id ? parseInt(result.rows[0].max_id) + 1 : 1;
+    console.log('Returning next task ID:', nextId);
     res.json({ nextId });
   } catch (error) {
     console.error('Error getting next task ID:', error);
@@ -221,6 +225,7 @@ app.post('/api/tasks', async (req, res) => {
       assignments: assignments?.length
     });
     
+    // Convert field names to snake_case for database compatibility
     // Insert task
     const taskResult = await client.query(
       `INSERT INTO tasks (id, title, description, status, created_by, created_at, 
@@ -242,12 +247,20 @@ app.post('/api/tasks', async (req, res) => {
       }
     }
     
-    // Insert assignments
+    // Insert assignments - handle both user_id and userId formats
     if (assignments && assignments.length > 0) {
       for (const assignment of assignments) {
+        const userId = assignment.userId || assignment.user_id;
+        const hours = assignment.allocatedHours || assignment.allocated_hours;
+        
+        if (!userId) {
+          console.error('Missing user ID in assignment:', assignment);
+          continue;
+        }
+        
         await client.query(
           'INSERT INTO task_assignments (task_id, user_id, allocated_hours) VALUES ($1, $2, $3)',
-          [task.id, assignment.userId, assignment.allocatedHours]
+          [task.id, userId, hours]
         );
       }
     }
@@ -276,9 +289,13 @@ app.put('/api/tasks/:id', async (req, res) => {
     
     const { id } = req.params;
     const { 
-      title, description, status, start_date, due_date, 
+      title, description, status, startDate, dueDate, 
       priority, category, project, tags, assignments 
     } = req.body;
+    
+    // Convert camelCase to snake_case for database
+    const start_date = startDate;
+    const due_date = dueDate;
     
     // Update task
     const taskResult = await client.query(
@@ -312,9 +329,13 @@ app.put('/api/tasks/:id', async (req, res) => {
     
     if (assignments && assignments.length > 0) {
       for (const assignment of assignments) {
+        // Handle both formats
+        const userId = assignment.userId || assignment.user_id;
+        const hours = assignment.allocatedHours || assignment.allocated_hours;
+        
         await client.query(
           'INSERT INTO task_assignments (task_id, user_id, allocated_hours) VALUES ($1, $2, $3)',
-          [id, assignment.user_id, assignment.allocated_hours]
+          [id, userId, hours]
         );
       }
     }
