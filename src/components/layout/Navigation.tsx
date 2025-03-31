@@ -6,11 +6,9 @@ import {
   LayoutDashboard, 
   CheckSquare, 
   Clock, 
-  Calendar, 
   Users, 
   Settings, 
-  User,
-  CalendarDays
+  User
 } from 'lucide-react';
 
 export const Navigation = () => {
@@ -48,18 +46,6 @@ export const Navigation = () => {
       show: true
     },
     {
-      name: 'Calendarios',
-      path: '/calendars',
-      icon: <CalendarDays className="h-5 w-5" />,
-      show: true
-    },
-    {
-      name: 'Vacacións',
-      path: '/vacations',
-      icon: <Calendar className="h-5 w-5" />,
-      show: true
-    },
-    {
       name: 'Usuarios',
       path: '/users',
       icon: <Users className="h-5 w-5" />,
@@ -75,7 +61,7 @@ export const Navigation = () => {
       name: 'Configuración',
       path: '/settings',
       icon: <Settings className="h-5 w-5" />,
-      show: isAdmin  // Ahora solo visible para administradores
+      show: isAdmin  // Solo visible para administradores
     }
   ];
 
