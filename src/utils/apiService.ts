@@ -69,13 +69,36 @@ export const getUserById = async (id: string): Promise<User | undefined> => {
 
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
   try {
+    console.log(`Intentando obtener usuario con email: ${email}`);
     const response = await fetch(`${API_URL}/users/by-email/${encodeURIComponent(email)}`);
-    if (response.status === 404) return undefined;
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+    
+    // Verificar primero si la respuesta es 404 (usuario no encontrado)
+    if (response.status === 404) {
+      console.log(`Usuario con email ${email} no encontrado`);
+      return undefined;
+    }
+    
+    // Verificar si la respuesta no es exitosa
+    if (!response.ok) {
+      console.error(`Error HTTP: ${response.status} al obtener usuario por email`);
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    
+    // Verificar el tipo de contenido para asegurarse de que es JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error(`Respuesta no válida: se esperaba JSON pero se recibió ${contentType}`);
+      // Mostrar parte del contenido para depuración
+      const text = await response.text();
+      console.error(`Inicio del contenido recibido: ${text.substring(0, 150)}...`);
+      throw new Error(`Respuesta no válida: se esperaba JSON pero se recibió ${contentType}`);
+    }
+    
     return await response.json();
   } catch (error) {
     console.error(`Error al obtener usuario por email ${email}:`, error);
-    return undefined;
+    // Reenviar el error para que pueda ser manejado por el llamante
+    throw error;
   }
 };
 

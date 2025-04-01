@@ -64,6 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Get user from PostgreSQL
       let user: User | undefined;
       try {
+        console.log("Intentando obtener usuario de PostgreSQL:", email);
         user = await getUserByEmail(email);
         
         // Update any 'manager' roles to 'director'
@@ -71,16 +72,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user.role = 'director';
         }
       } catch (error) {
-        console.log("Error getting user from PostgreSQL", error);
+        console.error("Error getting user from PostgreSQL", error);
+        
+        // Mostrar un mensaje más descriptivo según el tipo de error
+        let errorMessage = 'Error de conexión a la base de datos';
+        if (error instanceof Error && error.message.includes('Respuesta no válida')) {
+          errorMessage = 'El servidor no está respondiendo correctamente. Por favor, contacte con el administrador.';
+        }
+        
         toast({
           title: 'Error de conexión',
-          description: 'No se pudo conectar a la base de datos PostgreSQL',
+          description: errorMessage,
           variant: 'destructive'
         });
-        throw new Error('Error de conexión a la base de datos');
+        throw new Error(errorMessage);
       }
       
       if (!user) {
+        console.log('Usuario no encontrado:', email);
         throw new Error('Usuario non atopado');
       }
       
