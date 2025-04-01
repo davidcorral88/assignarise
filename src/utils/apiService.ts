@@ -70,7 +70,7 @@ export const getUserById = async (id: number): Promise<User | undefined> => {
 export const getUserByEmail = async (email: string): Promise<User | undefined> => {
   try {
     console.log(`Intentando obtener usuario con email: ${email}`);
-    const response = await fetch(`${API_URL}/users/by-email/${encodeURIComponent(email)}`);
+    const response = await fetch(`${API_URL}/users/${encodeURIComponent(email)}`);
     
     // Verificar primero si la respuesta es 404 (usuario no encontrado)
     if (response.status === 404) {
@@ -85,16 +85,18 @@ export const getUserByEmail = async (email: string): Promise<User | undefined> =
     }
     
     // Verificar el tipo contenido para asegurarse de que es JSON
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      console.error(`Respuesta no válida: se esperaba JSON pero se recibió ${contentType}`);
+//    const contentType = response.headers.get('content-type');
+//    if (!contentType || !contentType.includes('application/json')) {
+//      console.error(`Respuesta no válida: se esperaba JSON pero se recibió ${contentType}`);
       // Mostrar parte del contenido para depuración
-      const text = await response.text();
-      console.error(`Inicio del contenido recibido: ${text.substring(0, 150)}...`);
-      throw new Error(`Respuesta no válida: se esperaba JSON pero se recibió ${contentType}`);
-    }
-    
+//      const text = await response.text();
+//      console.error(`Inicio del contenido recibido: ${text.substring(0, 150)}...`);
+//      throw new Error(`Respuesta no válida: se esperaba JSON pero se recibió ${contentType}`);
+//    }
+//    console.log(`JSON devuelto de ${email} : ${response.json()}`);
     return await response.json();
+
+
   } catch (error) {
     console.error(`Error al obtener usuario por email ${email}:`, error);
     // Reenviar el error para que pueda ser manejado por el llamante
@@ -154,7 +156,7 @@ export const getTaskById = async (id: string): Promise<Task | undefined> => {
 
 export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
   try {
-    const response = await fetch(`${API_URL}/tasks/user/${userId}`);
+    const response = await fetch(`${API_URL}/tasks/${userId}`);
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     return await response.json();
   } catch (error) {
