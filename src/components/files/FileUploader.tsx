@@ -70,7 +70,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     setUploading(true);
     
     try {
-      const attachment = await uploadTaskAttachment(taskId, file, currentUser.id, isResolution);
+      const attachment = await uploadTaskAttachment(taskId, file, String(currentUser.id), isResolution);
       if (attachment) {
         onAttachmentAdded(attachment);
         

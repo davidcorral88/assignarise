@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -85,7 +84,6 @@ const UserList = () => {
   };
   
   useEffect(() => {
-    // Only admins can access this page
     if (currentUser?.role !== 'admin') {
       navigate('/dashboard');
     }
@@ -131,7 +129,6 @@ const UserList = () => {
         description: `${selectedUser.name} foi eliminado correctamente.`,
       });
       
-      // Refresh the users list
       loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -146,7 +143,7 @@ const UserList = () => {
     setSelectedUser(null);
   };
   
-  const handleToggleActive = async (userId: string, currentActive?: boolean) => {
+  const handleToggleActive = async (userId: number, currentActive?: boolean) => {
     try {
       const user = await getUserById(userId);
       if (user) {
@@ -156,7 +153,6 @@ const UserList = () => {
         };
         await updateUser(updatedUser);
         
-        // Refresh the user list
         loadUsers();
         
         toast({

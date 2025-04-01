@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -28,7 +29,7 @@ const TaskForm = () => {
   const { currentUser } = useAuth();
   const [task, setTask] = useState<Task | null>(null);
   
-  const [taskId, setTaskId] = useState<number | undefined>(undefined);
+  const [taskId, setTaskId] = useState<string | undefined>(undefined);
   const [searchTaskId, setSearchTaskId] = useState('');
   const [tarefa, setTarefa] = useState('');
   const [description, setDescription] = useState('');
@@ -39,7 +40,7 @@ const TaskForm = () => {
   const [tag, setTag] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [allocatedHours, setAllocatedHours] = useState<number>(0);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   
@@ -77,7 +78,7 @@ const TaskForm = () => {
           const taskData = await getTaskById(id);
           if (taskData) {
             setTask(taskData);
-            setTaskId(parseInt(taskData.id));
+            setTaskId(taskData.id);
             setTarefa(taskData.title);
             setDescription(taskData.description);
             setStatus(taskData.status);
@@ -90,7 +91,7 @@ const TaskForm = () => {
           }
         } else {
           const nextId = await getNextTaskId();
-          setTaskId(nextId);
+          setTaskId(String(nextId));
         }
         setLoading(false);
       } catch (error) {
@@ -126,12 +127,12 @@ const TaskForm = () => {
     setSubmitting(true);
     
     const taskData: Task = {
-      id: String(taskId),
+      id: taskId,
       title: tarefa,
       description,
       status: status as 'pending' | 'in_progress' | 'completed',
       priority: priority as 'low' | 'medium' | 'high',
-      createdBy: currentUser?.id || '',
+      createdBy: currentUser?.id || 0,
       createdAt: isEditMode || searchMode ? task?.createdAt || new Date().toISOString() : new Date().toISOString(),
       startDate: startDate ? format(startDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0],
       dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined,
@@ -196,7 +197,7 @@ const TaskForm = () => {
       try {
         const taskData = await getTaskById(searchTaskId);
         if (taskData) {
-          setTaskId(parseInt(taskData.id));
+          setTaskId(taskData.id);
           setTarefa(taskData.title);
           setDescription(taskData.description);
           setStatus(taskData.status);
@@ -233,7 +234,7 @@ const TaskForm = () => {
   
   const handleResetForm = async () => {
     const nextId = await getNextTaskId();
-    setTaskId(nextId);
+    setTaskId(String(nextId));
     setTarefa('');
     setDescription('');
     setStatus('pending');
@@ -272,7 +273,7 @@ const TaskForm = () => {
           { userId: selectedUserId, allocatedHours }
         ]);
         
-        setSelectedUserId('');
+        setSelectedUserId(null);
         setAllocatedHours(0);
       } else {
         toast({
@@ -290,7 +291,7 @@ const TaskForm = () => {
     }
   };
   
-  const handleRemoveAssignment = (userId: string) => {
+  const handleRemoveAssignment = (userId: number) => {
     setAssignments(assignments.filter(a => a.userId !== userId));
   };
   

@@ -1,3 +1,4 @@
+
 // Define all types and interfaces for the application
 
 export interface User {
@@ -16,7 +17,7 @@ export interface User {
 export type UserRole = 'admin' | 'director' | 'worker';
 
 export interface TaskAssignment {
-  userId: string;
+  userId: number;
   allocatedHours: number;
 }
 
@@ -25,7 +26,7 @@ export interface TaskAttachment {
   fileName: string;
   fileSize: number;
   uploadDate: string;
-  uploadedBy: string;
+  uploadedBy: number;
   isResolution: boolean;
   fileUrl?: string;
   fileType?: string;
@@ -38,7 +39,7 @@ export interface Task {
   description: string;
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
-  createdBy: string;
+  createdBy: number;
   createdAt: string;
   startDate?: string;
   dueDate?: string;
@@ -49,7 +50,7 @@ export interface Task {
 
 export interface TimeEntry {
   id: string;
-  userId: string;
+  userId: number;
   taskId: string;
   date: string;
   hours: number;
@@ -70,7 +71,7 @@ export interface Holiday {
 export type VacationType = 'vacation' | 'personal' | 'sick' | 'sick_leave';
 
 export interface VacationDay {
-  userId: string;
+  userId: number;
   date: string;
   type: VacationType;
 }
@@ -103,7 +104,7 @@ export interface WorkSchedule {
   defaultWorkdayScheduleId: string;
   useDefaultForAll: boolean;
   userSchedules: {
-    userId: string;
+    userId: number;
     workdayScheduleId: string;
   }[];
   regularHours?: {

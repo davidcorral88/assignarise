@@ -55,7 +55,7 @@ export const getUsers = async (): Promise<User[]> => {
   return fetchWithErrorHandling(`${API_URL}/users`, {}, 'Error al obtener usuarios');
 };
 
-export const getUserById = async (id: string): Promise<User | undefined> => {
+export const getUserById = async (id: number): Promise<User | undefined> => {
   try {
     const response = await fetch(`${API_URL}/users/${id}`);
     if (response.status === 404) return undefined;
@@ -84,7 +84,7 @@ export const getUserByEmail = async (email: string): Promise<User | undefined> =
       throw new Error(`Error HTTP: ${response.status}`);
     }
     
-    // Verificar el tipo de contenido para asegurarse de que es JSON
+    // Verificar el tipo contenido para asegurarse de que es JSON
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       console.error(`Respuesta no válida: se esperaba JSON pero se recibió ${contentType}`);
@@ -124,7 +124,7 @@ export const updateUser = async (user: User): Promise<void> => {
   );
 };
 
-export const deleteUser = async (id: string): Promise<void> => {
+export const deleteUser = async (id: number): Promise<void> => {
   try {
     const response = await fetch(`${API_URL}/users/${id}`, {
       method: 'DELETE'
