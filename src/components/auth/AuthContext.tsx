@@ -1,13 +1,11 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../../utils/types';
 import { toast } from '@/components/ui/use-toast';
-import { getUserByEmail } from '@/utils/dataService';
-import { defaultUsers } from '@/utils/dbConfig';
+import { getUserByEmail, addUser, getNextUserId } from '@/utils/dataService';
+import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Contraseña predeterminada para usuarios nuevos
-const DEFAULT_PASSWORD = 'dxm2025';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -31,6 +29,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setLoading(false);
   }, []);
+  
+  // Función para crear un nuevo usuario
+  const createNewUser = async (email: string): Promise<User> => {
+    try {
+      // Obtener el siguiente ID de usuario
+      const nextId = await getNextUserId();
+      
+      // Extraer el nombre del usuario del correo electrónico
+      const namePart = email.split('@')[0];
+      const name = namePart
+        .split('.')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+      
+      // Crear el objeto de usuario
+      const newUser: User = {
+        id: String(nextId),
+        name: name,
+        email: email,
+        password: DEFAULT_PASSWORD,
+        role: 'worker', // Por defecto, asignar rol de trabajador
+        active: true
+      };
+      
+      // Guardar el usuario en la base de datos
+      await addUser(newUser);
+      
+      toast({
+        title: 'Usuario creado',
+        description: `Se ha creado automáticamente una cuenta para ${email}`,
+      });
+      
+      return newUser;
+    } catch (error) {
+      console.error('Error al crear nuevo usuario:', error);
+      throw new Error('No se pudo crear el usuario automáticamente');
+    }
+  };
   
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -92,9 +128,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(errorMessage);
       }
       
+      // Si el usuario no existe, intentar crearlo automáticamente
       if (!user) {
         console.log('Usuario no encontrado:', email);
-        throw new Error('Usuario non atopado');
+        
+        // Intentar crear un nuevo usuario si se utiliza la contraseña predeterminada
+        if (password === DEFAULT_PASSWORD) {
+          try {
+            user = await createNewUser(email);
+            console.log('Usuario creado automáticamente:', user);
+          } catch (createError) {
+            console.error('Error al crear usuario automáticamente:', createError);
+            throw new Error('No se pudo crear el usuario automáticamente. Contacte con el administrador.');
+          }
+        } else {
+          throw new Error('Usuario non atopado');
+        }
       }
       
       // Check if user is active

@@ -51,7 +51,7 @@ const Login = () => {
       
       // Mostrar un mensaje más específico para usuario no encontrado
       if (errorMessage.includes('Usuario non atopado')) {
-        setLoginError('O usuario non existe. Se é a primeira vez que accede, contacte co administrador para crear a súa conta.');
+        setLoginError('O usuario non existe. Para crear unha conta nova, utiliza o correo electrónico e a contrasinal predeterminada (dxm2025).');
       } else {
         setLoginError(errorMessage);
       }
@@ -115,7 +115,8 @@ const Login = () => {
               <Alert className="bg-blue-50 border-blue-200">
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-700 text-sm">
-                  Se es un novo usuario, a túa contrasinal inicial é <strong>{DEFAULT_PASSWORD}</strong>
+                  Se es un novo usuario, utiliza o teu correo e a contrasinal inicial <strong>{DEFAULT_PASSWORD}</strong>. 
+                  Crearemos unha conta automáticamente para ti.
                 </AlertDescription>
               </Alert>
               
