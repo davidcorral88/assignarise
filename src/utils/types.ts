@@ -2,7 +2,7 @@
 // Define all types and interfaces for the application
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
   password: string;

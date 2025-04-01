@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -19,7 +20,7 @@ const UserForm = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('worker');
   const [active, setActive] = useState(true);
-  const [userId, setUserId] = useState('');
+  const [userId, setUserId] = useState<number>(0);
   const [avatar, setAvatar] = useState('');
   const [phone, setPhone] = useState('');
   const [emailATSXPTPG, setEmailATSXPTPG] = useState('');
@@ -30,7 +31,9 @@ const UserForm = () => {
     const loadUser = async () => {
       if (isEditMode && id) {
         try {
-          const userData = await getUserById(id);
+          // Parse the ID string to number
+          const numericId = parseInt(id, 10);
+          const userData = await getUserById(numericId);
           if (userData) {
             setName(userData.name);
             setEmail(userData.email);
@@ -55,7 +58,7 @@ const UserForm = () => {
         // For new users, generate ID
         const getNewId = async () => {
           const nextId = await getNextUserId();
-          setUserId(String(nextId));
+          setUserId(nextId);
         };
         getNewId();
       }

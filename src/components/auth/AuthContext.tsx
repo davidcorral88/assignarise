@@ -33,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Función para crear un nuevo usuario
   const createNewUser = async (email: string): Promise<User> => {
     try {
-      // Obtener el siguiente ID de usuario
+      // Obtener el siguiente ID de usuario (ahora es un número)
       const nextId = await getNextUserId();
       
       // Extraer el nombre del usuario del correo electrónico
@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Crear el objeto de usuario
       const newUser: User = {
-        id: String(nextId),
+        id: nextId,
         name: name,
         email: email,
         password: DEFAULT_PASSWORD,
@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (email === 'admin@ticmoveo.com' && password === 'dc0rralIplan') {
         // Ensure the admin user has the 'admin' role
         const adminUser: User = {
-          id: 'admin-user',
+          id: 0, // El administrador tiene el ID 0
           name: 'Administrador ATSXPTPG',
           email: 'admin@ticmoveo.com',
           password: '', // Empty password for security
