@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
@@ -172,7 +171,6 @@ app.get('/api/tasks', async (req, res) => {
   }
 });
 
-
 // Add endpoint to get next task ID - THIS ENDPOINT MUST BE DEFINED BEFORE OTHER /tasks endpoints
 app.get('/api/tasks/next-id', async (req, res) => {
   try {
@@ -187,8 +185,6 @@ app.get('/api/tasks/next-id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-
 
 app.get('/api/tasks/:id', async (req, res) => {
   try {
@@ -305,6 +301,12 @@ app.put('/api/tasks/:id', async (req, res) => {
       priority, category, project, tags, assignments 
     } = req.body;
     
+    console.log('Updating task:', id, 'with data:', {
+      title, status, startDate, dueDate, 
+      tags: tags?.length, 
+      assignments: assignments?.length
+    });
+    
     // Convert camelCase to snake_case for database
     const start_date = startDate;
     const due_date = dueDate;
@@ -345,6 +347,11 @@ app.put('/api/tasks/:id', async (req, res) => {
         const userId = assignment.userId || assignment.user_id;
         const hours = assignment.allocatedHours || assignment.allocated_hours;
         
+        if (!userId) {
+          console.error('Missing user ID in assignment:', assignment);
+          continue;
+        }
+        
         await client.query(
           'INSERT INTO task_assignments (task_id, user_id, allocated_hours) VALUES ($1, $2, $3)',
           [id, userId, hours]
@@ -358,11 +365,12 @@ app.put('/api/tasks/:id', async (req, res) => {
     task.tags = tags || [];
     task.assignments = assignments || [];
     
+    console.log('Task updated successfully:', task);
     res.json(task);
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error updating task:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   } finally {
     client.release();
   }
