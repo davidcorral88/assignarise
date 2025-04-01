@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { CheckSquare, ArrowLeft, Trash2, Plus, Search, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2 } from 'lucide-react';
-import FileUploader from '@/components/files/FileUploader';
+import { FileUploader } from '@/components/files/FileUploader';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
