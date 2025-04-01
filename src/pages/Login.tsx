@@ -49,9 +49,13 @@ const Login = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Produciuse un erro durante o inicio de sesión';
       
-      // Mostrar un mensaje más específico para usuario no encontrado
+      // Mostrar mensajes específicos según el tipo de error
       if (errorMessage.includes('Usuario non atopado')) {
         setLoginError('O usuario non existe. Para crear unha conta nova, utiliza o correo electrónico e a contrasinal predeterminada (dxm2025).');
+      } else if (errorMessage.includes('servidor no está respondiendo') || errorMessage.includes('Respuesta no válida')) {
+        setLoginError('Erro de conexión: Non se puido conectar co servidor. O servidor pode estar inactivo ou a configuración da rede pode estar bloqueando a conexión. Por favor, contacta co administrador en admin@ticmoveo.com');
+      } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        setLoginError('Erro de rede: Comproba a túa conexión a Internet. Se o problema persiste, o servidor pode estar caído. Por favor, contacta co administrador.');
       } else {
         setLoginError(errorMessage);
       }
