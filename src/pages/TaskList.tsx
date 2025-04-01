@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -659,9 +660,17 @@ const TaskList = () => {
                       {task.createdBy ? (
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                            <span className="text-xs font-medium text-primary-foreground">
-                              {getUserName(task.createdBy).substring(0, 2)}
-                            </span>
+                            {users[task.createdBy] && users[task.createdBy]?.avatar ? (
+                              <img 
+                                src={users[task.createdBy]?.avatar} 
+                                alt={users[task.createdBy]?.name} 
+                                className="h-full w-full rounded-full" 
+                              />
+                            ) : (
+                              <span className="text-xs font-medium text-primary-foreground">
+                                {getUserName(task.createdBy).substring(0, 2)}
+                              </span>
+                            )}
                           </div>
                           <span className="text-sm">{getUserName(task.createdBy)}</span>
                         </div>
