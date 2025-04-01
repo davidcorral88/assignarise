@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -18,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-import { CheckSquare, ArrowLeft, Trash2, Plus, Search, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2 } from 'lucide-react';
+import { CheckSquare, ArrowLeft, Trash2, Plus, Search, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
 import { FileUploader } from '@/components/files/FileUploader';
 
 const TaskForm = () => {
@@ -42,6 +43,7 @@ const TaskForm = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [allocatedHours, setAllocatedHours] = useState<number>(0);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
+  const [creatorUser, setCreatorUser] = useState<User | null>(null);
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -85,12 +87,27 @@ const TaskForm = () => {
             setStartDate(taskData.startDate ? new Date(taskData.startDate) : new Date());
             setDueDate(taskData.dueDate ? new Date(taskData.dueDate) : undefined);
             setTags(taskData.tags || []);
-            setAssignments([...taskData.assignments]);
+            setAssignments(taskData.assignments || []);
             setAttachments(taskData.attachments || []);
+            
+            // Fetch creator user information
+            if (taskData.createdBy) {
+              try {
+                const creator = await getUserById(taskData.createdBy);
+                setCreatorUser(creator || null);
+              } catch (error) {
+                console.error('Error fetching creator user:', error);
+              }
+            }
           }
         } else {
           const nextId = await getNextTaskId();
           setTaskId(String(nextId));
+          
+          // Set current user as creator for new tasks
+          if (currentUser) {
+            setCreatorUser(currentUser);
+          }
         }
         setLoading(false);
       } catch (error) {
@@ -100,7 +117,7 @@ const TaskForm = () => {
     };
     
     fetchData();
-  }, [id, isEditMode]);
+  }, [id, isEditMode, currentUser]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,8 +153,8 @@ const TaskForm = () => {
       startDate: startDate ? format(startDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0],
       dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined,
       tags,
-      assignments,
-      attachments,
+      assignments: assignments || [],
+      attachments: attachments || [],
     };
     
     try {
@@ -437,6 +454,17 @@ const TaskForm = () => {
                         </Button>
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Creator field */}
+                  <div className="space-y-2">
+                    <Label htmlFor="creator">Creador</Label>
+                    <div className="flex items-center space-x-2 p-2 border rounded-md bg-gray-50">
+                      <UserIcon className="h-5 w-5 text-gray-500" />
+                      <span className="text-sm font-medium">
+                        {creatorUser ? creatorUser.name : isEditMode ? 'Usuario non atopado' : 'Ti (creador da tarefa)'}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
