@@ -41,16 +41,25 @@ const Dashboard = () => {
           let tasksData;
           if (currentUser.role === 'worker') {
             // Workers only see tasks assigned to them
-            tasksData = await getTasksByUserId(String(currentUser.id));
+            const userId = String(currentUser.id);
+            tasksData = await getTasksByUserId(userId);
           } else {
             // Directors and Admins see all tasks
             tasksData = await getTasks();
           }
-          setUserTasks(tasksData);
+          
+          // Ensure all tasks have an assignments array
+          const normalizedTasks = tasksData.map(task => ({
+            ...task,
+            assignments: task.assignments || []
+          }));
+          
+          setUserTasks(normalizedTasks);
           
           // Fetch time entries for the user
           if (currentUser.role === 'worker') {
-            const entries = await getTimeEntriesByUserId(String(currentUser.id));
+            const userId = String(currentUser.id);
+            const entries = await getTimeEntriesByUserId(userId);
             setUserTimeEntries(entries);
           }
         } catch (error) {
@@ -254,8 +263,8 @@ const Dashboard = () => {
                         </span>
                         <span className="mx-2">•</span>
                         <span>
-                          {task.assignments.length} 
-                          {task.assignments.length === 1 ? ' asignado' : ' asignados'}
+                          {(task.assignments || []).length} 
+                          {(task.assignments || []).length === 1 ? ' asignado' : ' asignados'}
                         </span>
                       </div>
                     </div>

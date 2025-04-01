@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -101,13 +100,20 @@ const TaskList = () => {
       
       if (currentUser && currentUser.role === 'worker') {
         // Convert user ID to string for API call
-        tasksData = await getTasksByUserId(String(currentUser.id));
+        const userId = String(currentUser.id);
+        tasksData = await getTasksByUserId(userId);
       } else {
         tasksData = await getTasks();
       }
       
-      setTasks(tasksData);
-      setFilteredTasks(tasksData);
+      // Ensure all tasks have an assignments array
+      const normalizedTasks = tasksData.map(task => ({
+        ...task,
+        assignments: task.assignments || []
+      }));
+      
+      setTasks(normalizedTasks);
+      setFilteredTasks(normalizedTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast({
@@ -146,7 +152,13 @@ const TaskList = () => {
     }
 
     if (creatorFilter) {
-      result = result.filter(task => Number(task.createdBy) === creatorFilter);
+      result = result.filter(task => {
+        // Convert string createdBy to number for comparison if needed
+        const createdByNum = typeof task.createdBy === 'string' 
+          ? parseInt(task.createdBy, 10) 
+          : task.createdBy;
+        return createdByNum === creatorFilter;
+      });
     }
 
     if (startDateFilter || endDateFilter) {
@@ -635,25 +647,37 @@ const TaskList = () => {
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
                             <span className="text-xs font-medium text-primary-foreground">
-                              {getUserName(Number(task.createdBy)).substring(0, 2)}
+                              {getUserName(typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy).substring(0, 2)}
                             </span>
                           </div>
-                          <span className="text-sm">{getUserName(Number(task.createdBy))}</span>
+                          <span className="text-sm">{getUserName(typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy)}</span>
                         </div>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex -space-x-2">
-                        {(task.assignments || []).slice(0, 3).map((assignment) => (
-                          <div key={assignment.userId} className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" title={String(assignment.userId)}>
-                            <span className="text-xs font-medium text-primary-foreground">
-                              {String(assignment.userId).substring(0, 2)}
-                            </span>
-                          </div>
-                        ))}
-                        {(task.assignments || []).length > 3 && (
-                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
-                            <span className="text-xs">+{task.assignments.length - 3}</span>
+                        {task.assignments && task.assignments.length > 0 ? (
+                          <>
+                            {task.assignments.slice(0, 3).map((assignment) => (
+                              <div 
+                                key={assignment.userId} 
+                                className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" 
+                                title={String(assignment.userId)}
+                              >
+                                <span className="text-xs font-medium text-primary-foreground">
+                                  {String(assignment.userId).substring(0, 2)}
+                                </span>
+                              </div>
+                            ))}
+                            {task.assignments.length > 3 && (
+                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
+                                <span className="text-xs">+{task.assignments.length - 3}</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">0</span>
                           </div>
                         )}
                       </div>

@@ -1,231 +1,317 @@
-
-import React, { useCallback, useState } from 'react';
-import { 
-  Upload, 
-  File, 
-  FileText, 
-  FileImage, 
-  FileSpreadsheet,
-  FileLock2,
-  X, 
-  Download,
-  Trash2
-} from 'lucide-react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { TaskAttachment } from '@/utils/types';
-import { uploadTaskAttachment, deleteTaskAttachment, formatFileSize } from '@/utils/fileService';
-import { 
-  Card,
-  CardContent
-} from '@/components/ui/card';
-import { useAuth } from '../auth/AuthContext';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
+import { Upload, FileText, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { 
+  addTask, 
+  addTimeEntry, 
+  addUser, 
+  getTaskById, 
+  getTimeEntriesByUserId, 
+  getUserByEmail 
+} from '@/utils/apiService';
+import { Task, TimeEntry, User } from '@/utils/types';
 
 interface FileUploaderProps {
-  taskId: string;
-  attachments: TaskAttachment[];
-  isResolution: boolean;
-  onAttachmentAdded: (attachment: TaskAttachment) => void;
-  onAttachmentRemoved: (attachmentId: string) => void;
-  readOnly?: boolean;
+  onUploadComplete?: () => void;
+  acceptedFileTypes?: string;
+  maxFileSizeMB?: number;
+  buttonText?: string;
+  variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  className?: string;
+  showFileDialog?: boolean;
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({
-  taskId,
-  attachments,
-  isResolution,
-  onAttachmentAdded,
-  onAttachmentRemoved,
-  readOnly = false
-}) => {
-  const { currentUser } = useAuth();
-  const [uploading, setUploading] = useState(false);
-  
-  // Filtrar los adjuntos según el tipo (inicial o resolución)
-  const filteredAttachments = attachments.filter(
-    attachment => attachment.isResolution === isResolution
-  );
-  
-  const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || !event.target.files.length || !currentUser) {
+export function FileUploader({
+  onUploadComplete,
+  acceptedFileTypes = ".csv,.xlsx,.json",
+  maxFileSizeMB = 10,
+  buttonText = "Importar datos",
+  variant = "outline",
+  size = "default",
+  className = "",
+  showFileDialog = true
+}: FileUploaderProps) {
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    setError(null);
+    
+    if (!selectedFile) {
+      setFile(null);
       return;
     }
     
-    const file = event.target.files[0];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    
-    // Verificar si el archivo es del tipo permitido (.zip, .rar, .7z)
-    const allowedExtensions = ['zip', 'rar', '7z'];
-    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-      toast({
-        title: "Tipo de arquivo non permitido",
-        description: "Só se permiten arquivos comprimidos (.zip, .rar, .7z)",
-        variant: "destructive",
-      });
-      // Limpiar el input para permitir cargar el mismo archivo repetidamente
-      event.target.value = '';
+    // Check file size
+    if (selectedFile.size > maxFileSizeMB * 1024 * 1024) {
+      setError(`El archivo es demasiado grande. El tamaño máximo es ${maxFileSizeMB}MB.`);
+      setFile(null);
       return;
     }
     
-    setUploading(true);
+    // Check file type
+    const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase();
+    const acceptedTypes = acceptedFileTypes.split(',').map(type => 
+      type.startsWith('.') ? type.substring(1) : type
+    );
     
+    if (fileExtension && !acceptedTypes.includes(fileExtension)) {
+      setError(`Tipo de archivo no permitido. Tipos aceptados: ${acceptedFileTypes}`);
+      setFile(null);
+      return;
+    }
+    
+    setFile(selectedFile);
+  };
+
+  const processJsonData = async (jsonData: any) => {
     try {
-      const attachment = await uploadTaskAttachment(taskId, file, String(currentUser.id), isResolution);
-      if (attachment) {
-        onAttachmentAdded(attachment);
-        
-        toast({
-          title: "Arquivo cargado",
-          description: `${file.name} foi cargado correctamente.`,
-        });
+      // Process users
+      if (jsonData.users && Array.isArray(jsonData.users)) {
+        for (const userData of jsonData.users) {
+          // Check if user already exists
+          const existingUser = await getUserByEmail(userData.email);
+          if (!existingUser) {
+            await addUser(userData);
+          }
+        }
       }
+      
+      // Process tasks
+      if (jsonData.tasks && Array.isArray(jsonData.tasks)) {
+        for (const taskData of jsonData.tasks) {
+          // Check if task already exists
+          const existingTask = await getTaskById(taskData.id);
+          if (!existingTask) {
+            await addTask(taskData);
+          }
+        }
+      }
+      
+      // Process time entries
+      if (jsonData.timeEntries && Array.isArray(jsonData.timeEntries)) {
+        for (const entryData of jsonData.timeEntries) {
+          // Check if time entry already exists by checking user's entries
+          const userEntries = await getTimeEntriesByUserId(String(entryData.userId));
+          const exists = userEntries.some(entry => 
+            entry.date === entryData.date && 
+            entry.taskId === entryData.taskId &&
+            Math.abs(entry.hours - entryData.hours) < 0.01
+          );
+          
+          if (!exists) {
+            await addTimeEntry(entryData);
+          }
+        }
+      }
+      
+      return {
+        users: jsonData.users?.length || 0,
+        tasks: jsonData.tasks?.length || 0,
+        timeEntries: jsonData.timeEntries?.length || 0
+      };
     } catch (error) {
-      console.error('Error al cargar el archivo:', error);
-      toast({
-        title: "Error",
-        description: "Non se puido cargar o arquivo. Inténteo de novo.",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-      // Limpiar el input para permitir cargar el mismo archivo repetidamente
-      event.target.value = '';
-    }
-  }, [taskId, currentUser, isResolution, onAttachmentAdded]);
-  
-  const handleDownload = useCallback((attachment: TaskAttachment) => {
-    // Create a direct download link for the attachment
-    if (attachment.fileUrl) {
-      const link = document.createElement('a');
-      link.href = attachment.fileUrl;
-      link.download = attachment.fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      toast({
-        title: "Error",
-        description: "No se pudo descargar el archivo, URL no disponible",
-        variant: "destructive",
-      });
-    }
-  }, []);
-  
-  const handleDelete = useCallback((attachmentId: string) => {
-    deleteTaskAttachment(taskId, attachmentId)
-      .then(() => {
-        onAttachmentRemoved(attachmentId);
-        
-        toast({
-          title: "Archivo eliminado",
-          description: "O arquivo foi eliminado correctamente.",
-        });
-      })
-      .catch(error => {
-        console.error('Error al eliminar el archivo:', error);
-        toast({
-          title: "Error",
-          description: "Non se puido eliminar o arquivo.",
-          variant: "destructive",
-        });
-      });
-  }, [taskId, onAttachmentRemoved]);
-  
-  // Determinar qué ícono mostrar según el tipo de archivo
-  const getFileIcon = (fileType: string) => {
-    if (fileType.includes('zip') || fileType.includes('x-rar') || fileType.includes('x-7z-compressed')) {
-      return <FileLock2 className="h-6 w-6 text-purple-500" />;
-    } else if (fileType.includes('image')) {
-      return <FileImage className="h-6 w-6 text-blue-500" />;
-    } else if (fileType.includes('pdf')) {
-      return <FileText className="h-6 w-6 text-red-500" />;
-    } else if (fileType.includes('spreadsheet') || fileType.includes('excel')) {
-      return <FileSpreadsheet className="h-6 w-6 text-green-500" />;
-    } else {
-      return <File className="h-6 w-6 text-gray-500" />;
+      console.error('Error processing JSON data:', error);
+      throw new Error('Error al procesar los datos JSON');
     }
   };
-  
-  return (
-    <div className="space-y-4">
-      {!readOnly && (
-        <div className="flex flex-col gap-2">
+
+  const handleUpload = async () => {
+    if (!file) {
+      setError('Por favor, selecciona un archivo primero.');
+      return;
+    }
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    setError(null);
+    
+    try {
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          const newProgress = prev + 5;
+          return newProgress > 90 ? 90 : newProgress;
+        });
+      }, 100);
+      
+      // Read file
+      const fileContent = await readFileAsText(file);
+      let jsonData;
+      
+      try {
+        jsonData = JSON.parse(fileContent);
+      } catch (e) {
+        throw new Error('El archivo no contiene JSON válido');
+      }
+      
+      // Process the data
+      const result = await processJsonData(jsonData);
+      
+      // Complete the progress
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      // Show success message
+      toast({
+        title: 'Importación completada',
+        description: `Se importaron ${result.users} usuarios, ${result.tasks} tareas y ${result.timeEntries} registros de tiempo.`,
+      });
+      
+      // Close dialog and reset state
+      setTimeout(() => {
+        setIsDialogOpen(false);
+        setFile(null);
+        setIsUploading(false);
+        setUploadProgress(0);
+        if (onUploadComplete) onUploadComplete();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Upload error:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido durante la carga');
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const readFileAsText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          resolve(event.target.result as string);
+        } else {
+          reject(new Error('Error al leer el archivo'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Error al leer el archivo'));
+      reader.readAsText(file);
+    });
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const renderFileUploadContent = () => (
+    <>
+      <div className="grid w-full max-w-sm items-center gap-1.5">
+        <Label htmlFor="file-upload" className="text-sm text-muted-foreground mb-1">
+          Selecciona un archivo JSON para importar
+        </Label>
+        <Input
+          ref={fileInputRef}
+          id="file-upload"
+          type="file"
+          accept={acceptedFileTypes}
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        <div className="flex items-center gap-2">
           <Button 
-            variant="outline" 
-            onClick={() => document.getElementById(`file-upload-${isResolution ? 'resolution' : 'initial'}`).click()}
-            disabled={uploading}
-            className="w-full"
+            type="button" 
+            variant="secondary" 
+            onClick={triggerFileInput}
+            className="flex-1"
+            disabled={isUploading}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Seleccionar archivo
+          </Button>
+          <Button 
+            type="button" 
+            onClick={handleUpload}
+            disabled={!file || isUploading}
+            className="flex-1"
           >
             <Upload className="mr-2 h-4 w-4" />
-            {uploading ? 'Cargando...' : 'Cargar arquivo comprimido'}
+            Importar
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Só se permiten arquivos comprimidos (.zip, .rar, .7z)
+        </div>
+        {file && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Archivo seleccionado: {file.name}
           </p>
-          <input
-            id={`file-upload-${isResolution ? 'resolution' : 'initial'}`}
-            type="file"
-            accept=".zip,.rar,.7z"
-            onChange={handleFileChange}
-            style={{ display: 'none' }}
-          />
+        )}
+      </div>
+      
+      {isUploading && (
+        <div className="mt-4 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Procesando datos...</span>
+            <span>{uploadProgress}%</span>
+          </div>
+          <Progress value={uploadProgress} className="h-2" />
         </div>
       )}
       
-      {filteredAttachments.length > 0 ? (
-        <div className="space-y-2">
-          {filteredAttachments.map((attachment) => (
-            <Card key={attachment.id} className="overflow-hidden">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {getFileIcon(attachment.fileType)}
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" title={attachment.fileName}>
-                        {attachment.fileName}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatFileSize(attachment.fileSize)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleDownload(attachment)}
-                      title="Descargar"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span className="sr-only">Descargar</span>
-                    </Button>
-                    
-                    {!readOnly && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleDelete(attachment.id)}
-                        title="Eliminar"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                        <span className="sr-only">Eliminar</span>
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-4 text-muted-foreground">
-          Non hai arquivos {isResolution ? 'da resolución' : 'iniciais'} adjuntos.
-        </div>
+      {error && (
+        <Alert variant="destructive" className="mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
-    </div>
+    </>
   );
-};
 
-export default FileUploader;
+  if (!showFileDialog) {
+    return (
+      <div className={className}>
+        {renderFileUploadContent()}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogTrigger asChild>
+        <Button variant={variant} size={size} className={className}>
+          <Upload className="mr-2 h-4 w-4" />
+          {buttonText}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Importar datos</DialogTitle>
+          <DialogDescription>
+            Sube un archivo JSON con datos de usuarios, tareas y registros de tiempo.
+          </DialogDescription>
+        </DialogHeader>
+        
+        {renderFileUploadContent()}
+        
+        <DialogFooter className="mt-4">
+          <Button 
+            variant="outline" 
+            onClick={() => setIsDialogOpen(false)}
+            disabled={isUploading}
+          >
+            Cancelar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
