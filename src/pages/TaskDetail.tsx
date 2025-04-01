@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -14,7 +13,8 @@ import {
   CheckCircle2,
   Circle,
   Timer,
-  PlusCircle
+  PlusCircle,
+  AlertCircle
 } from 'lucide-react';
 import { 
   Card, 
@@ -33,6 +33,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { 
   getTaskByIdForState,
   getUserById, 
@@ -50,6 +51,7 @@ const TaskDetail = () => {
   const [task, setTask] = useState<Task | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [totalHoursWorked, setTotalHoursWorked] = useState(0);
   const [totalHoursAllocated, setTotalHoursAllocated] = useState(0);
   const [creator, setCreator] = useState<User | null>(null);
@@ -58,17 +60,50 @@ const TaskDetail = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (id) {
-        await getTaskByIdForState(id, setTask);
-        await getTimeEntriesByTaskIdForState(id, setTimeEntries);
-        
-        // Fetch statistics
-        const hoursWorked = await getTotalHoursByTask(id);
-        setTotalHoursWorked(hoursWorked);
-        
-        const hoursAllocated = await getTotalHoursAllocatedByTask(id);
-        setTotalHoursAllocated(hoursAllocated);
-        
-        setLoading(false);
+        try {
+          setLoading(true);
+          setError(null);
+          
+          // Obtener detalles de la tarea
+          const taskResult = await getTaskByIdForState(id, setTask);
+          if (!taskResult) {
+            setError('No se pudo cargar la tarea');
+            setLoading(false);
+            return;
+          }
+          
+          // Obtener registros de tiempo
+          try {
+            await getTimeEntriesByTaskIdForState(id, setTimeEntries);
+          } catch (err) {
+            console.error('Error al cargar registros de tiempo:', err);
+            // Continuar con la carga aunque no se puedan obtener los registros de tiempo
+          }
+          
+          // Calcular horas trabajadas
+          try {
+            const hoursWorked = await getTotalHoursByTask(id);
+            setTotalHoursWorked(hoursWorked);
+          } catch (err) {
+            console.error('Error al calcular horas trabajadas:', err);
+            setTotalHoursWorked(0);
+          }
+          
+          // Calcular horas asignadas
+          try {
+            const hoursAllocated = await getTotalHoursAllocatedByTask(id);
+            setTotalHoursAllocated(hoursAllocated);
+          } catch (err) {
+            console.error('Error al calcular horas asignadas:', err);
+            setTotalHoursAllocated(0);
+          }
+          
+          setLoading(false);
+        } catch (err) {
+          console.error('Error al cargar los detalles de la tarea:', err);
+          setError('Error al cargar los detalles de la tarea');
+          setLoading(false);
+        }
       }
     };
     
@@ -137,13 +172,13 @@ const TaskDetail = () => {
     );
   }
   
-  if (!task) {
+  if (error || !task) {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center h-96">
           <CheckSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
           <h2 className="text-xl font-semibold mb-2">Tarea no encontrada</h2>
-          <p className="text-muted-foreground mb-6">No se pudo encontrar esta tarea</p>
+          <p className="text-muted-foreground mb-6">{error || 'No se pudo encontrar esta tarea'}</p>
           <Button onClick={() => navigate('/tasks')}>
             Volver a tareas
           </Button>
@@ -251,6 +286,16 @@ const TaskDetail = () => {
             )}
           </div>
         </div>
+        
+        {timeEntries.length === 0 && (
+          <Alert variant="warning" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Información</AlertTitle>
+            <AlertDescription>
+              No hay registros de tiempo para esta tarea. Los datos de progreso y horas trabajadas no estarán disponibles.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">

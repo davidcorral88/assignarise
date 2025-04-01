@@ -85,18 +85,7 @@ export const getUserByEmail = async (email: string): Promise<User | undefined> =
     }
     
     // Verificar el tipo contenido para asegurarse de que es JSON
-//    const contentType = response.headers.get('content-type');
-//    if (!contentType || !contentType.includes('application/json')) {
-//      console.error(`Respuesta no válida: se esperaba JSON pero se recibió ${contentType}`);
-      // Mostrar parte del contenido para depuración
-//      const text = await response.text();
-//      console.error(`Inicio del contenido recibido: ${text.substring(0, 150)}...`);
-//      throw new Error(`Respuesta no válida: se esperaba JSON pero se recibió ${contentType}`);
-//    }
-//    console.log(`JSON devuelto de ${email} : ${response.json()}`);
     return await response.json();
-
-
   } catch (error) {
     console.error(`Error al obtener usuario por email ${email}:`, error);
     // Reenviar el error para que pueda ser manejado por el llamante
@@ -266,7 +255,7 @@ export const deleteTaskAttachment = async (taskId: string, attachmentId: string)
 // Registros de tiempo (TimeEntries)
 export const getTimeEntries = async (): Promise<TimeEntry[]> => {
   try {
-    const response = await fetch(`${API_URL}/time-entries`);
+    const response = await fetch(`${API_URL}/time_entries`);
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -276,7 +265,7 @@ export const getTimeEntries = async (): Promise<TimeEntry[]> => {
 
 export const getTimeEntryById = async (id: string): Promise<TimeEntry | undefined> => {
   try {
-    const response = await fetch(`${API_URL}/time-entries/${id}`);
+    const response = await fetch(`${API_URL}/time_entries/${id}`);
     if (response.status === 404) return undefined;
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     return await response.json();
@@ -287,7 +276,7 @@ export const getTimeEntryById = async (id: string): Promise<TimeEntry | undefine
 
 export const getTimeEntriesByUserId = async (userId: string): Promise<TimeEntry[]> => {
   try {
-    const response = await fetch(`${API_URL}/time-entries/user/${userId}`);
+    const response = await fetch(`${API_URL}/time_entries?user_id=${userId}`);
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -297,7 +286,7 @@ export const getTimeEntriesByUserId = async (userId: string): Promise<TimeEntry[
 
 export const getTimeEntriesByTaskId = async (taskId: string): Promise<TimeEntry[]> => {
   try {
-    const response = await fetch(`${API_URL}/time-entries/task/${taskId}`);
+    const response = await fetch(`${API_URL}/time_entries?task_id=${taskId}`);
     if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -307,7 +296,7 @@ export const getTimeEntriesByTaskId = async (taskId: string): Promise<TimeEntry[
 
 export const addTimeEntry = async (entry: TimeEntry): Promise<void> => {
   try {
-    const response = await fetch(`${API_URL}/time-entries`, {
+    const response = await fetch(`${API_URL}/time_entries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry)
@@ -320,7 +309,7 @@ export const addTimeEntry = async (entry: TimeEntry): Promise<void> => {
 
 export const updateTimeEntry = async (entry: TimeEntry): Promise<void> => {
   try {
-    const response = await fetch(`${API_URL}/time-entries/${entry.id}`, {
+    const response = await fetch(`${API_URL}/time_entries/${entry.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry)
@@ -490,23 +479,32 @@ export const updateWorkSchedule = async (schedule: WorkSchedule): Promise<void> 
 // Funciones auxiliares para estadísticas y cálculos
 export const getTotalHoursByTask = async (taskId: string): Promise<number> => {
   try {
-    const response = await fetch(`${API_URL}/statistics/task/${taskId}/hours`);
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-    const result = await response.json();
-    return result.totalHours || 0;
+    const entries = await getTimeEntriesByTaskId(taskId);
+    const totalHours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+    return totalHours;
   } catch (error) {
-    return handleFetchError(error, `Error al calcular horas totales para la tarea ${taskId}`);
+    console.error(`Error al calcular horas totales para la tarea ${taskId}:`, error);
+    return 0; // Retornar 0 en caso de error
   }
 };
 
 export const getTotalHoursAllocatedByTask = async (taskId: string): Promise<number> => {
   try {
-    const response = await fetch(`${API_URL}/statistics/task/${taskId}/allocated-hours`);
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-    const result = await response.json();
-    return result.allocatedHours || 0;
+    const task = await getTaskById(taskId);
+    
+    if (!task || !task.assignments) {
+      return 0;
+    }
+    
+    const totalAllocated = task.assignments.reduce(
+      (sum, assignment) => sum + (assignment.allocatedHours || 0), 
+      0
+    );
+    
+    return totalAllocated;
   } catch (error) {
-    return handleFetchError(error, `Error al calcular horas asignadas para la tarea ${taskId}`);
+    console.error(`Error al calcular horas asignadas para la tarea ${taskId}:`, error);
+    return 0; // Retornar 0 en caso de error
   }
 };
 
