@@ -64,7 +64,6 @@ const TaskDetail = () => {
           setLoading(true);
           setError(null);
           
-          // Obtener detalles de la tarea
           const taskResult = await getTaskByIdForState(id, setTask);
           if (!taskResult) {
             setError('No se pudo cargar la tarea');
@@ -72,31 +71,13 @@ const TaskDetail = () => {
             return;
           }
           
-          // Obtener registros de tiempo
-          try {
-            await getTimeEntriesByTaskIdForState(id, setTimeEntries);
-          } catch (err) {
-            console.error('Error al cargar registros de tiempo:', err);
-            // Continuar con la carga aunque no se puedan obtener los registros de tiempo
-          }
+          await getTimeEntriesByTaskIdForState(id, setTimeEntries);
           
-          // Calcular horas trabajadas
-          try {
-            const hoursWorked = await getTotalHoursByTask(id);
-            setTotalHoursWorked(hoursWorked);
-          } catch (err) {
-            console.error('Error al calcular horas trabajadas:', err);
-            setTotalHoursWorked(0);
-          }
+          const hoursWorked = await getTotalHoursByTask(id);
+          setTotalHoursWorked(hoursWorked);
           
-          // Calcular horas asignadas
-          try {
-            const hoursAllocated = await getTotalHoursAllocatedByTask(id);
-            setTotalHoursAllocated(hoursAllocated);
-          } catch (err) {
-            console.error('Error al calcular horas asignadas:', err);
-            setTotalHoursAllocated(0);
-          }
+          const hoursAllocated = await getTotalHoursAllocatedByTask(id);
+          setTotalHoursAllocated(hoursAllocated);
           
           setLoading(false);
         } catch (err) {
@@ -159,6 +140,16 @@ const TaskDetail = () => {
     
     fetchTimeEntryUsers();
   }, [timeEntries, assignedUsers]);
+  
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return 'No disponible';
+    try {
+      return format(parseISO(dateString), 'dd/MM/yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Fecha inválida';
+    }
+  };
   
   if (loading) {
     return (
@@ -492,7 +483,7 @@ const TaskDetail = () => {
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Fecha de creación</h3>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{format(parseISO(task.createdAt), 'dd/MM/yyyy')}</span>
+                    <span>{task.createdAt ? formatDate(task.createdAt) : 'No disponible'}</span>
                   </div>
                 </div>
                 
@@ -503,7 +494,7 @@ const TaskDetail = () => {
                       <h3 className="text-sm font-medium text-muted-foreground mb-1">Fecha de vencimiento</h3>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{format(parseISO(task.dueDate), 'dd/MM/yyyy')}</span>
+                        <span>{formatDate(task.dueDate)}</span>
                       </div>
                     </div>
                   </>
