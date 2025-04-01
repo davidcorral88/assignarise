@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -40,7 +41,7 @@ const Dashboard = () => {
           let tasksData;
           if (currentUser.role === 'worker') {
             // Workers only see tasks assigned to them
-            tasksData = await getTasksByUserId(currentUser.id);
+            tasksData = await getTasksByUserId(String(currentUser.id));
           } else {
             // Directors and Admins see all tasks
             tasksData = await getTasks();
@@ -49,7 +50,7 @@ const Dashboard = () => {
           
           // Fetch time entries for the user
           if (currentUser.role === 'worker') {
-            const entries = await getTimeEntriesByUserId(currentUser.id);
+            const entries = await getTimeEntriesByUserId(String(currentUser.id));
             setUserTimeEntries(entries);
           }
         } catch (error) {

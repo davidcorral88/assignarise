@@ -100,12 +100,12 @@ const TimeTracking = () => {
           </Button>
         </div>
         
-        {isAddingEntry && (
+        {isAddingEntry && currentUser && (
           <TimeTrackingForm 
             tasks={tasks}
             onEntryAdded={handleTimeEntryAdded}
             onCancel={() => setIsAddingEntry(false)}
-            userId={currentUser?.id || ''}
+            userId={currentUser.id}
           />
         )}
         

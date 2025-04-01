@@ -1,110 +1,190 @@
 
 /**
- * Documentación para la modificación de la base de datos PostgreSQL
+ * Modificaciones necesarias en la base de datos para usar IDs de tipo entero
  * 
- * Este archivo documenta los cambios necesarios para convertir los IDs de usuario
- * de tipo texto a tipo entero en la base de datos PostgreSQL.
+ * Este archivo contiene las instrucciones y scripts SQL necesarios para
+ * migrar la base de datos PostgreSQL y cambiar el tipo de los campos ID
+ * de texto a entero.
  */
 
-/**
- * Consulta SQL para modificar la columna id de la tabla users:
- * 
- * ALTER TABLE users 
- * ALTER COLUMN id TYPE INTEGER USING (id::integer);
- * 
- * Nota: Esta consulta convierte los IDs existentes en tipo entero. Asegúrate de que todos los IDs son valores
- * numéricos antes de ejecutar esta consulta.
- */
-
-/**
- * Consultas para modificar las columnas de clave foránea que hacen referencia a user.id:
- * 
- * -- Modifica la columna user_id en la tabla task_assignments
- * ALTER TABLE task_assignments 
- * ALTER COLUMN user_id TYPE INTEGER USING (user_id::integer);
- * 
- * -- Modifica la columna created_by en la tabla tasks
- * ALTER TABLE tasks 
- * ALTER COLUMN created_by TYPE INTEGER USING (created_by::integer);
- * 
- * -- Modifica la columna uploaded_by en la tabla task_attachments
- * ALTER TABLE task_attachments 
- * ALTER COLUMN uploaded_by TYPE INTEGER USING (uploaded_by::integer);
- * 
- * -- Modifica la columna user_id en la tabla time_entries
- * ALTER TABLE time_entries 
- * ALTER COLUMN user_id TYPE INTEGER USING (user_id::integer);
- * 
- * -- Modifica la columna user_id en la tabla vacation_days
- * ALTER TABLE vacation_days 
- * ALTER COLUMN user_id TYPE INTEGER USING (user_id::integer);
- * 
- * -- Modifica la columna user_id en la tabla user_schedules (si existe)
- * ALTER TABLE user_schedules 
- * ALTER COLUMN user_id TYPE INTEGER USING (user_id::integer);
- */
-
-/**
- * Después de ejecutar estas modificaciones, es importante actualizar cualquier 
- * script o servicio que interactúe con la base de datos para que trate los IDs 
- * de usuario como enteros en lugar de cadenas de texto.
- * 
- * Secuencia de pasos recomendada:
- * 
- * 1. Hacer una copia de seguridad de la base de datos
- * 2. Ejecutar las consultas de modificación en un entorno de prueba
- * 3. Verificar que todas las relaciones y datos son correctos
- * 4. Implementar los cambios en el código de la aplicación
- * 5. Actualizar la API para manejar IDs numéricos
- * 6. Aplicar los cambios a la base de datos de producción
- */
-
-/**
- * Script SQL completo para realizar todas las modificaciones:
- */
+// Script SQL para actualizar la base de datos PostgreSQL
 export const SQL_CONVERSION_SCRIPT = `
--- Respaldo de la base de datos (ejecutar en línea de comandos)
--- pg_dump -U username -h hostname -p port -d database_name > backup_before_id_change.sql
+-- Convertir IDs de tipo texto a entero en todas las tablas
 
--- Inicio de la transacción
-BEGIN;
-
--- Convertir IDs de usuario de texto a entero
+-- 1. Tabla users - Convertir ID de texto a entero
 ALTER TABLE users 
-ALTER COLUMN id TYPE INTEGER USING (id::integer);
+ADD COLUMN id_numeric INTEGER;
 
--- Actualizar las claves foráneas en todas las tablas relacionadas
-ALTER TABLE task_assignments 
-ALTER COLUMN user_id TYPE INTEGER USING (user_id::integer);
+-- Actualizar la columna numérica con valores convertidos
+UPDATE users 
+SET id_numeric = CAST(id AS INTEGER);
 
-ALTER TABLE tasks 
-ALTER COLUMN created_by TYPE INTEGER USING (created_by::integer);
+-- Eliminar la columna antigua y renombrar la nueva
+ALTER TABLE users 
+DROP COLUMN id,
+ADD COLUMN id INTEGER;
 
-ALTER TABLE task_attachments 
-ALTER COLUMN uploaded_by TYPE INTEGER USING (uploaded_by::integer);
+UPDATE users
+SET id = id_numeric;
 
-ALTER TABLE time_entries 
-ALTER COLUMN user_id TYPE INTEGER USING (user_id::integer);
+ALTER TABLE users
+DROP COLUMN id_numeric,
+ALTER COLUMN id SET NOT NULL,
+ADD PRIMARY KEY (id);
 
-ALTER TABLE vacation_days 
-ALTER COLUMN user_id TYPE INTEGER USING (user_id::integer);
+-- 2. Actualizar referencias a user_id en otras tablas
+-- Tabla tasks - Campo createdBy
+ALTER TABLE tasks
+ADD COLUMN created_by_numeric INTEGER;
 
--- Solo ejecutar si existe la tabla user_schedules
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'user_schedules'
-    ) THEN
-        ALTER TABLE user_schedules 
-        ALTER COLUMN user_id TYPE INTEGER USING (user_id::integer);
-    END IF;
-END
-$$;
+UPDATE tasks
+SET created_by_numeric = CAST(created_by AS INTEGER);
 
--- Confirmar la transacción si todo fue exitoso
-COMMIT;
+ALTER TABLE tasks
+DROP COLUMN created_by,
+ADD COLUMN created_by INTEGER;
+
+UPDATE tasks
+SET created_by = created_by_numeric;
+
+ALTER TABLE tasks
+DROP COLUMN created_by_numeric,
+ALTER COLUMN created_by SET NOT NULL;
+
+-- 3. Tabla task_assignments - Campo userId
+ALTER TABLE task_assignments
+ADD COLUMN user_id_numeric INTEGER;
+
+UPDATE task_assignments
+SET user_id_numeric = CAST(user_id AS INTEGER);
+
+ALTER TABLE task_assignments
+DROP COLUMN user_id,
+ADD COLUMN user_id INTEGER;
+
+UPDATE task_assignments
+SET user_id = user_id_numeric;
+
+ALTER TABLE task_assignments
+DROP COLUMN user_id_numeric,
+ALTER COLUMN user_id SET NOT NULL;
+
+-- 4. Tabla task_attachments - Campo uploadedBy 
+ALTER TABLE task_attachments
+ADD COLUMN uploaded_by_numeric INTEGER;
+
+UPDATE task_attachments
+SET uploaded_by_numeric = CAST(uploaded_by AS INTEGER);
+
+ALTER TABLE task_attachments
+DROP COLUMN uploaded_by,
+ADD COLUMN uploaded_by INTEGER;
+
+UPDATE task_attachments
+SET uploaded_by = uploaded_by_numeric;
+
+ALTER TABLE task_attachments
+DROP COLUMN uploaded_by_numeric,
+ALTER COLUMN uploaded_by SET NOT NULL;
+
+-- 5. Tabla time_entries - Campo userId
+ALTER TABLE time_entries
+ADD COLUMN user_id_numeric INTEGER;
+
+UPDATE time_entries
+SET user_id_numeric = CAST(user_id AS INTEGER);
+
+ALTER TABLE time_entries
+DROP COLUMN user_id,
+ADD COLUMN user_id INTEGER;
+
+UPDATE time_entries
+SET user_id = user_id_numeric;
+
+ALTER TABLE time_entries
+DROP COLUMN user_id_numeric,
+ALTER COLUMN user_id SET NOT NULL;
+
+-- 6. Tabla vacation_days - Campo userId
+ALTER TABLE vacation_days
+ADD COLUMN user_id_numeric INTEGER;
+
+UPDATE vacation_days
+SET user_id_numeric = CAST(user_id AS INTEGER);
+
+ALTER TABLE vacation_days
+DROP COLUMN user_id,
+ADD COLUMN user_id INTEGER;
+
+UPDATE vacation_days
+SET user_id = user_id_numeric;
+
+ALTER TABLE vacation_days
+DROP COLUMN user_id_numeric,
+ALTER COLUMN user_id SET NOT NULL;
+
+-- 7. Tabla work_schedule_users - Campo userId
+ALTER TABLE work_schedule_users
+ADD COLUMN user_id_numeric INTEGER;
+
+UPDATE work_schedule_users
+SET user_id_numeric = CAST(user_id AS INTEGER);
+
+ALTER TABLE work_schedule_users
+DROP COLUMN user_id,
+ADD COLUMN user_id INTEGER;
+
+UPDATE work_schedule_users
+SET user_id = user_id_numeric;
+
+ALTER TABLE work_schedule_users
+DROP COLUMN user_id_numeric,
+ALTER COLUMN user_id SET NOT NULL;
+
+-- Verificar secuencias para autoincremento
+SELECT pg_get_serial_sequence('users', 'id');
+
+-- Crear secuencia si no existe
+CREATE SEQUENCE IF NOT EXISTS users_id_seq;
+SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
+ALTER TABLE users ALTER COLUMN id SET DEFAULT nextval('users_id_seq');
 `;
+
+/**
+ * Instrucciones para aplicar las modificaciones:
+ * 
+ * 1. Realizar una copia de seguridad de la base de datos antes de aplicar los cambios.
+ * 2. Ejecutar el script SQL anterior en la base de datos PostgreSQL.
+ * 3. Verificar que todas las referencias a IDs de usuario en el código fuente usen el tipo 'number' en lugar de 'string'.
+ * 4. Actualizar las interfaces TypeScript para usar 'number' en lugar de 'string' para los IDs de usuario.
+ * 5. Reiniciar el servidor API después de aplicar los cambios.
+ * 
+ * Nota importante:
+ * Asegúrate de que todas las funciones que pasan o reciben IDs de usuario manejen correctamente
+ * el tipo 'number'. Algunas funciones pueden necesitar conversión explícita usando:
+ * - Number(id) para convertir strings a números
+ * - String(id) para convertir números a strings cuando se pasan a APIs que aún esperan strings
+ */
+
+/**
+ * Cambios realizados en el código:
+ * 
+ * 1. src/utils/types.d.ts y src/utils/types.ts:
+ *    - Modificado User.id de string a number
+ *    - Modificado TaskAssignment.userId de string a number
+ *    - Modificado TaskAttachment.uploadedBy de string a number
+ *    - Modificado TimeEntry.userId de string a number
+ *    - Modificado VacationDay.userId de string a number
+ * 
+ * 2. Componentes que usan IDs de usuario:
+ *    - Actualizado TimeTrackingForm para usar userId como number
+ *    - Actualizado Dashboard para convertir IDs en llamadas a API
+ *    - Actualizado TaskForm para manejar IDs de usuario como números
+ *    - Actualizado componentes de selección para convertir entre string y number según sea necesario
+ * 
+ * 3. Funciones API:
+ *    - Actualizado getNextUserId para devolver explícitamente un number
+ *    - Agregado manejo de conversión en funciones que interactúan con la API
+ */
 
 export default SQL_CONVERSION_SCRIPT;

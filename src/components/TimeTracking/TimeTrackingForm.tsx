@@ -30,7 +30,7 @@ interface TimeTrackingFormProps {
   tasks: Task[];
   onEntryAdded: (entry: TimeEntry) => void;
   onCancel: () => void;
-  userId: string;
+  userId: number;
 }
 
 const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({ 

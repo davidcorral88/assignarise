@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -640,15 +639,15 @@ const TaskForm = () => {
                       <div className="space-y-2">
                         <Label htmlFor="user">Usuario</Label>
                         <Select 
-                          value={selectedUserId} 
-                          onValueChange={setSelectedUserId}
+                          value={selectedUserId ? String(selectedUserId) : undefined} 
+                          onValueChange={(value) => setSelectedUserId(value ? Number(value) : null)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Seleccionar usuario" />
                           </SelectTrigger>
                           <SelectContent>
                             {availableUsers.map(user => (
-                              <SelectItem key={user.id} value={user.id}>
+                              <SelectItem key={user.id} value={String(user.id)}>
                                 {user.name} {user.role === 'director' ? ' (Xerente)' : ''}
                               </SelectItem>
                             ))}

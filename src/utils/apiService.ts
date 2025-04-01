@@ -513,14 +513,14 @@ export const getNextUserId = async (): Promise<number> => {
   try {
     const response = await fetch(`${API_URL}/users/next-id`);
     if (!response.ok) {
-      // Si el endpoint específico falla, intentamos obtener todos los usuarios
-      // y calcular el siguiente ID
+      // If the endpoint specific fails, try to get all users
+      // and calculate the next ID
       const usersResponse = await fetch(`${API_URL}/users`);
       if (!usersResponse.ok) throw new Error(`Error HTTP: ${usersResponse.status}`);
       
       const users = await usersResponse.json();
       const maxId = users.reduce((max: number, user: User) => {
-        const userId = parseInt(user.id);
+        const userId = typeof user.id === 'string' ? parseInt(user.id) : user.id;
         return isNaN(userId) ? max : Math.max(max, userId);
       }, 0);
       
