@@ -1,19 +1,13 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../../utils/types';
 import { toast } from '@/components/ui/use-toast';
-import { getUserByEmail, addUser, getNextUserId } from '@/utils/dataService';
+import { getUserByEmail } from '@/utils/dataService';
 import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
+import { createNewUser, getAdminUser } from './authUtils';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// Create the auth context
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -21,7 +15,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   useEffect(() => {
     // Check if session exists in sessionStorage (not localStorage)
-    // This is just for session persistence, not data storage
     const storedUser = sessionStorage.getItem('currentUser');
     if (storedUser) {
       setCurrentUser(JSON.parse(storedUser));
@@ -29,44 +22,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setLoading(false);
   }, []);
-  
-  // Función para crear un nuevo usuario
-  const createNewUser = async (email: string): Promise<User> => {
-    try {
-      // Obtener el siguiente ID de usuario (ahora es un número)
-      const nextId = await getNextUserId();
-      
-      // Extraer el nombre del usuario del correo electrónico
-      const namePart = email.split('@')[0];
-      const name = namePart
-        .split('.')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
-      
-      // Crear el objeto de usuario
-      const newUser: User = {
-        id: nextId,
-        name: name,
-        email: email,
-        password: DEFAULT_PASSWORD,
-        role: 'worker', // Por defecto, asignar rol de trabajador
-        active: true
-      };
-      
-      // Guardar el usuario en la base de datos
-      await addUser(newUser);
-      
-      toast({
-        title: 'Usuario creado',
-        description: `Se ha creado automáticamente una cuenta para ${email}`,
-      });
-      
-      return newUser;
-    } catch (error) {
-      console.error('Error al crear nuevo usuario:', error);
-      throw new Error('No se pudo crear el usuario automáticamente');
-    }
-  };
   
   const login = async (email: string, password: string) => {
     setLoading(true);
@@ -76,16 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Check for admin credentials directly
       if (email === 'admin@ticmoveo.com' && password === 'dc0rralIplan') {
-        // Ensure the admin user has the 'admin' role
-        const adminUser: User = {
-          id: 0, // El administrador tiene el ID 0
-          name: 'Administrador ATSXPTPG',
-          email: 'admin@ticmoveo.com',
-          password: '', // Empty password for security
-          role: 'admin', // Explicitly set as admin role
-          active: true
-        };
-        
+        const adminUser = getAdminUser();
         setCurrentUser(adminUser);
         sessionStorage.setItem('currentUser', JSON.stringify(adminUser));
         toast({
@@ -110,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (error) {
         console.error("Error getting user from PostgreSQL", error);
         
-        // Mostrar un mensaje más descriptivo según el tipo de error
+        // More descriptive error message based on error type
         let errorMessage = 'Error de conexión a la base de datos';
         if (error instanceof Error) {
           if (error.message.includes('Respuesta no válida')) {
@@ -128,11 +74,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(errorMessage);
       }
       
-      // Si el usuario no existe, intentar crearlo automáticamente
+      // Try to create a new user automatically if not found
       if (!user) {
         console.log('Usuario no encontrado:', email);
         
-        // Intentar crear un nuevo usuario si se utiliza la contraseña predeterminada
+        // Try to create a new user if using the default password
         if (password === DEFAULT_PASSWORD) {
           try {
             user = await createNewUser(email);
@@ -151,11 +97,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('A túa conta está desactivada. Por favor, contacta co administrador.');
       }
       
-      // Comprobar la contraseña predeterminada para usuarios que no son administradores
+      // Authenticate successfully using default password for non-admin users
       if (email !== 'admin@ticmoveo.com' && password === DEFAULT_PASSWORD) {
         console.log("Usuario accediendo con contraseña predeterminada:", email);
         
-        // Autenticar con éxito usando la contraseña predeterminada
         setCurrentUser(user);
         sessionStorage.setItem('currentUser', JSON.stringify(user));
         toast({

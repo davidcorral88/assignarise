@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Header } from './Header';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
