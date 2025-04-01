@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/auth/AuthContext';
+import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
 import { 
   Clock, 

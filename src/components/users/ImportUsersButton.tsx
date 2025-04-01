@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { testPostgreSQLConnection } from '@/utils/migrationService';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/components/auth/useAuth';
 import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
 
 interface ImportUsersButtonProps {

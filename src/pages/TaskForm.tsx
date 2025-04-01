@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
-import { useAuth } from '../components/auth/AuthContext';
+import { useAuth } from '../components/auth/useAuth';
 import { getUserById, addTask, updateTask, getTaskById, getNextTaskId, deleteTask, getUsers } from '../utils/dataService';
 import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
@@ -86,7 +85,6 @@ const TaskForm = () => {
             setStatus(taskData.status || 'pending');
             setPriority(taskData.priority || 'medium');
             
-            // Manejar fechas correctamente
             if (taskData.startDate) {
               try {
                 setStartDate(new Date(taskData.startDate));
@@ -113,7 +111,6 @@ const TaskForm = () => {
             setAssignments(taskData.assignments || []);
             setAttachments(taskData.attachments || []);
             
-            // Fetch creator user information
             if (taskData.createdBy) {
               try {
                 const creator = await getUserById(taskData.createdBy);
@@ -136,7 +133,6 @@ const TaskForm = () => {
           const nextId = await getNextTaskId();
           setTaskId(String(nextId));
           
-          // Set current user as creator for new tasks
           if (currentUser) {
             setCreatorUser(currentUser);
           }
@@ -180,7 +176,6 @@ const TaskForm = () => {
     setSubmitting(true);
     
     try {
-      // Preparar objeto de tarea con comprobaciones para evitar undefined
       const taskData: Task = {
         id: taskId,
         title: tarefa,
@@ -393,7 +388,6 @@ const TaskForm = () => {
                     </p>
                   </div>
                   
-                  {/* Creator field */}
                   <div className="space-y-2">
                     <Label htmlFor="creator">Creador</Label>
                     <div className="flex items-center space-x-2 p-2 border rounded-md bg-gray-50">

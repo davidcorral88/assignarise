@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { migrateToPostgreSQL, testPostgreSQLConnection } from '@/utils/migrationService';
 import { getUseAPI, setUseAPI } from '@/utils/dataService';
 import { API_URL, dbConfig, pgAdminConfig, DEFAULT_USE_POSTGRESQL } from '@/utils/dbConfig';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/components/auth/useAuth';
 
 const PostgreSQLMigration: React.FC = () => {
   const { currentUser } = useAuth();

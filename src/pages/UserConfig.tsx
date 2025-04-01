@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { 
@@ -8,7 +7,7 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/components/auth/useAuth';
 
 const UserConfig = () => {
   const { currentUser } = useAuth();

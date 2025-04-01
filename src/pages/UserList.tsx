@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/auth/AuthContext';
+import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
 import { 
   Users, 
@@ -66,7 +65,6 @@ const UserList = () => {
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Check permissions based on role
   const isAdmin = currentUser?.role === 'admin';
   const canDeleteUsers = isAdmin;
   const canResetPassword = isAdmin;

@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/components/auth/AuthContext';
+import { useAuth } from '@/components/auth/useAuth';
 
 const Index = () => {
   const navigate = useNavigate();

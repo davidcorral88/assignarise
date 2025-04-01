@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -6,7 +5,7 @@ import {
   getTasks, getTimeEntriesByUserId, addTimeEntry, 
   setStateFromPromise 
 } from '../utils/dataService';
-import { useAuth } from '../components/auth/AuthContext';
+import { useAuth } from '../components/auth/useAuth';
 import { Task, TimeEntry } from '../utils/types';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
