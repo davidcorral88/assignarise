@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -29,7 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -118,11 +117,17 @@ const TaskList = () => {
       
       for (const creatorId of uniqueCreatorIds) {
         const creatorIdNumber = typeof creatorId === 'string' ? parseInt(creatorId, 10) : creatorId;
-        const user = await getUserById(creatorIdNumber);
-        userMap[creatorId] = user;
+        try {
+          const user = await getUserById(creatorIdNumber);
+          userMap[creatorId.toString()] = user;
+        } catch (error) {
+          console.error(`Error fetching user with ID ${creatorId}:`, error);
+          userMap[creatorId.toString()] = null;
+        }
       }
       
       setUsers(userMap);
+      console.log("User map:", userMap);
 
       const usersData = await getUsers();
       setAllUsers(usersData);
@@ -302,6 +307,14 @@ const TaskList = () => {
     const userIdStr = userId.toString();
     const user = users[userIdStr];
     return user ? user.name : 'Usuario descoñecido';
+  };
+
+  const handleViewTask = (taskId: string) => {
+    navigate(`/tasks/${taskId}`);
+  };
+
+  const handleEditTask = (taskId: string) => {
+    navigate(`/tasks/${taskId}/edit`);
   };
 
   return (
@@ -660,10 +673,10 @@ const TaskList = () => {
                       {task.createdBy ? (
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                            {users[task.createdBy] && users[task.createdBy]?.avatar ? (
+                            {users[task.createdBy.toString()] && users[task.createdBy.toString()]?.avatar ? (
                               <img 
-                                src={users[task.createdBy]?.avatar} 
-                                alt={users[task.createdBy]?.name} 
+                                src={users[task.createdBy.toString()]?.avatar} 
+                                alt={users[task.createdBy.toString()]?.name} 
                                 className="h-full w-full rounded-full" 
                               />
                             ) : (
@@ -714,11 +727,19 @@ const TaskList = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-1">
-                        <Button variant="ghost" size="icon" onClick={() => navigate(`/tasks/${task.id}`)}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleViewTask(task.id)}
+                        >
                           <Eye className="h-4 w-4" />
                           <span className="sr-only">Ver</span>
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => navigate(`/tasks/${task.id}/edit`)}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleEditTask(task.id)}
+                        >
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">Editar</span>
                         </Button>

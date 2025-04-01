@@ -71,11 +71,31 @@ export const {
 // Helper functions for React useState
 export const getTaskByIdForState = async (id: string, setState: React.Dispatch<React.SetStateAction<Task | null>>) => {
   try {
+    console.log(`Fetching task with ID: ${id}`);
     const task = await apiService.getTaskById(id);
+    console.log(`Task retrieved:`, task);
     setState(task || null);
     return task;
   } catch (error) {
     console.error(`Error en getTaskByIdForState(${id}):`, error);
+    setState(null);
+    return null;
+  }
+};
+
+export const getUserByIdForState = async (
+  id: string | number, 
+  setState: React.Dispatch<React.SetStateAction<User | null>>
+) => {
+  try {
+    const userId = typeof id === 'string' ? parseInt(id, 10) : id;
+    console.log(`Fetching user with ID: ${userId}`);
+    const user = await apiService.getUserById(userId);
+    console.log(`User retrieved:`, user);
+    setState(user || null);
+    return user;
+  } catch (error) {
+    console.error(`Error en getUserByIdForState(${id}):`, error);
     setState(null);
     return null;
   }
