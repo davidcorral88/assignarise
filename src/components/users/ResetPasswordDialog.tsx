@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { KeyRound, Mail, AlertCircle, Check } from 'lucide-react';
+import { KeyRound, Mail, AlertCircle, Check, Info } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import {
   Dialog,
@@ -21,6 +21,9 @@ interface ResetPasswordDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Contraseña predeterminada para usuarios nuevos
+const DEFAULT_PASSWORD = 'dxm2025';
+
 const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
   user,
   open,
@@ -37,13 +40,13 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Aquí se implementaría la lógica real para resetear la contraseña
-      // Por ejemplo, enviar un email con un enlace para resetear la contraseña
+      // Por ahora se establece a la contraseña predeterminada
       
       setIsSuccess(true);
       
       toast({
         title: "Contrasinal resetado",
-        description: `Enviouse un correo a ${user.email} con instrucións para establecer un novo contrasinal.`,
+        description: `A contrasinal foi resetada á predeterminada (${DEFAULT_PASSWORD}). Informa ó usuario para que a cambie no seguinte inicio de sesión.`,
       });
       
       // Cerrar el diálogo después de un tiempo
@@ -71,7 +74,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
             Resetear contrasinal
           </DialogTitle>
           <DialogDescription>
-            Enviarase un correo electrónico a <strong>{user.email}</strong> con instrucións para establecer un novo contrasinal.
+            Resetear a contrasinal de <strong>{user.email}</strong> á predeterminada.
           </DialogDescription>
         </DialogHeader>
         
@@ -80,7 +83,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
             <Alert className="bg-green-50 border-green-200">
               <Check className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-700">
-                Enviouse un correo con instrucións para resetear o contrasinal.
+                A contrasinal do usuario foi reseteada á predeterminada.
               </AlertDescription>
             </Alert>
           </div>
@@ -89,15 +92,22 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
             <div className="flex items-start">
               <Mail className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
               <div>
-                <Label className="font-medium">Correo de destino</Label>
+                <Label className="font-medium">Usuario</Label>
                 <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
               </div>
             </div>
             
+            <Alert className="bg-blue-50 border-blue-200">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-700">
+                A contrasinal será reseteada a <strong>{DEFAULT_PASSWORD}</strong>
+              </AlertDescription>
+            </Alert>
+            
             <Alert className="bg-amber-50 border-amber-200">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-700">
-                O usuario recibirá un correo con instrucións para establecer un novo contrasinal.
+                Debes informar ao usuario da nova contrasinal predeterminada.
               </AlertDescription>
             </Alert>
           </div>
@@ -116,11 +126,11 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
               >
                 {isLoading ? (
                   <>
-                    <span className="mr-2">Enviando...</span>
+                    <span className="mr-2">Procesando...</span>
                     <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                   </>
                 ) : (
-                  "Confirmar"
+                  "Confirmar reset"
                 )}
               </Button>
             </>

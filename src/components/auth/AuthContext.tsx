@@ -7,6 +7,9 @@ import { defaultUsers } from '@/utils/dbConfig';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Contraseña predeterminada para usuarios nuevos
+const DEFAULT_PASSWORD = 'dxm2025';
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -84,6 +87,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if user is active
       if (user.active === false) {
         throw new Error('A túa conta está desactivada. Por favor, contacta co administrador.');
+      }
+      
+      // Comprobar la contraseña predeterminada para usuarios que no son administradores
+      if (email !== 'admin@ticmoveo.com' && password === DEFAULT_PASSWORD) {
+        console.log("Usuario accediendo con contraseña predeterminada:", email);
+        
+        // Autenticar con éxito usando la contraseña predeterminada
+        setCurrentUser(user);
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
+        toast({
+          title: 'Benvido/a!',
+          description: `Iniciaches sesión como ${user.name}`,
+        });
+        
+        setLoading(false);
+        return user;
       }
       
       // In production, password validation would be done securely by the backend

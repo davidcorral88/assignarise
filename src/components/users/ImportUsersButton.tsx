@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { testPostgreSQLConnection } from '@/utils/migrationService';
 import { useAuth } from '@/components/auth/AuthContext';
+import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
 
 interface ImportUsersButtonProps {
   onImportComplete: () => void;
@@ -157,7 +158,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
           id: item.id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: item.name,
           email: item.email,
-          password: item.password || 'default_password', // Add default password if not provided
+          password: item.password || DEFAULT_PASSWORD, // Usar contraseña predeterminada si no se proporciona
           role: item.role,
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=0D8ABC&color=fff`,
           organism: item.organism,
@@ -167,7 +168,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
         };
         
         try {
-          console.log(`Importando usuario: ${newUser.name} a PostgreSQL`);
+          console.log(`Importando usuario: ${newUser.name} a PostgreSQL con contraseña predeterminada`);
           await addUser(newUser);
           importResults.success++;
         } catch (error) {
@@ -185,7 +186,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
     if (importResults.errors === 0) {
       toast({
         title: "Importación completada",
-        description: `Se importaron ${importResults.success} usuarios correctamente a PostgreSQL.`,
+        description: `Se importaron ${importResults.success} usuarios correctamente a PostgreSQL con la contraseña predeterminada.`,
       });
     } else {
       toast({

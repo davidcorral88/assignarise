@@ -2,12 +2,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
-import { Clock, Loader2 } from 'lucide-react';
+import { Clock, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+// Contraseña predeterminada para usuarios nuevos
+const DEFAULT_PASSWORD = 'dxm2025';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -87,6 +91,14 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
+              
+              <Alert className="bg-blue-50 border-blue-200">
+                <Info className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-700 text-sm">
+                  Se es un novo usuario, a túa contrasinal inicial é <strong>{DEFAULT_PASSWORD}</strong>
+                </AlertDescription>
+              </Alert>
+              
             </CardContent>
             <CardFooter>
               <Button className="w-full" disabled={isSubmitting}>
