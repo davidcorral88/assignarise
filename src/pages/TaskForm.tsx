@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -19,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-import { CheckSquare, ArrowLeft, Trash2, Plus, Search, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
+import { CheckSquare, ArrowLeft, Trash2, Plus, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
 import { FileUploader } from '@/components/files/FileUploader';
 
 const TaskForm = () => {
@@ -30,7 +29,6 @@ const TaskForm = () => {
   const [task, setTask] = useState<Task | null>(null);
   
   const [taskId, setTaskId] = useState<string | undefined>(undefined);
-  const [searchTaskId, setSearchTaskId] = useState('');
   const [tarefa, setTarefa] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<string>('pending');
@@ -48,7 +46,6 @@ const TaskForm = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [searchMode, setSearchMode] = useState(false);
   
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   
@@ -149,7 +146,7 @@ const TaskForm = () => {
       status: status as 'pending' | 'in_progress' | 'completed',
       priority: priority as 'low' | 'medium' | 'high',
       createdBy: currentUser?.id || 0,
-      createdAt: isEditMode || searchMode ? task?.createdAt || new Date().toISOString() : new Date().toISOString(),
+      createdAt: isEditMode ? task?.createdAt || new Date().toISOString() : new Date().toISOString(),
       startDate: startDate ? format(startDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0],
       dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined,
       tags,
@@ -158,7 +155,7 @@ const TaskForm = () => {
     };
     
     try {
-      if (isEditMode || searchMode) {
+      if (isEditMode) {
         await updateTask(taskData);
         toast({
           title: 'Tarefa actualizada',
@@ -188,10 +185,9 @@ const TaskForm = () => {
   };
 
   const handleDeleteTask = async () => {
-    if ((isEditMode && id) || (searchMode && searchTaskId)) {
-      const taskIdToDelete = isEditMode ? id : searchTaskId;
+    if (isEditMode && id) {
       try {
-        await deleteTask(taskIdToDelete);
+        await deleteTask(id);
         toast({
           title: 'Tarefa eliminada',
           description: 'A tarefa foi eliminada correctamente.',
@@ -206,68 +202,6 @@ const TaskForm = () => {
         });
       }
     }
-  };
-  
-  const handleSearchTask = async () => {
-    if (searchTaskId.trim()) {
-      try {
-        const taskData = await getTaskById(searchTaskId);
-        if (taskData) {
-          setTaskId(taskData.id);
-          setTarefa(taskData.title);
-          setDescription(taskData.description);
-          setStatus(taskData.status);
-          setPriority(taskData.priority);
-          setStartDate(taskData.startDate ? new Date(taskData.startDate) : new Date());
-          setDueDate(taskData.dueDate ? new Date(taskData.dueDate) : undefined);
-          setTags(taskData.tags || []);
-          setAssignments([...taskData.assignments]);
-          setAttachments(taskData.attachments || []);
-          setSearchMode(true);
-          setTask(taskData);
-          
-          toast({
-            title: 'Tarefa atopada',
-            description: `Cargouse a tarefa con ID ${searchTaskId}`,
-          });
-        } else {
-          toast({
-            title: 'Tarefa non atopada',
-            description: `Non se atopou ningunha tarefa co ID ${searchTaskId}`,
-            variant: 'destructive',
-          });
-        }
-      } catch (error) {
-        console.error("Error searching for task:", error);
-        toast({
-          title: 'Tarefa non atopada',
-          description: `Non se atopou ningunha tarefa co ID ${searchTaskId}`,
-          variant: 'destructive',
-        });
-      }
-    }
-  };
-  
-  const handleResetForm = async () => {
-    const nextId = await getNextTaskId();
-    setTaskId(String(nextId));
-    setTarefa('');
-    setDescription('');
-    setStatus('pending');
-    setPriority('medium');
-    setStartDate(new Date());
-    setDueDate(undefined);
-    setTags([]);
-    setAssignments([]);
-    setAttachments([]);
-    setSearchMode(false);
-    setSearchTaskId('');
-    setTask(null);
-    
-    toast({
-      title: 'Formulario restablecido',
-      description: 'O formulario foi restablecido para crear unha nova tarefa.',
-    });
   };
   
   const handleAddTag = () => {
@@ -332,8 +266,7 @@ const TaskForm = () => {
   }
   
   const canEdit = currentUser?.role === 'director' || 
-    (isEditMode && task?.createdBy === currentUser?.id) ||
-    (searchMode && task?.createdBy === currentUser?.id);
+    (isEditMode && task?.createdBy === currentUser?.id);
   
   const isTaskCompleted = status === 'completed';
   
@@ -343,7 +276,7 @@ const TaskForm = () => {
     currentUser.role === 'director' || isUserAssignedToTask
   );
   
-  if ((isEditMode || searchMode) && !canEdit) {
+  if (isEditMode && !canEdit) {
     navigate('/tasks');
     return null;
   }
@@ -362,7 +295,7 @@ const TaskForm = () => {
           </Button>
           
           <div className="flex space-x-2">
-            {(isEditMode || searchMode) && (
+            {isEditMode && (
               <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive">
@@ -385,7 +318,7 @@ const TaskForm = () => {
               </AlertDialog>
             )}
             <h1 className="text-3xl font-bold tracking-tight" style={{ color: '#007bc4' }}>
-              {isEditMode ? 'Editar tarefa' : searchMode ? 'Editar tarefa (buscada)' : 'Nova tarefa'}
+              {isEditMode ? 'Editar tarefa' : 'Nova tarefa'}
             </h1>
           </div>
         </div>
@@ -401,59 +334,20 @@ const TaskForm = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex space-x-4">
-                    <div className="w-1/3 space-y-2">
-                      <Label htmlFor="id">ID</Label>
-                      <div className="flex">
-                        <Input
-                          id="id"
-                          type="number"
-                          value={taskId || ''}
-                          className="bg-gray-100 cursor-not-allowed"
-                          readOnly
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        O ID asígnase automaticamente e non se pode modificar
-                      </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="id">ID</Label>
+                    <div className="flex">
+                      <Input
+                        id="id"
+                        type="number"
+                        value={taskId || ''}
+                        className="bg-gray-100 cursor-not-allowed"
+                        readOnly
+                      />
                     </div>
-
-                    {!isEditMode && !searchMode && (
-                      <div className="w-2/3 space-y-2">
-                        <Label htmlFor="searchId">Buscar tarefa por ID</Label>
-                        <div className="flex space-x-2">
-                          <Input
-                            id="searchId"
-                            type="number"
-                            value={searchTaskId}
-                            onChange={(e) => setSearchTaskId(e.target.value)}
-                            placeholder="Introducir ID da tarefa"
-                          />
-                          <Button 
-                            type="button" 
-                            onClick={handleSearchTask} 
-                            className="flex-shrink-0"
-                          >
-                            <Search className="h-4 w-4 mr-1" />
-                            Buscar
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {searchMode && (
-                      <div className="w-2/3 space-y-2 flex items-end">
-                        <Button 
-                          type="button" 
-                          onClick={handleResetForm}
-                          variant="outline"
-                          className="ml-auto"
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Nova tarefa
-                        </Button>
-                      </div>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      O ID asígnase automaticamente e non se pode modificar
+                    </p>
                   </div>
                   
                   {/* Creator field */}
@@ -779,12 +673,12 @@ const TaskForm = () => {
                     {submitting ? (
                       <>
                         <Clock className="mr-2 h-4 w-4 animate-spin" />
-                        {isEditMode || searchMode ? 'Actualizando...' : 'Creando...'}
+                        {isEditMode ? 'Actualizando...' : 'Creando...'}
                       </>
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        {isEditMode || searchMode ? 'Actualizar tarefa' : 'Crear tarefa'}
+                        {isEditMode ? 'Actualizar tarefa' : 'Crear tarefa'}
                       </>
                     )}
                   </Button>
