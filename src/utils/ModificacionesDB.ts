@@ -181,10 +181,14 @@ ALTER TABLE users ALTER COLUMN id SET DEFAULT nextval('users_id_seq');
  *    - Actualizado Dashboard para convertir IDs en llamadas a API
  *    - Actualizado TaskForm para manejar IDs de usuario como números
  *    - Actualizado componentes de selección para convertir entre string y number según sea necesario
+ *    - Actualizado TaskList para usar userId como number y convertir los tipos cuando sea necesario
+ *    - Actualizado TimeTracking para trabajar con userId como number en los filtros
  * 
  * 3. Funciones API:
  *    - Actualizado getNextUserId para devolver explícitamente un number
- *    - Agregado manejo de conversión en funciones que interactúan con la API
+ *    - Agregado manejo de conversión en funciones de apiService que interactúan con el API
+ *    - Modificado fileService.ts para usar correctamente userId como number
+ *    - Actualizado mockData.ts para usar userId como number en las funciones
  */
 
 export default SQL_CONVERSION_SCRIPT;

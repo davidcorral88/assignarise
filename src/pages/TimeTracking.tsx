@@ -46,7 +46,8 @@ const TimeTracking = () => {
           
           setTasks(userTasks);
           
-          const fetchedEntries = await getTimeEntriesByUserId(currentUser.id);
+          // Convert user ID to string for the API call
+          const fetchedEntries = await getTimeEntriesByUserId(String(currentUser.id));
           setTimeEntries(fetchedEntries);
         } catch (error) {
           console.error('Error fetching data:', error);
@@ -212,7 +213,7 @@ const TimeTracking = () => {
               {tasks.map(task => {
                 const taskEntries = timeEntries.filter(entry => entry.taskId === task.id);
                 const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
-                const taskAssignment = task.assignments.find(a => a.userId === currentUser?.id);
+                const taskAssignment = task.assignments.find(a => currentUser && a.userId === currentUser.id);
                 const allocatedHours = taskAssignment?.allocatedHours || 0;
                 
                 const progress = allocatedHours > 0 

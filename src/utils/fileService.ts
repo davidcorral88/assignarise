@@ -23,11 +23,12 @@ export const isImageFile = (fileName: string): boolean => {
 export const uploadTaskAttachment = async (
   taskId: string,
   file: File,
-  userId: string,
+  userId: number,
   isResolution: boolean
 ): Promise<TaskAttachment | null> => {
   try {
-    return await apiService.uploadTaskAttachment(taskId, file, userId, isResolution);
+    // Convert userId to string for API call
+    return await apiService.uploadTaskAttachment(taskId, file, String(userId), isResolution);
   } catch (error) {
     console.error('Error al subir archivo:', error);
     

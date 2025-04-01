@@ -23,7 +23,7 @@ export const getTaskById = async (id: string): Promise<Task | undefined> => {
   return mockTasks.find(task => task.id === id);
 };
 
-export const getTimeEntriesByUserId = async (userId: string): Promise<TimeEntry[]> => {
+export const getTimeEntriesByUserId = async (userId: number): Promise<TimeEntry[]> => {
   console.warn('Using deprecated mockData.getTimeEntriesByUserId - update to use apiService directly');
   return mockTimeEntries.filter(entry => entry.userId === userId);
 };

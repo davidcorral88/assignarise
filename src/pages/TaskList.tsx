@@ -69,10 +69,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
 
+// Updated mock users with number IDs
 const mockUsers = [
-  { id: 'user1', name: 'Ana Pereira', avatar: null },
-  { id: 'user2', name: 'Carlos Silva', avatar: null },
-  { id: 'user3', name: 'Admin', avatar: null }
+  { id: 1, name: 'Ana Pereira', avatar: null },
+  { id: 2, name: 'Carlos Silva', avatar: null },
+  { id: 3, name: 'Admin', avatar: null }
 ];
 
 const TaskList = () => {
@@ -83,7 +84,7 @@ const TaskList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
-  const [creatorFilter, setCreatorFilter] = useState<string | null>(null);
+  const [creatorFilter, setCreatorFilter] = useState<number | null>(null);
   const [startDateFilter, setStartDateFilter] = useState<Date | undefined>(undefined);
   const [endDateFilter, setEndDateFilter] = useState<Date | undefined>(undefined);
   const [dueDateStartFilter, setDueDateStartFilter] = useState<Date | undefined>(undefined);
@@ -99,7 +100,8 @@ const TaskList = () => {
       let tasksData;
       
       if (currentUser && currentUser.role === 'worker') {
-        tasksData = await getTasksByUserId(currentUser.id);
+        // Convert user ID to string for API call
+        tasksData = await getTasksByUserId(String(currentUser.id));
       } else {
         tasksData = await getTasks();
       }
@@ -144,7 +146,7 @@ const TaskList = () => {
     }
 
     if (creatorFilter) {
-      result = result.filter(task => task.createdBy === creatorFilter);
+      result = result.filter(task => Number(task.createdBy) === creatorFilter);
     }
 
     if (startDateFilter || endDateFilter) {
@@ -271,7 +273,7 @@ const TaskList = () => {
     }
   };
 
-  const getUserName = (userId: string): string => {
+  const getUserName = (userId: number): string => {
     const user = mockUsers.find(u => u.id === userId);
     return user ? user.name : 'Usuario descoñecido';
   };
@@ -633,19 +635,19 @@ const TaskList = () => {
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
                             <span className="text-xs font-medium text-primary-foreground">
-                              {getUserName(task.createdBy).substring(0, 2)}
+                              {getUserName(Number(task.createdBy)).substring(0, 2)}
                             </span>
                           </div>
-                          <span className="text-sm">{getUserName(task.createdBy)}</span>
+                          <span className="text-sm">{getUserName(Number(task.createdBy))}</span>
                         </div>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex -space-x-2">
                         {(task.assignments || []).slice(0, 3).map((assignment) => (
-                          <div key={assignment.userId} className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" title={assignment.userId}>
+                          <div key={assignment.userId} className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" title={String(assignment.userId)}>
                             <span className="text-xs font-medium text-primary-foreground">
-                              {assignment.userId.substring(0, 2)}
+                              {String(assignment.userId).substring(0, 2)}
                             </span>
                           </div>
                         ))}
