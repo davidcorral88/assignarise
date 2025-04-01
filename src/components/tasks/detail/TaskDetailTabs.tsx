@@ -3,7 +3,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Timer } from 'lucide-react';
-import { Task, TimeEntry, User } from '@/utils/types';
+import { Task, TimeEntry, User, TaskAssignment } from '@/utils/types';
 import { TaskAssignmentList } from './TaskAssignmentList';
 import { TimeEntryList } from './TimeEntryList';
 
