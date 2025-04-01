@@ -49,7 +49,8 @@ import {
   getTasks, 
   getTasksByUserId, 
   getUserById,
-  deleteTask
+  deleteTask,
+  getUsers
 } from '../utils/dataService';
 import { Task, User } from '../utils/types';
 import { format, isAfter, isBefore, parseISO } from 'date-fns';
@@ -85,6 +86,7 @@ const TaskList = () => {
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState<Record<string, User | null>>({});
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   
   const loadData = async () => {
     try {
@@ -114,11 +116,15 @@ const TaskList = () => {
       const userMap: Record<string, User | null> = {};
       
       for (const creatorId of uniqueCreatorIds) {
-        const user = await getUserById(creatorId);
+        const creatorIdNumber = typeof creatorId === 'string' ? parseInt(creatorId, 10) : creatorId;
+        const user = await getUserById(creatorIdNumber);
         userMap[creatorId] = user;
       }
       
       setUsers(userMap);
+
+      const usersData = await getUsers();
+      setAllUsers(usersData);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast({
@@ -421,7 +427,7 @@ const TaskList = () => {
                     <DropdownMenuItem onClick={() => setCreatorFilter(null)}>
                       Todos os usuarios
                     </DropdownMenuItem>
-                    {mockUsers.map(user => (
+                    {allUsers.map(user => (
                       <DropdownMenuItem key={user.id} onClick={() => setCreatorFilter(user.id)}>
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
