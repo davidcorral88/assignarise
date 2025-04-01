@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -65,6 +66,11 @@ const UserList = () => {
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Check permissions based on role
+  const isAdmin = currentUser?.role === 'admin';
+  const canDeleteUsers = isAdmin;
+  const canResetPassword = isAdmin;
+  
   const loadUsers = async () => {
     try {
       setIsLoading(true);
@@ -84,12 +90,8 @@ const UserList = () => {
   };
   
   useEffect(() => {
-    if (currentUser?.role !== 'admin') {
-      navigate('/dashboard');
-    }
-    
     loadUsers();
-  }, [currentUser, navigate]);
+  }, []);
   
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -306,36 +308,48 @@ const UserList = () => {
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleResetPassword(user)}
-                          >
-                            <KeyRound className="mr-2 h-4 w-4" />
-                            Resetear contrasinal
-                          </DropdownMenuItem>
+                          
+                          {canResetPassword && (
+                            <DropdownMenuItem 
+                              onClick={() => handleResetPassword(user)}
+                            >
+                              <KeyRound className="mr-2 h-4 w-4" />
+                              Resetear contrasinal
+                            </DropdownMenuItem>
+                          )}
+                          
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleToggleActive(user.id, user.active)}
-                          >
-                            {user.active !== false ? (
-                              <>
-                                <X className="mr-2 h-4 w-4 text-red-500" />
-                                <span className="text-red-500">Desactivar</span>
-                              </>
-                            ) : (
-                              <>
-                                <Check className="mr-2 h-4 w-4 text-green-500" />
-                                <span className="text-green-500">Activar</span>
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-red-500"
-                            onClick={() => handleDeleteUser(user)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar
-                          </DropdownMenuItem>
+                          
+                          {isAdmin && (
+                            <DropdownMenuItem 
+                              onClick={() => handleToggleActive(user.id, user.active)}
+                            >
+                              {user.active !== false ? (
+                                <>
+                                  <X className="mr-2 h-4 w-4 text-red-500" />
+                                  <span className="text-red-500">Desactivar</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="mr-2 h-4 w-4 text-green-500" />
+                                  <span className="text-green-500">Activar</span>
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {canDeleteUsers && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="text-red-500"
+                                onClick={() => handleDeleteUser(user)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

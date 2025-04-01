@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Timer } from 'lucide-react';
+import { ArrowLeft, Edit, Timer, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Task } from '@/utils/types';
 import { TaskStatusIcon } from './TaskStatusIcon';
@@ -10,27 +10,24 @@ interface TaskDetailHeaderProps {
   task: Task;
   currentUserId?: number;
   currentUserRole?: string;
+  onDeleteTask?: () => void;
 }
 
 export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
   task,
   currentUserId,
-  currentUserRole
+  currentUserRole,
+  onDeleteTask
 }) => {
   const navigate = useNavigate();
   
-  // Verificar si el usuario está asignado a la tarea
+  // All roles can now edit and delete tasks
+  const canEdit = true;
+  const canDelete = true;
+
+  // Users can track time if they're assigned to the task
   const isAssignedToCurrentUser = task.assignments && 
     task.assignments.some(a => a.userId === currentUserId);
-  
-  // Determinar si el usuario puede editar la tarea
-  const canEdit = currentUserRole === 'director' || 
-    currentUserRole === 'admin' || 
-    task.createdBy === currentUserId || 
-    isAssignedToCurrentUser;
-
-  // Solo los worker asignados pueden registrar horas
-  const canTrackTime = currentUserRole === 'worker' && isAssignedToCurrentUser;
   
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-y-4">
@@ -51,7 +48,14 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
           </Button>
         )}
         
-        {canTrackTime && (
+        {canDelete && onDeleteTask && (
+          <Button variant="destructive" onClick={onDeleteTask}>
+            <Trash className="mr-2 h-4 w-4" />
+            Eliminar
+          </Button>
+        )}
+        
+        {isAssignedToCurrentUser && (
           <Button variant="outline" onClick={() => navigate('/time-tracking')}>
             <Timer className="mr-2 h-4 w-4" />
             Registrar horas

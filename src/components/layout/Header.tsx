@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -52,9 +51,6 @@ export const Header: React.FC = () => {
 
   // Check if user is admin
   const isAdmin = currentUser?.role === 'admin';
-  
-  // Check if user is director or admin
-  const isDirector = currentUser?.role === 'director' || isAdmin;
 
   const navLinks = [
     {
@@ -73,25 +69,25 @@ export const Header: React.FC = () => {
       to: '/users',
       icon: <Users className="mr-2 h-4 w-4" />,
       label: 'Usuarios',
-      show: isDirector
+      show: true // All users can now see the Users section
     },
     {
       to: '/calendars',
       icon: <Calendar className="mr-2 h-4 w-4" />,
       label: 'Calendarios',
-      show: true
+      show: isAdmin // Only admin can see Calendars
     },
     {
       to: '/time-tracking',
       icon: <Clock className="mr-2 h-4 w-4" />,
       label: 'Rexistro de Horas',
-      show: currentUser?.role === 'worker'
+      show: true
     },
     {
       to: '/settings',
       icon: <Settings className="mr-2 h-4 w-4" />,
       label: 'Configuración',
-      show: isAdmin  // Ahora solo visible para administradores
+      show: isAdmin  // Only admin can see Settings
     }
   ];
 

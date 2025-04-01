@@ -8,7 +8,8 @@ import {
   Clock, 
   Users, 
   Settings, 
-  User
+  User,
+  Calendar
 } from 'lucide-react';
 
 export const Navigation = () => {
@@ -18,9 +19,6 @@ export const Navigation = () => {
   
   // Check if user is admin
   const isAdmin = currentUser?.role === 'admin';
-  
-  // Check if user is director or admin
-  const isDirector = currentUser?.role === 'director' || isAdmin;
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -49,7 +47,7 @@ export const Navigation = () => {
       name: 'Usuarios',
       path: '/users',
       icon: <Users className="h-5 w-5" />,
-      show: isDirector
+      show: true // All users can see the Users section now
     },
     {
       name: 'Perfil',
@@ -58,10 +56,16 @@ export const Navigation = () => {
       show: true
     },
     {
+      name: 'Calendarios',
+      path: '/calendars',
+      icon: <Calendar className="h-5 w-5" />,
+      show: isAdmin  // Only visible for administrators
+    },
+    {
       name: 'Configuración',
       path: '/settings',
       icon: <Settings className="h-5 w-5" />,
-      show: isAdmin  // Solo visible para administradores
+      show: isAdmin  // Only visible for administrators
     }
   ];
 
