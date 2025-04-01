@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../components/auth/AuthContext';
-import { getUserById, addUser, updateUser, getNextUserId, getUsers, addTask, updateTask, getTaskById, getNextTaskId, deleteTask } from '../utils/dataService';
+import { getUserById, addTask, updateTask, getTaskById, getNextTaskId, deleteTask, getUsers } from '../utils/dataService';
 import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -73,16 +74,41 @@ const TaskForm = () => {
     const fetchData = async () => {
       try {
         if (isEditMode && id) {
+          console.log(`Fetching task with ID: ${id}`);
           const taskData = await getTaskById(id);
+          console.log("Task data received:", taskData);
+          
           if (taskData) {
             setTask(taskData);
             setTaskId(taskData.id);
             setTarefa(taskData.title);
-            setDescription(taskData.description);
-            setStatus(taskData.status);
-            setPriority(taskData.priority);
-            setStartDate(taskData.startDate ? new Date(taskData.startDate) : new Date());
-            setDueDate(taskData.dueDate ? new Date(taskData.dueDate) : undefined);
+            setDescription(taskData.description || '');
+            setStatus(taskData.status || 'pending');
+            setPriority(taskData.priority || 'medium');
+            
+            // Manejar fechas correctamente
+            if (taskData.startDate) {
+              try {
+                setStartDate(new Date(taskData.startDate));
+              } catch (e) {
+                console.error("Error parsing startDate:", e);
+                setStartDate(new Date());
+              }
+            } else {
+              setStartDate(new Date());
+            }
+            
+            if (taskData.dueDate) {
+              try {
+                setDueDate(new Date(taskData.dueDate));
+              } catch (e) {
+                console.error("Error parsing dueDate:", e);
+                setDueDate(undefined);
+              }
+            } else {
+              setDueDate(undefined);
+            }
+            
             setTags(taskData.tags || []);
             setAssignments(taskData.assignments || []);
             setAttachments(taskData.attachments || []);
@@ -96,6 +122,15 @@ const TaskForm = () => {
                 console.error('Error fetching creator user:', error);
               }
             }
+          } else {
+            console.error(`Task with ID ${id} not found`);
+            toast({
+              title: 'Erro',
+              description: 'Tarefa non atopada. Redirixindo á lista de tarefas.',
+              variant: 'destructive',
+            });
+            navigate('/tasks');
+            return;
           }
         } else {
           const nextId = await getNextTaskId();
@@ -109,12 +144,17 @@ const TaskForm = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error loading task data:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao cargar os datos da tarefa',
+          variant: 'destructive',
+        });
         setLoading(false);
       }
     };
     
     fetchData();
-  }, [id, isEditMode, currentUser]);
+  }, [id, isEditMode, currentUser, navigate]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,22 +179,25 @@ const TaskForm = () => {
     
     setSubmitting(true);
     
-    const taskData: Task = {
-      id: taskId,
-      title: tarefa,
-      description,
-      status: status as 'pending' | 'in_progress' | 'completed',
-      priority: priority as 'low' | 'medium' | 'high',
-      createdBy: currentUser?.id || 0,
-      createdAt: isEditMode ? task?.createdAt || new Date().toISOString() : new Date().toISOString(),
-      startDate: startDate ? format(startDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0],
-      dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined,
-      tags,
-      assignments: assignments || [],
-      attachments: attachments || [],
-    };
-    
     try {
+      // Preparar objeto de tarea con comprobaciones para evitar undefined
+      const taskData: Task = {
+        id: taskId,
+        title: tarefa,
+        description: description || '',
+        status: (status as 'pending' | 'in_progress' | 'completed') || 'pending',
+        priority: (priority as 'low' | 'medium' | 'high') || 'medium',
+        createdBy: currentUser?.id || 0,
+        createdAt: task?.createdAt || new Date().toISOString(),
+        startDate: startDate ? format(startDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+        dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined,
+        tags: tags || [],
+        assignments: assignments || [],
+        attachments: attachments || [],
+      };
+      
+      console.log("Saving task data:", taskData);
+      
       if (isEditMode) {
         await updateTask(taskData);
         toast({
@@ -537,12 +580,12 @@ const TaskForm = () => {
                                 <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
                               ) : (
                                 <span className="text-xs font-medium text-primary-foreground">
-                                  {user?.name.substring(0, 2)}
+                                  {user?.name ? user.name.substring(0, 2) : 'UN'}
                                 </span>
                               )}
                             </div>
                             <div>
-                              <p className="font-medium">{user?.name}</p>
+                              <p className="font-medium">{user?.name || 'Usuario desconocido'}</p>
                               <p className="text-sm text-muted-foreground">{assignment.allocatedHours} horas asignadas</p>
                             </div>
                           </div>
@@ -553,6 +596,12 @@ const TaskForm = () => {
                         </div>
                       );
                     })}
+                    
+                    {assignments.length === 0 && (
+                      <div className="text-sm text-muted-foreground p-3">
+                        Non hai asignacións aínda
+                      </div>
+                    )}
                   </div>
                   
                   <div className="p-4 border rounded-md">

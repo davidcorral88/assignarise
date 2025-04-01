@@ -19,13 +19,17 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   
+  // Verificar si el usuario está asignado a la tarea
   const isAssignedToCurrentUser = task.assignments && 
     task.assignments.some(a => a.userId === currentUserId);
   
+  // Determinar si el usuario puede editar la tarea
   const canEdit = currentUserRole === 'director' || 
     currentUserRole === 'admin' || 
+    task.createdBy === currentUserId || 
     isAssignedToCurrentUser;
 
+  // Solo los worker asignados pueden registrar horas
   const canTrackTime = currentUserRole === 'worker' && isAssignedToCurrentUser;
   
   return (

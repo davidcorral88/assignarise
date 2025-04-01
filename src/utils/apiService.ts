@@ -1,3 +1,4 @@
+
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule, TaskAttachment } from './types';
 import { toast } from '@/components/ui/use-toast';
 import { API_URL } from './dbConfig';
@@ -133,10 +134,23 @@ export const getTasks = async (): Promise<Task[]> => {
 
 export const getTaskById = async (id: string): Promise<Task | undefined> => {
   try {
+    console.log(`Fetching task with ID: ${id}`);
     const response = await fetch(`${API_URL}/tasks/${id}`);
-    if (response.status === 404) return undefined;
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-    return await response.json();
+    
+    if (response.status === 404) {
+      console.log(`Task with ID ${id} not found`);
+      return undefined;
+    }
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error HTTP ${response.status}: ${errorText}`);
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log(`Task data retrieved:`, data);
+    return data;
   } catch (error) {
     console.error(`Error al obtener tarea ${id}:`, error);
     return undefined;
@@ -156,7 +170,7 @@ export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
 export const addTask = async (task: Task): Promise<void> => {
   console.log("Guardando tarea en PostgreSQL:", task);
   try {
-    // Convert assignments to the format expected by the API
+    // Asegurarse de que las propiedades tienen los formatos correctos para la API
     const apiTask = {
       ...task,
       assignments: task.assignments?.map(a => ({
@@ -176,6 +190,8 @@ export const addTask = async (task: Task): Promise<void> => {
       console.error(`Error HTTP ${response.status}: ${errorText}`);
       throw new Error(`Error HTTP: ${response.status}`);
     }
+    
+    console.log("Tarea guardada con éxito");
   } catch (error) {
     return handleFetchError(error, 'Error al crear tarea');
   }
@@ -183,12 +199,30 @@ export const addTask = async (task: Task): Promise<void> => {
 
 export const updateTask = async (task: Task): Promise<void> => {
   try {
+    console.log(`Actualizando tarea con ID ${task.id}`, task);
+    
+    // Normalizar assignments para la API
+    const normalizedTask = {
+      ...task,
+      assignments: task.assignments?.map(a => ({
+        user_id: a.userId,
+        allocated_hours: a.allocatedHours
+      }))
+    };
+    
     const response = await fetch(`${API_URL}/tasks/${task.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(task)
+      body: JSON.stringify(normalizedTask)
     });
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error HTTP ${response.status}: ${errorText}`);
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    
+    console.log(`Tarea ${task.id} actualizada con éxito`);
   } catch (error) {
     handleFetchError(error, `Error al actualizar tarea ${task.id}`);
   }
