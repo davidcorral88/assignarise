@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -48,9 +49,12 @@ const Login = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Produciuse un erro durante o inicio de sesión';
       
-      setLoginError(errorMessage);
-      
-      // Error is already handled in AuthContext, but we'll keep the error state for UI
+      // Mostrar un mensaje más específico para usuario no encontrado
+      if (errorMessage.includes('Usuario non atopado')) {
+        setLoginError('O usuario non existe. Se é a primeira vez que accede, contacte co administrador para crear a súa conta.');
+      } else {
+        setLoginError(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -116,7 +120,7 @@ const Login = () => {
               </Alert>
               
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-4">
               <Button className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
@@ -127,6 +131,9 @@ const Login = () => {
                   <>Iniciar sesión</>
                 )}
               </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Se non podes acceder ou necesitas axuda, contacta co administrador en <a href="mailto:admin@ticmoveo.com" className="text-primary hover:underline">admin@ticmoveo.com</a>
+              </p>
             </CardFooter>
           </form>
         </Card>

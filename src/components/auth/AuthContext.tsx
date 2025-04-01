@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../../utils/types';
 import { toast } from '@/components/ui/use-toast';
@@ -63,8 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Get user from PostgreSQL
       let user: User | undefined;
+      console.log("Intentando obtener usuario de PostgreSQL:", email);
+      
       try {
-        console.log("Intentando obtener usuario de PostgreSQL:", email);
         user = await getUserByEmail(email);
         
         // Update any 'manager' roles to 'director'
@@ -76,8 +76,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Mostrar un mensaje más descriptivo según el tipo de error
         let errorMessage = 'Error de conexión a la base de datos';
-        if (error instanceof Error && error.message.includes('Respuesta no válida')) {
-          errorMessage = 'El servidor no está respondiendo correctamente. Por favor, contacte con el administrador.';
+        if (error instanceof Error) {
+          if (error.message.includes('Respuesta no válida')) {
+            errorMessage = 'El servidor no está respondiendo correctamente. Por favor, contacte con el administrador.';
+          } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            errorMessage = 'No se pudo conectar al servidor. Compruebe su conexión a Internet o contacte con el administrador.';
+          }
         }
         
         toast({
