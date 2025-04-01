@@ -50,7 +50,7 @@ import {
   getTasksByUserId, 
   getUserById,
   deleteTask
-} from '../utils/apiService'; // Make sure we're using the apiService functions
+} from '../utils/dataService';
 import { Task, User } from '../utils/types';
 import { format, isAfter, isBefore, parseISO } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
@@ -68,13 +68,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
 
-// Updated mock users with number IDs
-const mockUsers = [
-  { id: 1, name: 'Ana Pereira', avatar: null },
-  { id: 2, name: 'Carlos Silva', avatar: null },
-  { id: 3, name: 'Admin', avatar: null }
-];
-
 const TaskList = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
@@ -91,7 +84,7 @@ const TaskList = () => {
   const [dateFilterType, setDateFilterType] = useState<'creation' | 'due'>('creation');
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<Record<string, User | null>>({});
   
   const loadData = async () => {
     try {
@@ -99,14 +92,12 @@ const TaskList = () => {
       let tasksData;
       
       if (currentUser && currentUser.role === 'worker') {
-        // Convert user ID to string for API call
         const userId = String(currentUser.id);
         tasksData = await getTasksByUserId(userId);
       } else {
         tasksData = await getTasks();
       }
       
-      // Ensure all tasks have an assignments array
       const normalizedTasks = tasksData.map(task => ({
         ...task,
         assignments: task.assignments || []
@@ -114,6 +105,20 @@ const TaskList = () => {
       
       setTasks(normalizedTasks);
       setFilteredTasks(normalizedTasks);
+      
+      const creatorIds = normalizedTasks
+        .map(task => task.createdBy)
+        .filter(id => id !== undefined && id !== null) as string[];
+      
+      const uniqueCreatorIds = [...new Set(creatorIds)];
+      const userMap: Record<string, User | null> = {};
+      
+      for (const creatorId of uniqueCreatorIds) {
+        const user = await getUserById(creatorId);
+        userMap[creatorId] = user;
+      }
+      
+      setUsers(userMap);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast({
@@ -153,7 +158,6 @@ const TaskList = () => {
 
     if (creatorFilter) {
       result = result.filter(task => {
-        // Convert string createdBy to number for comparison if needed
         const createdByNum = typeof task.createdBy === 'string' 
           ? parseInt(task.createdBy, 10) 
           : task.createdBy;
@@ -285,8 +289,11 @@ const TaskList = () => {
     }
   };
 
-  const getUserName = (userId: number): string => {
-    const user = mockUsers.find(u => u.id === userId);
+  const getUserName = (userId: string | number | undefined): string => {
+    if (!userId) return 'Usuario descoñecido';
+    
+    const userIdStr = userId.toString();
+    const user = users[userIdStr];
     return user ? user.name : 'Usuario descoñecido';
   };
 
@@ -643,15 +650,17 @@ const TaskList = () => {
                     <TableCell>{getStatusText(task.status)}</TableCell>
                     <TableCell>{getPriorityBadge(task.priority)}</TableCell>
                     <TableCell>
-                      {task.createdBy && (
+                      {task.createdBy ? (
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
                             <span className="text-xs font-medium text-primary-foreground">
-                              {getUserName(typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy).substring(0, 2)}
+                              {getUserName(task.createdBy).substring(0, 2)}
                             </span>
                           </div>
-                          <span className="text-sm">{getUserName(typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy)}</span>
+                          <span className="text-sm">{getUserName(task.createdBy)}</span>
                         </div>
+                      ) : (
+                        <span className="text-muted-foreground">Sen asignar</span>
                       )}
                     </TableCell>
                     <TableCell>

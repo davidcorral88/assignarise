@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/AuthContext';
@@ -235,14 +236,14 @@ const TaskDetail = () => {
           </Button>
           
           <div className="flex space-x-2">
-            {(currentUser?.role === 'director' || task.assignments.some(a => a.userId === currentUser?.id)) && (
+            {(currentUser?.role === 'director' || currentUser?.role === 'admin' || (task && task.assignments && task.assignments.some(a => a.userId === currentUser?.id))) && (
               <Button onClick={() => navigate(`/tasks/${task.id}/edit`)}>
                 <Edit className="mr-2 h-4 w-4" />
                 Editar tarea
               </Button>
             )}
             
-            {currentUser?.role === 'worker' && task.assignments.some(a => a.userId === currentUser?.id) && (
+            {currentUser?.role === 'worker' && task?.assignments && task.assignments.some(a => a.userId === currentUser?.id) && (
               <Button variant="outline" onClick={() => navigate('/time-tracking')}>
                 <Timer className="mr-2 h-4 w-4" />
                 Registrar horas
