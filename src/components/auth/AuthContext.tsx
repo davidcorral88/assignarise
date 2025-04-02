@@ -2,7 +2,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../../utils/types';
 import { toast } from '@/components/ui/use-toast';
-import { getUserByEmail } from '@/utils/dataService';
+import { getUserByEmail, verifyUserPassword } from '@/utils/dataService';
 import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
 import { createNewUser, getAdminUser } from './authUtils';
 
@@ -97,24 +97,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('A túa conta está desactivada. Por favor, contacta co administrador.');
       }
       
-      // Authenticate successfully using default password for non-admin users
-      if (email !== 'admin@ticmoveo.com' && password === DEFAULT_PASSWORD) {
-        console.log("Usuario accediendo con contraseña predeterminada:", email);
-        
-        setCurrentUser(user);
-        sessionStorage.setItem('currentUser', JSON.stringify(user));
-        toast({
-          title: 'Benvido/a!',
-          description: `Iniciaches sesión como ${user.name}`,
-        });
-        
-        setLoading(false);
-        return user;
+      // Verify password
+      const isPasswordValid = await verifyUserPassword(user.id, password);
+      
+      // Allow login with default password as a fallback
+      if (!isPasswordValid && password !== DEFAULT_PASSWORD) {
+        console.log("Contraseña incorrecta para:", email);
+        throw new Error('Contraseña incorrecta');
       }
       
-      // In production, password validation would be done securely by the backend
-      // This is only for demonstration purposes
-      
+      console.log("Inicio de sesión exitoso para:", email);
       setCurrentUser(user);
       sessionStorage.setItem('currentUser', JSON.stringify(user));
       toast({

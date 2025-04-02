@@ -65,7 +65,10 @@ export const {
   updateWorkdaySchedule,
   deleteWorkdaySchedule,
   getWorkSchedule,
-  updateWorkSchedule
+  updateWorkSchedule,
+  verifyUserPassword,
+  changeUserPassword,
+  resetUserPassword
 } = apiService;
 
 // Helper functions for React useState

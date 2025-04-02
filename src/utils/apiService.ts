@@ -1,4 +1,3 @@
-
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule, TaskAttachment } from './types';
 import { toast } from '@/components/ui/use-toast';
 import { API_URL } from './dbConfig';
@@ -605,5 +604,73 @@ export const getNextTaskId = async (): Promise<number> => {
   } catch (error) {
     console.error('Error al obtener siguiente ID de tarea:', error);
     return 1; // Valor por defecto en caso de error
+  }
+};
+
+export const verifyUserPassword = async (userId: number, password: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/passwords/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, password }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error verifying password');
+    }
+
+    const data = await response.json();
+    return data.isValid;
+  } catch (error) {
+    console.error('Error verifying password:', error);
+    // Default to checking with the default password
+    return false;
+  }
+};
+
+export const changeUserPassword = async (userId: number, currentPassword: string, newPassword: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/passwords/change`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, currentPassword, newPassword }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error changing password');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error changing password:', error);
+    throw error;
+  }
+};
+
+export const resetUserPassword = async (userId: number): Promise<boolean> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/passwords/reset`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error resetting password');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    throw error;
   }
 };

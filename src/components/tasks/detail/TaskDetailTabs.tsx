@@ -13,7 +13,6 @@ interface TaskDetailTabsProps {
   timeEntries: TimeEntry[];
   assignedUsers: Record<string, User | null>;
   currentUserId?: number;
-  currentUserRole?: string;
 }
 
 export const TaskDetailTabs: React.FC<TaskDetailTabsProps> = ({
@@ -21,10 +20,13 @@ export const TaskDetailTabs: React.FC<TaskDetailTabsProps> = ({
   assignments,
   timeEntries,
   assignedUsers,
-  currentUserId,
-  currentUserRole
+  currentUserId
 }) => {
-  const isAssignedToCurrentUser = assignments.some(a => a.userId === currentUserId);
+  // Check if user is assigned to this task
+  const isAssignedToCurrentUser = assignments.some(a => {
+    const assignmentUserId = typeof a.userId === 'string' ? parseInt(a.userId, 10) : a.userId;
+    return assignmentUserId === currentUserId;
+  });
   
   return (
     <Tabs defaultValue="assignments">
@@ -50,7 +52,6 @@ export const TaskDetailTabs: React.FC<TaskDetailTabsProps> = ({
               assignments={assignments}
               assignedUsers={assignedUsers}
               timeEntries={timeEntries}
-              currentUserRole={currentUserRole}
             />
           </CardContent>
         </Card>
@@ -73,7 +74,6 @@ export const TaskDetailTabs: React.FC<TaskDetailTabsProps> = ({
               timeEntries={timeEntries}
               assignedUsers={assignedUsers}
               currentUserId={currentUserId}
-              currentUserRole={currentUserRole}
               isAssignedToCurrentUser={isAssignedToCurrentUser}
             />
           </CardContent>

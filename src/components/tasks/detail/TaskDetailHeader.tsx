@@ -9,25 +9,26 @@ import { TaskStatusIcon } from './TaskStatusIcon';
 interface TaskDetailHeaderProps {
   task: Task;
   currentUserId?: number;
-  currentUserRole?: string;
   onDeleteTask?: () => void;
 }
 
 export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
   task,
   currentUserId,
-  currentUserRole,
   onDeleteTask
 }) => {
   const navigate = useNavigate();
   
-  // All roles can now edit and delete tasks
+  // All users can edit and delete tasks
   const canEdit = true;
   const canDelete = true;
 
   // Users can track time if they're assigned to the task
   const isAssignedToCurrentUser = task.assignments && 
-    task.assignments.some(a => a.userId === currentUserId);
+    task.assignments.some(a => {
+      const assignmentUserId = typeof a.userId === 'string' ? parseInt(a.userId, 10) : a.userId;
+      return assignmentUserId === currentUserId;
+    });
   
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-y-4">
