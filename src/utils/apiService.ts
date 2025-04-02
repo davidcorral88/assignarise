@@ -609,7 +609,7 @@ export const getNextTaskId = async (): Promise<number> => {
 
 export const verifyUserPassword = async (userId: number, password: string): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/passwords/verify`, {
+    const response = await fetch(`${API_URL}/passwords/verify`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -633,7 +633,7 @@ export const verifyUserPassword = async (userId: number, password: string): Prom
 
 export const changeUserPassword = async (userId: number, currentPassword: string, newPassword: string): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/passwords/change`, {
+    const response = await fetch(`${API_URL}/passwords/change`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -655,7 +655,7 @@ export const changeUserPassword = async (userId: number, currentPassword: string
 
 export const resetUserPassword = async (userId: number): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/passwords/reset`, {
+    const response = await fetch(`${API_URL}/passwords/reset`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
