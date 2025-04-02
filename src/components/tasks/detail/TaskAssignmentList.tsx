@@ -34,38 +34,17 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
     );
   }
   
-  console.log('Assignments in TaskAssignmentList:', assignments);
-  console.log('assignedUsers in TaskAssignmentList:', assignedUsers);
-  
   return (
     <div className="space-y-4">
       {assignments.map(assignment => {
-        // Normalize the userId to a number for consistency
+        // Convert userId to number for consistency
         const userId = typeof assignment.userId === 'string' 
           ? parseInt(assignment.userId, 10) 
           : assignment.userId;
         
-        // Find the user in assignedUsers by trying different key formats
-        const stringId = userId.toString();
-        let user = assignedUsers[stringId] || null;
-        
-        // If not found by string key, try to find by number key or by looking through all users
-        if (!user) {
-          user = assignedUsers[userId] || null;
-          
-          // If still not found, search through all user objects in assignedUsers
-          if (!user) {
-            for (const key in assignedUsers) {
-              const currentUser = assignedUsers[key];
-              if (currentUser && currentUser.id === userId) {
-                user = currentUser;
-                break;
-              }
-            }
-          }
-        }
-        
-        console.log(`Looking for user with ID: ${userId}, found:`, user);
+        // Find the user in assignedUsers with numeric ID
+        const userIdStr = userId.toString();
+        const user = assignedUsers[userIdStr] || null;
         
         const hoursWorked = timeEntries
           .filter(entry => {

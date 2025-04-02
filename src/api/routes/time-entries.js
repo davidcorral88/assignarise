@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
     
     if (user_id) {
       conditions.push(`user_id = $${params.length + 1}`);
-      params.push(user_id);
+      params.push(parseInt(user_id, 10)); // Ensure user_id is an integer
     }
     
     if (task_id) {
@@ -51,10 +51,13 @@ router.post('/', async (req, res) => {
   try {
     const { id, task_id, user_id, hours, date, notes, category, project, activity, time_format } = req.body;
     
+    // Ensure user_id is an integer
+    const userIdInt = parseInt(user_id, 10);
+    
     const result = await pool.query(
       `INSERT INTO time_entries (id, task_id, user_id, hours, date, notes, category, project, activity, time_format) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [id, task_id, user_id, hours, date, notes, category, project, activity, time_format]
+      [id, task_id, userIdInt, hours, date, notes, category, project, activity, time_format]
     );
     
     res.status(201).json(result.rows[0]);

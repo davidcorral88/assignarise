@@ -30,7 +30,7 @@ export const pgAdminConfig = {
 // Default users for initial setup
 export const defaultUsers = [
   {
-    id: 'admin1',
+    id: 0, // Changed to number (was string '1')
     name: 'Admin',
     email: 'admin@example.com',
     password: DEFAULT_PASSWORD,

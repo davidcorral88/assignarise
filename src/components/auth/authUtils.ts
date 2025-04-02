@@ -17,7 +17,7 @@ export const createNewUser = async (email: string): Promise<User> => {
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
     
-    // Create the user object
+    // Create the user object with numeric ID
     const newUser: User = {
       id: nextId,
       name: name,
@@ -45,7 +45,7 @@ export const createNewUser = async (email: string): Promise<User> => {
 // Admin user for direct authentication
 export const getAdminUser = (): User => {
   return {
-    id: 0, // Admin has ID 0
+    id: 0, // Admin has ID 0 (now as number, not string)
     name: 'Administrador ATSXPTPG',
     email: 'admin@ticmoveo.com',
     password: '', // Empty password for security
