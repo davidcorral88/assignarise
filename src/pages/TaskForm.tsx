@@ -458,8 +458,8 @@ const TaskForm = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="px-3 py-1 text-sm">
+                    {tags.map((tag, index) => (
+                      <Badge key={`tag-${index}-${tag}`} variant="secondary" className="px-3 py-1 text-sm">
                         {tag}
                         <Button
                           variant="ghost"
@@ -564,10 +564,10 @@ const TaskForm = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
-                    {assignments.map(assignment => {
+                    {assignments.map((assignment, index) => {
                       const user = availableUsers.find(u => u.id === assignment.userId);
                       return (
-                        <div key={assignment.userId} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                        <div key={`assignment-${assignment.userId}-${index}`} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                               {user?.avatar ? (

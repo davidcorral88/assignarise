@@ -19,7 +19,7 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   
-  // All users can edit and delete tasks
+  // All users can edit and delete tasks as per the requirement
   const canEdit = true;
   const canDelete = true;
 
