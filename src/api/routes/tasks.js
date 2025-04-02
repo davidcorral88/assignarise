@@ -43,14 +43,29 @@ router.get('/:id', async (req, res) => {
     const tagsResult = await pool.query('SELECT tag FROM task_tags WHERE task_id = $1', [id]);
     const tags = tagsResult.rows.map(row => row.tag);
     
-    // Get task assignments
+    // Get task assignments - converting user_id to userId
     const assignmentsResult = await pool.query('SELECT user_id, allocated_hours FROM task_assignments WHERE task_id = $1', [id]);
+    // Convert to camelCase and ensure user_id is a number
+    const assignments = assignmentsResult.rows.map(row => ({
+      userId: parseInt(row.user_id, 10),
+      allocatedHours: parseFloat(row.allocated_hours)
+    }));
     
     const task = {
       ...result.rows[0],
       tags,
-      assignments: assignmentsResult.rows
+      assignments
     };
+    
+    // Convert createdBy to a number if it exists
+    if (task.created_by) {
+      task.createdBy = parseInt(task.created_by, 10);
+    }
+    
+    // Convert snake_case to camelCase for frontend compatibility
+    if (task.created_at) task.createdAt = task.created_at;
+    if (task.start_date) task.startDate = task.start_date;
+    if (task.due_date) task.dueDate = task.due_date;
     
     res.json(task);
   } catch (error) {
@@ -77,13 +92,15 @@ router.post('/', async (req, res) => {
       assignments: assignments?.length
     });
     
-    // Convert field names to snake_case for database compatibility
-    // Insert task
+    // Ensure createdBy is an integer
+    const createdByInt = typeof createdBy === 'string' ? parseInt(createdBy, 10) : createdBy;
+    
+    // Insert task - convert field names to snake_case for database
     const taskResult = await client.query(
       `INSERT INTO tasks (id, title, description, status, created_by, created_at, 
         start_date, due_date, priority) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [id, title, description, status, createdBy, createdAt || new Date(), 
+      [id, title, description, status, createdByInt, createdAt || new Date(), 
        startDate, dueDate, priority]
     );
     
@@ -99,13 +116,17 @@ router.post('/', async (req, res) => {
       }
     }
     
-    // Insert assignments - handle both user_id and userId formats
+    // Insert assignments - handle numeric user IDs
     if (assignments && assignments.length > 0) {
       for (const assignment of assignments) {
-        const userId = assignment.userId || assignment.user_id;
+        // Extract userId, handle both formats and ensure it's a number
+        const userIdInput = assignment.userId || assignment.user_id;
+        const userId = typeof userIdInput === 'string' ? parseInt(userIdInput, 10) : userIdInput;
+        
+        // Extract allocatedHours, handle both formats
         const hours = assignment.allocatedHours || assignment.allocated_hours;
         
-        if (!userId) {
+        if (userId === undefined || userId === null) {
           console.error('Missing user ID in assignment:', assignment);
           continue;
         }
@@ -122,6 +143,12 @@ router.post('/', async (req, res) => {
     // Return complete task with tags and assignments
     task.tags = tags || [];
     task.assignments = assignments || [];
+    
+    // Convert some fields to camelCase for frontend
+    if (task.created_by) task.createdBy = parseInt(task.created_by, 10);
+    if (task.created_at) task.createdAt = task.created_at;
+    if (task.start_date) task.startDate = task.start_date;
+    if (task.due_date) task.dueDate = task.due_date;
     
     res.status(201).json(task);
   } catch (error) {
@@ -188,11 +215,14 @@ router.put('/:id', async (req, res) => {
     
     if (assignments && assignments.length > 0) {
       for (const assignment of assignments) {
-        // Handle both formats
-        const userId = assignment.userId || assignment.user_id;
+        // Extract userId, handle both formats and ensure it's a number
+        const userIdInput = assignment.userId || assignment.user_id;
+        const userId = typeof userIdInput === 'string' ? parseInt(userIdInput, 10) : userIdInput;
+        
+        // Extract allocatedHours, handle both formats
         const hours = assignment.allocatedHours || assignment.allocated_hours;
         
-        if (!userId) {
+        if (userId === undefined || userId === null) {
           console.error('Missing user ID in assignment:', assignment);
           continue;
         }
@@ -209,6 +239,12 @@ router.put('/:id', async (req, res) => {
     // Return complete task with tags and assignments
     task.tags = tags || [];
     task.assignments = assignments || [];
+    
+    // Convert some fields to camelCase for frontend
+    if (task.created_by) task.createdBy = parseInt(task.created_by, 10);
+    if (task.created_at) task.createdAt = task.created_at;
+    if (task.start_date) task.startDate = task.start_date;
+    if (task.due_date) task.dueDate = task.due_date;
     
     console.log('Task updated successfully:', task);
     res.json(task);

@@ -16,7 +16,7 @@ export const DEFAULT_PASSWORD = 'dxm2025';
 export const dbConfig = {
   host: 'localhost',
   port: 5433,
-  database: 'task_management',
+  database: 'task_management_v04', // Updated to new database name
   user: 'task_control',
   password: 'dc0rralIplan'
 };

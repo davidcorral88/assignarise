@@ -22,8 +22,9 @@ export const TaskDetailTabs: React.FC<TaskDetailTabsProps> = ({
   assignedUsers,
   currentUserId
 }) => {
-  // Check if user is assigned to this task
+  // Check if user is assigned to this task - ensure we're comparing numbers with numbers
   const isAssignedToCurrentUser = assignments.some(a => {
+    // Ensure userId is a number for comparison
     const assignmentUserId = typeof a.userId === 'string' ? parseInt(a.userId, 10) : a.userId;
     return assignmentUserId === currentUserId;
   });

@@ -37,15 +37,16 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
   return (
     <div className="space-y-4">
       {assignments.map(assignment => {
-        // Convert userId to number for consistency
+        // Ensure userId is a number for consistent lookup
         const userId = typeof assignment.userId === 'string' 
           ? parseInt(assignment.userId, 10) 
           : assignment.userId;
         
-        // Find the user in assignedUsers with numeric ID
+        // Find the user in assignedUsers - try both string and number keys
         const userIdStr = userId.toString();
         const user = assignedUsers[userIdStr] || null;
         
+        // Calculate hours worked for this user on this task
         const hoursWorked = timeEntries
           .filter(entry => {
             const entryUserId = typeof entry.userId === 'string' 
@@ -55,6 +56,7 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
           })
           .reduce((sum, entry) => sum + entry.hours, 0);
         
+        // Calculate progress percentage
         const progress = assignment.allocatedHours > 0 
           ? Math.min(Math.round((hoursWorked / assignment.allocatedHours) * 100), 100) 
           : 0;
