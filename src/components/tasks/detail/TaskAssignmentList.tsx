@@ -40,19 +40,39 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
   return (
     <div className="space-y-4">
       {assignments.map(assignment => {
-        // Try to get user using both string and number keys
-        const userId = assignment.userId;
-        const userIdStr = typeof userId === 'number' ? userId.toString() : userId;
-        const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+        // Normalize the userId to a number for consistency
+        const userId = typeof assignment.userId === 'string' 
+          ? parseInt(assignment.userId, 10) 
+          : assignment.userId;
         
-        let user = assignedUsers[userId] || assignedUsers[userIdStr] || assignedUsers[userIdNum];
+        // Find the user in assignedUsers by trying different key formats
+        const stringId = userId.toString();
+        let user = assignedUsers[stringId] || null;
         
-        console.log(`Looking up user for assignment userId: ${userId}, found:`, user);
+        // If not found by string key, try to find by number key or by looking through all users
+        if (!user) {
+          user = assignedUsers[userId] || null;
+          
+          // If still not found, search through all user objects in assignedUsers
+          if (!user) {
+            for (const key in assignedUsers) {
+              const currentUser = assignedUsers[key];
+              if (currentUser && currentUser.id === userId) {
+                user = currentUser;
+                break;
+              }
+            }
+          }
+        }
+        
+        console.log(`Looking for user with ID: ${userId}, found:`, user);
         
         const hoursWorked = timeEntries
           .filter(entry => {
-            const entryUserId = typeof entry.userId === 'string' ? parseInt(entry.userId, 10) : entry.userId;
-            return entryUserId === userIdNum;
+            const entryUserId = typeof entry.userId === 'string' 
+              ? parseInt(entry.userId, 10) 
+              : entry.userId;
+            return entryUserId === userId;
           })
           .reduce((sum, entry) => sum + entry.hours, 0);
         
@@ -61,7 +81,7 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
           : 0;
         
         return (
-          <div key={userIdStr} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg bg-muted/50">
+          <div key={`assignment-${userId}`} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg bg-muted/50">
             <div className="flex items-center gap-3 flex-1">
               <UserAvatar user={user} />
               <div>

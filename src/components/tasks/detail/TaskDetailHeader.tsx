@@ -23,11 +23,16 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
   const canEdit = true;
   const canDelete = true;
 
+  // Normalize the currentUserId to ensure it's a number
+  const normalizedCurrentUserId = currentUserId ? currentUserId : undefined;
+  
   // Users can track time if they're assigned to the task
-  const isAssignedToCurrentUser = task.assignments && 
+  const isAssignedToCurrentUser = task.assignments && normalizedCurrentUserId && 
     task.assignments.some(a => {
-      const assignmentUserId = typeof a.userId === 'string' ? parseInt(a.userId, 10) : a.userId;
-      return assignmentUserId === currentUserId;
+      const assignmentUserId = typeof a.userId === 'string' 
+        ? parseInt(a.userId, 10) 
+        : a.userId;
+      return assignmentUserId === normalizedCurrentUserId;
     });
   
   return (
