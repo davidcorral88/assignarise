@@ -1,7 +1,7 @@
-
 import * as apiService from './apiService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
+import { API_URL } from './dbConfig';
 
 // Always true - PostgreSQL is the only storage option
 const useAPI = true;
@@ -134,14 +134,34 @@ export const setStateFromPromise = async <T>(
   }
 };
 
-// Functions with no direct PostgreSQL equivalent
-export const resetDatabase = (): void => {
-  toast({
-    title: 'Operación no disponible',
-    description: 'El restablecimiento de la base de datos local no está disponible. Contacte con el administrador de la base de datos PostgreSQL.',
-    variant: 'destructive',
-  });
-  return;
+// Reset database functionality
+export const resetDatabase = async (): Promise<void> => {
+  try {
+    const response = await fetch(`${API_URL}/reset-database`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        scriptName: 'reset_database_20250402.sql'
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error al reiniciar la base de datos');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error resetting database:', error);
+    toast({
+      title: 'Error al reiniciar la base de datos',
+      description: `${error instanceof Error ? error.message : 'Error desconocido'}. Contacte con el administrador del sistema.`,
+      variant: 'destructive',
+    });
+    throw error;
+  }
 };
 
 export const downloadDatabaseBackup = () => {

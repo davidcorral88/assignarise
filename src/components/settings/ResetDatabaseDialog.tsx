@@ -17,17 +17,20 @@ export const ResetDatabaseDialog: React.FC<ResetDatabaseDialogProps> = ({
 }) => {
   const handleReset = async () => {
     try {
+      // Execute the reset database function
       resetDatabase();
+      
       toast({
         title: "Base de datos reiniciada",
-        description: "Todos los datos han sido eliminados correctamente",
+        description: "La estructura de la base de datos ha sido recreada correctamente",
       });
+      
       onConfirm();
     } catch (error) {
       console.error('Error al reiniciar la base de datos:', error);
       toast({
         title: "Error al reiniciar",
-        description: "No se pudo reiniciar la base de datos",
+        description: "No se pudo reiniciar la base de datos. Contacte al administrador.",
         variant: "destructive",
       });
     }
@@ -39,7 +42,7 @@ export const ResetDatabaseDialog: React.FC<ResetDatabaseDialogProps> = ({
         <AlertDialogHeader>
           <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta acción elimina todos los datos de la aplicación. No es posible recuperarlos una vez eliminados.
+            Esta acción elimina todos los datos de la aplicación y recrea la estructura de la base de datos. No es posible recuperar los datos una vez eliminados.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
