@@ -85,7 +85,7 @@ const TaskList = () => {
   const [dateFilterType, setDateFilterType] = useState<'creation' | 'due'>('creation');
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [users, setUsers] = useState<Record<string, User | null>>({});
+  const [users, setUsers] = useState<Record<number, User>>({});
   const [allUsers, setAllUsers] = useState<User[]>([]);
   
   const loadData = async () => {
@@ -94,7 +94,7 @@ const TaskList = () => {
       let tasksData;
       
       if (currentUser && currentUser.role === 'worker') {
-        const userId = String(currentUser.id);
+        const userId = currentUser.id;
         tasksData = await getTasksByUserId(userId);
       } else {
         tasksData = await getTasks();
@@ -108,29 +108,19 @@ const TaskList = () => {
       setTasks(normalizedTasks);
       setFilteredTasks(normalizedTasks);
       
-      const creatorIds = normalizedTasks
-        .map(task => task.createdBy)
-        .filter(id => id !== undefined && id !== null) as string[];
+      const usersData = await getUsers();
+      const userMap: Record<number, User> = {};
       
-      const uniqueCreatorIds = [...new Set(creatorIds)];
-      const userMap: Record<string, User | null> = {};
-      
-      for (const creatorId of uniqueCreatorIds) {
-        const creatorIdNumber = typeof creatorId === 'string' ? parseInt(creatorId, 10) : creatorId;
-        try {
-          const user = await getUserById(creatorIdNumber);
-          userMap[creatorId.toString()] = user;
-        } catch (error) {
-          console.error(`Error fetching user with ID ${creatorId}:`, error);
-          userMap[creatorId.toString()] = null;
-        }
-      }
+      usersData.forEach(user => {
+        const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
+        userMap[userId] = { ...user, id: userId };
+      });
       
       setUsers(userMap);
-      console.log("User map:", userMap);
-
-      const usersData = await getUsers();
       setAllUsers(usersData);
+      
+      console.log("User map:", userMap);
+      console.log("Normalized tasks:", normalizedTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast({
@@ -301,11 +291,10 @@ const TaskList = () => {
     }
   };
 
-  const getUserName = (userId: string | number | undefined): string => {
+  const getUserName = (userId: number | undefined): string => {
     if (!userId) return 'Usuario descoñecido';
     
-    const userIdStr = userId.toString();
-    const user = users[userIdStr];
+    const user = users[userId];
     return user ? user.name : 'Usuario descoñecido';
   };
 
@@ -653,124 +642,146 @@ const TaskList = () => {
                   </TableCell>
                 </TableRow>
               ) : filteredTasks.length > 0 ? (
-                filteredTasks.map((task) => (
-                  <TableRow key={task.id}>
-                    <TableCell className="font-mono text-xs">
-                      <div className="flex items-center">
-                        <Hash className="h-3 w-3 mr-1 text-muted-foreground" />
-                        {task.id}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center">
-                        {getStatusIcon(task.status)}
-                        <span className="ml-2">{task.title}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusText(task.status)}</TableCell>
-                    <TableCell>{getPriorityBadge(task.priority)}</TableCell>
-                    <TableCell>
-                      {task.createdBy ? (
+                filteredTasks.map((task) => {
+                  const createdById = typeof task.createdBy === 'string' 
+                    ? parseInt(task.createdBy, 10) 
+                    : task.createdBy;
+                  
+                  return (
+                    <TableRow key={task.id}>
+                      <TableCell className="font-mono text-xs">
                         <div className="flex items-center">
-                          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                            {users[task.createdBy.toString()] && users[task.createdBy.toString()]?.avatar ? (
-                              <img 
-                                src={users[task.createdBy.toString()]?.avatar} 
-                                alt={users[task.createdBy.toString()]?.name} 
-                                className="h-full w-full rounded-full" 
-                              />
-                            ) : (
-                              <span className="text-xs font-medium text-primary-foreground">
-                                {getUserName(task.createdBy).substring(0, 2)}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-sm">{getUserName(task.createdBy)}</span>
+                          <Hash className="h-3 w-3 mr-1 text-muted-foreground" />
+                          {task.id}
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">Sen asignar</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex -space-x-2">
-                        {task.assignments && task.assignments.length > 0 ? (
-                          <>
-                            {task.assignments.slice(0, 3).map((assignment) => (
-                              <div 
-                                key={assignment.userId} 
-                                className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" 
-                                title={String(assignment.userId)}
-                              >
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center">
+                          {getStatusIcon(task.status)}
+                          <span className="ml-2">{task.title}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getStatusText(task.status)}</TableCell>
+                      <TableCell>{getPriorityBadge(task.priority)}</TableCell>
+                      <TableCell>
+                        {createdById ? (
+                          <div className="flex items-center">
+                            <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
+                              {users[createdById]?.avatar ? (
+                                <img 
+                                  src={users[createdById]?.avatar} 
+                                  alt={users[createdById]?.name} 
+                                  className="h-full w-full rounded-full object-cover"
+                                />
+                              ) : (
                                 <span className="text-xs font-medium text-primary-foreground">
-                                  {String(assignment.userId).substring(0, 2)}
+                                  {getUserName(createdById).substring(0, 2)}
                                 </span>
-                              </div>
-                            ))}
-                            {task.assignments.length > 3 && (
-                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
-                                <span className="text-xs">+{task.assignments.length - 3}</span>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                            <span className="text-xs text-muted-foreground">0</span>
+                              )}
+                            </div>
+                            <span className="text-sm">{getUserName(createdById)}</span>
                           </div>
+                        ) : (
+                          <span className="text-muted-foreground">Sen asignar</span>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {task.dueDate 
-                        ? format(new Date(task.dueDate), 'dd/MM/yyyy')
-                        : '—'
-                      }
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleViewTask(task.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span className="sr-only">Ver</span>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleEditTask(task.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Editar</span>
-                        </Button>
-                        {(currentUser?.role === 'director' || currentUser?.role === 'admin') && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-red-500">
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Eliminar</span>
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta acción non se pode desfacer. Eliminarás permanentemente esta tarefa.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteTask(task.id)}>
-                                  Eliminar
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex -space-x-2">
+                          {task.assignments && task.assignments.length > 0 ? (
+                            <>
+                              {task.assignments.slice(0, 3).map((assignment) => {
+                                const assignedUserId = typeof assignment.userId === 'string' 
+                                  ? parseInt(assignment.userId, 10) 
+                                  : assignment.userId;
+                                
+                                const user = users[assignedUserId];
+                                
+                                return (
+                                  <div 
+                                    key={assignedUserId} 
+                                    className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" 
+                                    title={user?.name || `User ${assignedUserId}`}
+                                  >
+                                    {user && user.avatar ? (
+                                      <img 
+                                        src={user.avatar} 
+                                        alt={user.name} 
+                                        className="h-full w-full rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <span className="text-xs font-medium text-primary-foreground">
+                                        {user ? user.name.substring(0, 2) : assignedUserId.toString().substring(0, 2)}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {task.assignments.length > 3 && (
+                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
+                                  <span className="text-xs">+{task.assignments.length - 3}</span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                              <span className="text-xs text-muted-foreground">0</span>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {task.dueDate 
+                          ? format(new Date(task.dueDate), 'dd/MM/yyyy')
+                          : '—'
+                        }
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleViewTask(task.id)}
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Ver</span>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleEditTask(task.id)}
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
+                          </Button>
+                          {(currentUser?.role === 'director' || currentUser?.role === 'admin') && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-red-500">
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">Eliminar</span>
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción non se pode desfacer. Eliminarás permanentemente esta tarefa.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteTask(task.id)}>
+                                    Eliminar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center">

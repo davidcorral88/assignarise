@@ -9,7 +9,7 @@ import { UserAvatar } from './UserAvatar';
 interface TaskAssignmentListProps {
   taskId: string;
   assignments: TaskAssignment[];
-  assignedUsers: Record<string, User | null>;
+  assignedUsers: Record<string | number, User | null>;
   timeEntries: TimeEntry[];
 }
 
@@ -42,9 +42,8 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
           ? parseInt(assignment.userId, 10) 
           : assignment.userId;
         
-        // Find the user in assignedUsers - try both string and number keys
-        const userIdStr = userId.toString();
-        const user = assignedUsers[userIdStr] || null;
+        // Try to find the user in assignedUsers using both numeric and string keys
+        const user = assignedUsers[userId] || assignedUsers[userId.toString()] || null;
         
         // Calculate hours worked for this user on this task
         const hoursWorked = timeEntries

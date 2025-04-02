@@ -43,7 +43,7 @@ router.get('/:id', async (req, res) => {
     const tagsResult = await pool.query('SELECT tag FROM task_tags WHERE task_id = $1', [id]);
     const tags = tagsResult.rows.map(row => row.tag);
     
-    // Get task assignments - converting user_id to userId
+    // Get task assignments - converting user_id to userId and ensuring it's a number
     const assignmentsResult = await pool.query('SELECT user_id, allocated_hours FROM task_assignments WHERE task_id = $1', [id]);
     // Convert to camelCase and ensure user_id is a number
     const assignments = assignmentsResult.rows.map(row => ({
@@ -130,6 +130,8 @@ router.post('/', async (req, res) => {
           console.error('Missing user ID in assignment:', assignment);
           continue;
         }
+        
+        console.log(`Inserting assignment for task ${task.id}, user ${userId}, hours ${hours}`);
         
         await client.query(
           'INSERT INTO task_assignments (task_id, user_id, allocated_hours) VALUES ($1, $2, $3)',

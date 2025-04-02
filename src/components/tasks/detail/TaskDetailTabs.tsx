@@ -11,7 +11,7 @@ interface TaskDetailTabsProps {
   taskId: string;
   assignments: TaskAssignment[];
   timeEntries: TimeEntry[];
-  assignedUsers: Record<string, User | null>;
+  assignedUsers: Record<string | number, User | null>;
   currentUserId?: number;
 }
 
