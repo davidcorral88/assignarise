@@ -47,7 +47,6 @@ import {
 } from '@/components/ui/popover';
 import { 
   getTasks, 
-  getTasksAssignments,
   getTasksByUserId, 
   getUserById,
   deleteTask,
@@ -93,30 +92,21 @@ const TaskList = () => {
     try {
       setIsLoading(true);
       let tasksData;
-      let tasksDataAssignments;
       
-      //if (currentUser && currentUser.role === 'worker') {
-      //  const userId = currentUser.id;
-      //  tasksData = await getTasksByUserId(userId);
-      //} else {
-      //  tasksData = await getTasks();
-      //}
-      const userId = currentUser.id;
-      tasksData = await getTasks();
-      tasksDataAssignments = await getTasksAssignments();
-
+      if (currentUser && currentUser.role === 'worker') {
+        const userId = currentUser.id;
+        tasksData = await getTasksByUserId(userId);
+      } else {
+        tasksData = await getTasks();
+      }
+      
       const normalizedTasks = tasksData.map(task => ({
         ...task,
         assignments: task.assignments || []
       }));
-
-      const normalizedTasks2 = tasksDataAssignments.map(task => ({
-        ...task,
-        assignments: task.assignments || []
-      }));
-
-      setTasks(normalizedTasks2);
-      setFilteredTasks(normalizedTasks2);
+      
+      setTasks(normalizedTasks);
+      setFilteredTasks(normalizedTasks);
       
       const usersData = await getUsers();
       const userMap: Record<number, User> = {};
@@ -130,7 +120,7 @@ const TaskList = () => {
       setAllUsers(usersData);
       
       console.log("User map:", userMap);
-      console.log("Normalized tasks:", normalizedTasks2);
+      console.log("Normalized tasks:", normalizedTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast({
@@ -657,17 +647,10 @@ const TaskList = () => {
                     ? parseInt(task.createdBy, 10) 
                     : task.createdBy;
               
-                    console.log("Datos de la tarea:", task); // dcorral
-                    console.log("Usuario creador:", task.created_by);
-                    console.log("Tipo de dato del usuario:", typeof task.created_by);
-                    console.log("users:", users);
-                    console.log("Claves en users:", Object.keys(users)); // Ver qué claves existen realmente
-                    console.log("¿users[5] existe?", users[5] !== undefined);
-                    console.log("Avatar:", users[createdById]?.avatar); // dcorral
-                    console.log("Nombre:", users[task.created_by]?.name);
-                    console.log("Datos completos de users[5]:", users[5]);
-                    console.log("createdById:", createdById);
-
+                    
+                    console.log("Datos de la tarea:", task); // Ver todo el objeto
+                    console.log("Usuario creador:", task.createdBy);
+                    console.log("Tipo de dato del usuario:", typeof task.createdBy);   
                   return (
                     <TableRow key={task.id}>
                       <TableCell className="font-mono text-xs">
@@ -685,22 +668,22 @@ const TaskList = () => {
                       <TableCell>{getStatusText(task.status)}</TableCell>
                       <TableCell>{getPriorityBadge(task.priority)}</TableCell>
                       <TableCell>
-                        {task.created_by  ? (
+                        {createdById ? (
                           <div className="flex items-center">
                             <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                              {users[task.created_by]?.avatar ? (
+                              {users[createdById]?.avatar ? (
                                 <img 
-                                  src={users[task.created_by]?.avatar} 
-                                  alt={users[task.created_by]?.name} 
+                                  src={users[createdById]?.avatar} 
+                                  alt={users[createdById]?.name} 
                                   className="h-full w-full rounded-full object-cover"
                                 />
                               ) : (
                                 <span className="text-xs font-medium text-primary-foreground">
-                                  {getUserName(task.created_by).substring(0, 2)}
+                                  {getUserName(createdById).substring(0, 2)}
                                 </span>
                               )}
                             </div>
-                            <span className="text-sm">{getUserName(task.created_by)}</span>
+                            <span className="text-sm">{getUserName(createdById)}</span>
                           </div>
                         ) : (
                           <span className="text-muted-foreground">Sen asignar</span>
@@ -711,11 +694,12 @@ const TaskList = () => {
                           {task.assignments && task.assignments.length > 0 ? (
                             <>
                               {task.assignments.slice(0, 3).map((assignment) => {
-                                const assignedUserId = typeof assignment.user_id === 'string' 
-                                  ? parseInt(assignment.user_id, 10) 
-                                  : assignment.user_id;
+                                const assignedUserId = typeof assignment.userId === 'string' 
+                                  ? parseInt(assignment.userId, 10) 
+                                  : assignment.userId;
                                 
                                 const user = users[assignedUserId];
+                                
                                 return (
                                   <div 
                                     key={assignedUserId} 

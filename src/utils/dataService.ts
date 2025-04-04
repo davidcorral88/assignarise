@@ -39,6 +39,7 @@ export const {
   deleteUser,
   getNextUserId,
   getTasks,
+  getTasksAssignments,
   getTaskById,
   getTasksByUserId,
   addTask,

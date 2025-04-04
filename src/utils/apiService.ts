@@ -128,8 +128,18 @@ export const deleteUser = async (id: number): Promise<void> => {
 
 // Funciones para tareas
 export const getTasks = async (): Promise<Task[]> => {
-  return fetchWithErrorHandling(`${API_URL}/tasks`, {}, 'Error al obtener tareas');
+  //JORGEPRUEBA
+  //return fetchWithErrorHandling(`${API_URL}/tasks`, {}, 'Error al obtener tareas');
+    const data = await fetchWithErrorHandling(`${API_URL}/tasks`, {}, 'Error al obtener tareas');
+    console.log("JGV:Datos crudos desde la API (/tasks):", data);
+    return data;
 };
+//DAVIDPRUEBA
+export const getTasksAssignments = async (): Promise<Task[]> => {
+    const data = await fetchWithErrorHandling(`${API_URL}/tasks/conassignments/`, {}, 'Error al obtener tareas');
+    return data;
+};
+
 
 export const getTaskById = async (id: string): Promise<Task | undefined> => {
   try {

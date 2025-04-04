@@ -17,7 +17,7 @@ export interface User {
 export type UserRole = 'admin' | 'director' | 'worker';
 
 export interface TaskAssignment {
-  userId: number;
+  user_id: number;
   allocatedHours: number;
 }
 

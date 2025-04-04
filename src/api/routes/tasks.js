@@ -14,6 +14,35 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get all tasks with task_assignments [dcorral]
+router.get('/conassignments/', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        t.*, 
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'task_id', ta.task_id,
+              'user_id', ta.user_id,
+              'allocated_hours', ta.allocated_hours
+            )
+          ) FILTER (WHERE ta.task_id IS NOT NULL), '[]'
+        ) AS assignments  -- Alias corregido
+      FROM tasks t
+      LEFT JOIN task_assignments ta ON t.id = ta.task_id
+      GROUP BY t.id
+      ORDER BY t.id
+    `;
+
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching tasks with assignments:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get next task ID
 router.get('/next-id', async (req, res) => {
   try {
