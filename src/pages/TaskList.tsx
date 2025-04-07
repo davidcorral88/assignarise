@@ -326,7 +326,7 @@ const TaskList = () => {
   };
 
   const renderCreatorCell = (task: Task) => {
-    const creator = users.find(u => u.id === task.createdBy);
+    const creator = Object.values(users).find(u => u.id === task.createdBy);
     
     return (
       <div className="flex items-center">

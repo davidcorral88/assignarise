@@ -69,7 +69,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
 
-const TaskList = () => {
+const TaskListCopy = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -291,14 +291,15 @@ const TaskList = () => {
     }
   };
 
-  const getUserName = async (id: number) => {
-    try {
-      const user = await getUserById(String(id));
-      return user ? user.name : 'Usuario descoñecido';
-    } catch (error) {
-      console.error(`Error fetching user with ID ${id}:`, error);
-      return 'Usuario descoñecido';
-    }
+  const handleTaskById = async (taskId: number) => {
+    return await getTaskById(taskId.toString());
+  };
+
+  const getUserName = (userId: number | undefined): string => {
+    if (!userId) return 'Usuario descoñecido';
+    
+    const user = users[userId];
+    return user ? user.name : 'Usuario descoñecido';
   };
 
   const handleViewTask = (taskId: string) => {
@@ -307,6 +308,67 @@ const TaskList = () => {
 
   const handleEditTask = (taskId: string) => {
     navigate(`/tasks/${taskId}/edit`);
+  };
+
+  const renderTaskCreatorName = (userId: number | undefined): React.ReactNode => {
+    if (!userId) return '-';
+    const user = users[userId];
+    return user?.name || '-';
+  };
+
+  const renderAssignments = (assignments: TaskAssignment[]) => {
+    return (
+      <div className="flex -space-x-2">
+        {assignments && assignments.length > 0 ? (
+          <>
+            {assignments.slice(0, 3).map((assignment) => {
+              const assignedUserId = typeof assignment.user_id === 'string' 
+                ? parseInt(assignment.user_id, 10) 
+                : assignment.user_id;
+              
+              const user = users[assignedUserId];
+              return (
+                <div 
+                  key={assignedUserId} 
+                  className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" 
+                  title={user?.name || `User ${assignedUserId}`}
+                >
+                  {user && user.avatar ? (
+                    <img 
+                      src={user.avatar} 
+                      alt={user.name} 
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs font-medium text-primary-foreground">
+                      {user ? user.name.substring(0, 2) : assignedUserId.toString().substring(0, 2)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            {assignments.length > 3 && (
+              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
+                <span className="text-xs">+{assignments.length - 3}</span>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+            <span className="text-xs text-muted-foreground">0</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const handleUserById = async (userId: string): Promise<User | null> => {
+    try {
+      return await getUserById(parseInt(userId, 10));
+    } catch (error) {
+      console.error('Error fetching user by ID:', error);
+      return null;
+    }
   };
 
   return (
@@ -697,9 +759,9 @@ const TaskList = () => {
                           {task.assignments && task.assignments.length > 0 ? (
                             <>
                               {task.assignments.slice(0, 3).map((assignment) => {
-                                const assignedUserId = typeof assignment.userId === 'string' 
-                                  ? parseInt(assignment.userId, 10) 
-                                  : assignment.userId;
+                                const assignedUserId = typeof assignment.user_id === 'string' 
+                                  ? parseInt(assignment.user_id, 10) 
+                                  : assignment.user_id;
                                 
                                 const user = users[assignedUserId];
                                 
@@ -807,4 +869,4 @@ const TaskList = () => {
   );
 };
 
-export default TaskList;
+export default TaskListCopy;

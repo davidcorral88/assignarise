@@ -40,7 +40,6 @@ export interface Task {
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   createdBy: number;
-  created_by?: number;  // Añadido para compatibilidad con la API de PostgreSQL
   createdAt: string;
   startDate?: string;
   dueDate?: string;
@@ -52,7 +51,6 @@ export interface Task {
 export interface TimeEntry {
   id: string;
   task_id: string;
-  taskId?: string; // Para compatibilidad con código existente
   user_id: number;
   date: string;
   hours: number;
