@@ -167,7 +167,7 @@ const TaskList = () => {
       result = result.filter(task => {
         const createdByNum = task.createdBy ? 
           (typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy) : 
-          null;
+          (task.created_by ? (typeof task.created_by === 'string' ? parseInt(task.created_by, 10) : task.created_by) : null);
         
         console.log(`Filtering task ${task.id}: createdBy=${createdByNum}, filter=${creatorFilter}, match=${createdByNum === creatorFilter}`);
         return createdByNum === creatorFilter;
@@ -325,18 +325,19 @@ const TaskList = () => {
   };
 
   const renderCreatorCell = (task: Task) => {
-    const creator = Object.values(users).find(u => u.id === task.createdBy);
+    const createdById = task.createdBy || task.created_by;
+    const taskCreator = createdById ? users[createdById] : null;
     
     return (
       <div className="flex items-center">
         <Avatar className="h-7 w-7 mr-2">
-          <AvatarImage src={creator?.avatar || ''} alt={creator?.name || ''} />
-          <AvatarFallback>{creator?.name ? creator.name.substring(0, 2) : 'U'}</AvatarFallback>
+          <AvatarImage src={taskCreator?.avatar || ''} alt={taskCreator?.name || ''} />
+          <AvatarFallback>{taskCreator?.name ? taskCreator.name.substring(0, 2) : 'U'}</AvatarFallback>
         </Avatar>
         <div>
-          <p className="text-sm font-medium">{creator?.name || 'Usuario descoñecido'}</p>
+          <p className="text-sm font-medium">{taskCreator?.name || 'Usuario descoñecido'}</p>
           <p className="text-xs text-muted-foreground">
-            {creator?.role === 'director' ? 'Xerente' : 'Traballador'}
+            {taskCreator?.role === 'director' ? 'Xerente' : 'Traballador'}
           </p>
         </div>
       </div>
@@ -680,7 +681,7 @@ const TaskList = () => {
                 </TableRow>
               ) : filteredTasks.length > 0 ? (
                 filteredTasks.map((task) => {
-                  const createdById = task.createdBy;
+                  const createdById = task.createdBy || task.created_by;
                   const taskCreator = createdById ? users[createdById] : null;
                   
                   return (

@@ -26,6 +26,7 @@ export interface Task {
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   createdBy: number;
+  created_by?: number; // Añadir campo alternativo para mantener compatibilidad
   createdAt: string;
   startDate?: string;
   dueDate?: string;
