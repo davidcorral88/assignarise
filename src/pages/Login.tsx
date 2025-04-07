@@ -2,16 +2,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
-import { Clock, Loader2, Info, AlertTriangle } from 'lucide-react';
+import { Clock, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
-// Contraseña predeterminada para usuarios nuevos
-const DEFAULT_PASSWORD = 'dxm2025';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -51,11 +48,11 @@ const Login = () => {
       
       // Mostrar mensajes específicos según el tipo de error
       if (errorMessage.includes('Usuario non atopado')) {
-        setLoginError('O usuario non existe. Para crear unha conta nova, utiliza o correo electrónico e a contrasinal predeterminada (dxm2025).');
+        setLoginError('O usuario non existe.');
       } else if (errorMessage.includes('servidor no está respondiendo') || errorMessage.includes('Respuesta no válida')) {
-        setLoginError('Erro de conexión: Non se puido conectar co servidor. O servidor pode estar inactivo ou a configuración da rede pode estar bloqueando a conexión. Por favor, contacta co administrador en admin@ticmoveo.com');
+        setLoginError('Erro de conexión: Non se puido conectar co servidor.');
       } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
-        setLoginError('Erro de rede: Comproba a túa conexión a Internet. Se o problema persiste, o servidor pode estar caído. Por favor, contacta co administrador.');
+        setLoginError('Erro de rede: Comproba a túa conexión a Internet.');
       } else {
         setLoginError(errorMessage);
       }
@@ -115,17 +112,8 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-              
-              <Alert className="bg-blue-50 border-blue-200">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-700 text-sm">
-                  Se es un novo usuario, utiliza o teu correo e a contrasinal inicial <strong>{DEFAULT_PASSWORD}</strong>. 
-                  Crearemos unha conta automáticamente para ti.
-                </AlertDescription>
-              </Alert>
-              
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
+            <CardFooter>
               <Button className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
@@ -136,9 +124,6 @@ const Login = () => {
                   <>Iniciar sesión</>
                 )}
               </Button>
-              <p className="text-xs text-muted-foreground text-center">
-                Se non podes acceder ou necesitas axuda, contacta co administrador en <a href="mailto:admin@ticmoveo.com" className="text-primary hover:underline">admin@ticmoveo.com</a>
-              </p>
             </CardFooter>
           </form>
         </Card>
