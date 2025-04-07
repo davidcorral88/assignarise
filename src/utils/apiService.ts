@@ -185,7 +185,7 @@ export const addTask = async (task: Task): Promise<Task> => {
       // ID will be generated server-side
       id: undefined,
       assignments: task.assignments?.map(a => ({
-        user_id: a.user_id || a.userId,
+        user_id: a.user_id,
         allocated_hours: a.allocatedHours
       }))
     };
