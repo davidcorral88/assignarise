@@ -35,7 +35,7 @@ export const uploadTaskAttachment = async (
     // Como fallback, crear un attachment local pero indicar que falló
     const attachment: TaskAttachment = {
       id: uuidv4(),
-      fileName: file.name,
+      filename: file.name,
       fileSize: file.size,
       uploadDate: new Date().toISOString(),
       uploadedBy: userId,

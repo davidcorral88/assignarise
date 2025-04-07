@@ -45,7 +45,7 @@ export const TimeEntryList: React.FC<TimeEntryListProps> = ({
   return (
     <div className="space-y-4">
       {timeEntries.map(entry => {
-        const user = assignedUsers[entry.userId];
+        const user = assignedUsers[entry.user_id];
         return (
           <div key={entry.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg bg-muted/50">
             <div className="flex items-center gap-3 flex-1">

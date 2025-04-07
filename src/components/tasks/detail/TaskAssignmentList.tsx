@@ -48,9 +48,9 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
         // Calculate hours worked for this user on this task
         const hoursWorked = timeEntries
           .filter(entry => {
-            const entryUserId = typeof entry.userId === 'string' 
-              ? parseInt(entry.userId, 10) 
-              : entry.userId;
+            const entryUserId = typeof entry.user_id === 'string' 
+              ? parseInt(entry.user_id, 10) 
+              : entry.user_id;
             return entryUserId === userId;
           })
           .reduce((sum, entry) => sum + entry.hours, 0);

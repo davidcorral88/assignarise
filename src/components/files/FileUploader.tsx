@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +35,6 @@ interface FileUploaderProps {
   size?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
   showFileDialog?: boolean;
-  // New props for task attachments
   taskId?: string;
   attachments?: TaskAttachment[];
   isResolution?: boolean;
@@ -54,7 +52,6 @@ export function FileUploader({
   size = "default",
   className = "",
   showFileDialog = true,
-  // New props with defaults
   taskId,
   attachments = [],
   isResolution = false,
@@ -69,7 +66,6 @@ export function FileUploader({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter attachments based on isResolution
   const filteredAttachments = attachments.filter(
     attachment => attachment.isResolution === isResolution
   );
@@ -83,14 +79,12 @@ export function FileUploader({
       return;
     }
     
-    // Check file size
     if (selectedFile.size > maxFileSizeMB * 1024 * 1024) {
       setError(`O arquivo é demasiado grande. O tamaño máximo é ${maxFileSizeMB}MB.`);
       setFile(null);
       return;
     }
     
-    // Check file type if specified
     if (acceptedFileTypes !== "*") {
       const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase();
       const acceptedTypes = acceptedFileTypes.split(',').map(type => 
@@ -107,7 +101,6 @@ export function FileUploader({
     setFile(selectedFile);
   };
 
-  // Function to handle task attachment upload
   const handleTaskAttachmentUpload = async () => {
     if (!file || !taskId || !onAttachmentAdded) {
       return;
@@ -117,7 +110,6 @@ export function FileUploader({
     setUploadProgress(0);
     
     try {
-      // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           const newProgress = prev + 5;
@@ -125,27 +117,23 @@ export function FileUploader({
         });
       }, 50);
       
-      // In a real app, this would upload to a server
-      // For demo, we'll simulate upload and create attachment object
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       clearInterval(progressInterval);
       setUploadProgress(100);
       
-      // Create attachment object
       const newAttachment: TaskAttachment = {
         id: uuidv4(),
-        fileName: file.name,
+        filename: file.name,
         fileSize: file.size,
         uploadDate: new Date().toISOString(),
-        uploadedBy: 1, // Use current user ID
+        uploadedBy: 1,
         isResolution: isResolution,
         fileUrl: URL.createObjectURL(file),
         fileType: file.type,
         taskId: taskId
       };
       
-      // Call the callback
       onAttachmentAdded(newAttachment);
       
       toast({
@@ -153,7 +141,6 @@ export function FileUploader({
         description: 'O arquivo foi engadido correctamente á tarefa.',
       });
       
-      // Reset form
       setFile(null);
       setIsUploading(false);
       setUploadProgress(0);
@@ -172,10 +159,8 @@ export function FileUploader({
 
   const processJsonData = async (jsonData: any) => {
     try {
-      // Process users
       if (jsonData.users && Array.isArray(jsonData.users)) {
         for (const userData of jsonData.users) {
-          // Check if user already exists
           const existingUser = await getUserByEmail(userData.email);
           if (!existingUser) {
             await addUser(userData);
@@ -183,10 +168,8 @@ export function FileUploader({
         }
       }
       
-      // Process tasks
       if (jsonData.tasks && Array.isArray(jsonData.tasks)) {
         for (const taskData of jsonData.tasks) {
-          // Check if task already exists
           const existingTask = await getTaskById(taskData.id);
           if (!existingTask) {
             await addTask(taskData);
@@ -194,14 +177,12 @@ export function FileUploader({
         }
       }
       
-      // Process time entries
       if (jsonData.timeEntries && Array.isArray(jsonData.timeEntries)) {
         for (const entryData of jsonData.timeEntries) {
-          // Check if time entry already exists by checking user's entries
-          const userEntries = await getTimeEntriesByUserId(String(entryData.userId));
+          const userEntries = await getTimeEntriesByUserId(String(entryData.user_id));
           const exists = userEntries.some(entry => 
             entry.date === entryData.date && 
-            entry.taskId === entryData.taskId &&
+            entry.task_id === entryData.task_id &&
             Math.abs(entry.hours - entryData.hours) < 0.01
           );
           
@@ -228,7 +209,6 @@ export function FileUploader({
       return;
     }
     
-    // If this is a task attachment upload
     if (taskId && onAttachmentAdded) {
       await handleTaskAttachmentUpload();
       return;
@@ -239,7 +219,6 @@ export function FileUploader({
     setError(null);
     
     try {
-      // Simulate progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           const newProgress = prev + 5;
@@ -247,7 +226,6 @@ export function FileUploader({
         });
       }, 100);
       
-      // Read file
       const fileContent = await readFileAsText(file);
       let jsonData;
       
@@ -257,20 +235,16 @@ export function FileUploader({
         throw new Error('El archivo no contiene JSON válido');
       }
       
-      // Process the data
       const result = await processJsonData(jsonData);
       
-      // Complete the progress
       clearInterval(progressInterval);
       setUploadProgress(100);
       
-      // Show success message
       toast({
         title: 'Importación completada',
         description: `Se importaron ${result.users} usuarios, ${result.tasks} tareas y ${result.timeEntries} registros de tiempo.`,
       });
       
-      // Close dialog and reset state
       setTimeout(() => {
         setIsDialogOpen(false);
         setFile(null);
@@ -312,7 +286,6 @@ export function FileUploader({
     fileInputRef.current?.click();
   };
 
-  // Render attachment list
   const renderAttachments = () => {
     if (filteredAttachments.length === 0) {
       return (
@@ -332,7 +305,7 @@ export function FileUploader({
             <div className="flex items-center space-x-3">
               <File className="h-5 w-5 text-blue-500" />
               <div>
-                <p className="font-medium text-sm">{attachment.fileName}</p>
+                <p className="font-medium text-sm">{attachment.filename}</p>
                 <p className="text-xs text-muted-foreground">
                   {formatFileSize(attachment.fileSize)} • {formatDate(attachment.uploadDate)}
                 </p>
@@ -355,7 +328,6 @@ export function FileUploader({
     );
   };
 
-  // Helper functions
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -437,7 +409,6 @@ export function FileUploader({
         </Alert>
       )}
 
-      {/* Render attachments list if this is for task attachments */}
       {taskId && renderAttachments()}
     </>
   );

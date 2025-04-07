@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
@@ -62,8 +61,8 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
     try {
       const timeEntry: TimeEntry = {
         id: uuidv4(),
-        taskId: selectedTask,
-        userId: userId,
+        task_id: selectedTask,
+        user_id: userId,
         hours: hours,
         date: format(date, 'yyyy-MM-dd'),
         notes: notes,
