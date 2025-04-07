@@ -40,7 +40,7 @@ const TimeTracking = () => {
         try {
           const fetchedTasks = await getTasks();
           const userTasks = currentUser.role === 'worker'
-            ? fetchedTasks.filter(task => task.assignments.some(a => a.userId === currentUser.id))
+            ? fetchedTasks.filter(task => task.assignments.some(a => a.user_id === currentUser.id))
             : fetchedTasks;
           
           setTasks(userTasks);
@@ -212,7 +212,7 @@ const TimeTracking = () => {
               {tasks.map(task => {
                 const taskEntries = timeEntries.filter(entry => entry.taskId === task.id);
                 const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
-                const taskAssignment = task.assignments.find(a => currentUser && a.userId === currentUser.id);
+                const taskAssignment = task.assignments.find(a => currentUser && a.user_id === currentUser.id);
                 const allocatedHours = taskAssignment?.allocatedHours || 0;
                 
                 const progress = allocatedHours > 0 

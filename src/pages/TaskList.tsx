@@ -69,6 +69,7 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const TaskList = () => {
   const { currentUser } = useAuth();
@@ -325,6 +326,25 @@ const TaskList = () => {
 
   const handleEditTask = (taskId: string) => {
     navigate(`/tasks/${taskId}/edit`);
+  };
+
+  const renderCreatorCell = (task: Task) => {
+    const creator = users.find(u => u.id === task.createdBy);
+    
+    return (
+      <div className="flex items-center">
+        <Avatar className="h-7 w-7 mr-2">
+          <AvatarImage src={creator?.avatar || ''} alt={creator?.name || ''} />
+          <AvatarFallback>{creator?.name ? creator.name.substring(0, 2) : 'U'}</AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="text-sm font-medium">{creator?.name || 'Usuario descoñecido'}</p>
+          <p className="text-xs text-muted-foreground">
+            {creator?.role === 'director' ? 'Xerente' : 'Traballador'}
+          </p>
+        </div>
+      </div>
+    );
   };
 
   return (

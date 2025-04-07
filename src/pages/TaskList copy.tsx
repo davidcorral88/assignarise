@@ -291,11 +291,14 @@ const TaskList = () => {
     }
   };
 
-  const getUserName = (userId: number | undefined): string => {
-    if (!userId) return 'Usuario descoñecido';
-    
-    const user = users[userId];
-    return user ? user.name : 'Usuario descoñecido';
+  const getUserName = async (id: number) => {
+    try {
+      const user = await getUserById(String(id));
+      return user ? user.name : 'Usuario descoñecido';
+    } catch (error) {
+      console.error(`Error fetching user with ID ${id}:`, error);
+      return 'Usuario descoñecido';
+    }
   };
 
   const handleViewTask = (taskId: string) => {

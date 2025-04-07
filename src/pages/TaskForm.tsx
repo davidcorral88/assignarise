@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../components/auth/useAuth';
-import { getUserById, addTask, updateTask, getTaskById, getNextTaskId, deleteTask, getUsers } from '../utils/dataService';
+import { getUserById, addTask, updateTask, getTaskById, deleteTask, getUsers } from '../utils/dataService';
 import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -28,7 +28,6 @@ const TaskForm = () => {
   const { currentUser } = useAuth();
   const [task, setTask] = useState<Task | null>(null);
   
-  const [taskId, setTaskId] = useState<string | undefined>(undefined);
   const [tarefa, setTarefa] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<string>('pending');
@@ -79,7 +78,6 @@ const TaskForm = () => {
           
           if (taskData) {
             setTask(taskData);
-            setTaskId(taskData.id);
             setTarefa(taskData.title);
             setDescription(taskData.description || '');
             setStatus(taskData.status || 'pending');
@@ -130,8 +128,8 @@ const TaskForm = () => {
             return;
           }
         } else {
-          const nextId = await getNextTaskId();
-          setTaskId(String(nextId));
+          // For new tasks, we don't need to get a next ID anymore
+          // The server will generate the ID when the task is created
           
           if (currentUser) {
             setCreatorUser(currentUser);
@@ -164,20 +162,11 @@ const TaskForm = () => {
       return;
     }
     
-    if (!taskId) {
-      toast({
-        title: 'Erro',
-        description: 'O ID da tarefa non é válido',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
     setSubmitting(true);
     
     try {
       const taskData: Task = {
-        id: taskId,
+        id: isEditMode && task ? task.id : '', // For new tasks, we'll leave id empty and let the server generate it
         title: tarefa,
         description: description || '',
         status: (status as 'pending' | 'in_progress' | 'completed') || 'pending',
@@ -372,21 +361,24 @@ const TaskForm = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="id">ID</Label>
-                    <div className="flex">
-                      <Input
-                        id="id"
-                        type="number"
-                        value={taskId || ''}
-                        className="bg-gray-100 cursor-not-allowed"
-                        readOnly
-                      />
+                  {/* Remove the ID field for new tasks, only show it in edit mode */}
+                  {isEditMode && (
+                    <div className="space-y-2">
+                      <Label htmlFor="id">ID</Label>
+                      <div className="flex">
+                        <Input
+                          id="id"
+                          type="number"
+                          value={task?.id || ''}
+                          className="bg-gray-100 cursor-not-allowed"
+                          readOnly
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        O ID asígnase automaticamente e non se pode modificar
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      O ID asígnase automaticamente e non se pode modificar
-                    </p>
-                  </div>
+                  )}
                   
                   <div className="space-y-2">
                     <Label htmlFor="creator">Creador</Label>
@@ -524,7 +516,7 @@ const TaskForm = () => {
                     
                     <TabsContent value="task-files" className="mt-4">
                       <FileUploader
-                        taskId={String(taskId)}
+                        taskId={String(task?.id)}
                         attachments={attachments}
                         isResolution={false}
                         onAttachmentAdded={handleAttachmentAdded}
@@ -535,7 +527,7 @@ const TaskForm = () => {
                     
                     <TabsContent value="resolution-files" className="mt-4">
                       <FileUploader
-                        taskId={String(taskId)}
+                        taskId={String(task?.id)}
                         attachments={attachments}
                         isResolution={true}
                         onAttachmentAdded={handleAttachmentAdded}

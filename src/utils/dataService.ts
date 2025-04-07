@@ -30,6 +30,7 @@ const resolvePromise = async <T>(promise: Promise<T>): Promise<T> => {
 };
 
 // Re-export functions from apiService
+// We're going to keep getNextTaskId for backward compatibility, but it won't be used in the new approach
 export const { 
   getUsers,
   getUserById,

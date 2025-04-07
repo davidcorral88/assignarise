@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -43,7 +42,7 @@ router.get('/conassignments/', async (req, res) => {
   }
 });
 
-// Get next task ID
+// Get next task ID - Kept for backward compatibility but not used by new task creation process
 router.get('/next-id', async (req, res) => {
   try {
     console.log('Getting next task ID');
@@ -103,7 +102,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create task
+// Create task - Modified to generate task ID server-side
 router.post('/', async (req, res) => {
   const client = await pool.connect();
   
@@ -111,15 +110,21 @@ router.post('/', async (req, res) => {
     await client.query('BEGIN');
     
     const { 
-      id, title, description, status, createdBy, createdAt, 
+      title, description, status, createdBy, createdAt, 
       startDate, dueDate, priority, tags, assignments 
     } = req.body;
     
+    // Get the next ID from the database
+    const nextIdResult = await client.query('SELECT MAX(CAST(id AS INTEGER)) as max_id FROM tasks');
+    const nextId = nextIdResult.rows[0].max_id ? parseInt(nextIdResult.rows[0].max_id) + 1 : 1;
+    const id = String(nextId);
+    
     console.log('Received task data:', {
-      id, title, status, createdBy, startDate, dueDate, 
+      title, status, createdBy, startDate, dueDate, 
       tags: tags?.length, 
       assignments: assignments?.length
     });
+    console.log('Generated task ID:', id);
     
     // Ensure createdBy is an integer
     const createdByInt = typeof createdBy === 'string' ? parseInt(createdBy, 10) : createdBy;
@@ -148,12 +153,12 @@ router.post('/', async (req, res) => {
     // Insert assignments - handle numeric user IDs
     if (assignments && assignments.length > 0) {
       for (const assignment of assignments) {
-        // Extract userId, handle both formats and ensure it's a number
-        const userIdInput = assignment.userId || assignment.user_id;
+        // Extract user_id, handle both formats and ensure it's a number
+        const userIdInput = assignment.user_id;
         const userId = typeof userIdInput === 'string' ? parseInt(userIdInput, 10) : userIdInput;
         
         // Extract allocatedHours, handle both formats
-        const hours = assignment.allocatedHours || assignment.allocated_hours;
+        const hours = assignment.allocatedHours;
         
         if (userId === undefined || userId === null) {
           console.error('Missing user ID in assignment:', assignment);
