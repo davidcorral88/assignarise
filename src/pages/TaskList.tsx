@@ -221,7 +221,6 @@ const TaskList = () => {
     setFilteredTasks(result);
   }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
   
-  
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -681,7 +680,7 @@ const TaskList = () => {
                 </TableRow>
               ) : filteredTasks.length > 0 ? (
                 filteredTasks.map((task) => {
-                  const createdById = task.createdBy || task.created_by;
+                  const createdById = task.createdBy;
                   const taskCreator = createdById ? users[createdById] : null;
                   
                   return (
