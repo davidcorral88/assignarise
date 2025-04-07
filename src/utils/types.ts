@@ -1,36 +1,16 @@
-
-// Define all types and interfaces for the application
-
 export interface User {
   id: number;
   name: string;
   email: string;
-  password: string;
-  role: 'admin' | 'director' | 'worker';
-  active?: boolean;
-  avatar?: string | null;
-  phone?: string;
-  emailATSXPTPG?: string;
-  organism?: string;
-}
-
-export type UserRole = 'admin' | 'director' | 'worker';
-
-export interface TaskAssignment {
-  user_id: number;
-  allocatedHours: number;
-}
-
-export interface TaskAttachment {
-  id: string;
-  fileName: string;
-  fileSize: number;
-  uploadDate: string;
-  uploadedBy: number;
-  isResolution: boolean;
-  fileUrl?: string;
-  fileType?: string;
-  taskId?: string;
+  role: string;
+  active: boolean;
+  password?: string;
+  avatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  lastLogin?: string;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
 }
 
 export interface Task {
@@ -45,105 +25,59 @@ export interface Task {
   dueDate?: string;
   tags: string[];
   assignments: TaskAssignment[];
-  attachments?: TaskAttachment[];
+  attachments: TaskAttachment[];
+  category?: string;
+  project?: string;
+}
+
+export interface TaskAssignment {
+  task_id?: string;
+  user_id: number;
+  allocatedHours: number;
+}
+
+export interface TaskAttachment {
+  id: string;
+  filename: string;
+  url: string;
+  isResolution: boolean;
 }
 
 export interface TimeEntry {
-  id: string;
-  userId: number;
-  taskId: string;
-  date: string;
-  hours: number;
+  id: number;
+  task_id: string;
+  user_id: number;
+  start_time: string;
+  end_time: string;
   description: string;
-  notes?: string;
-  category?: string;
-  project?: string;
-  activity?: string;
-  timeFormat?: string;
+  total_hours: number;
 }
 
 export interface Holiday {
+  id: number;
   date: string;
-  description: string;
   name: string;
 }
 
-export type VacationType = 'vacation' | 'personal' | 'sick' | 'sick_leave';
-
 export interface VacationDay {
-  userId: number;
+  id: number;
+  user_id: number;
   date: string;
-  type: VacationType;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface WorkdaySchedule {
-  id: string;
+  id: number;
   name: string;
-  monday: boolean;
-  tuesday: boolean;
-  wednesday: boolean;
-  thursday: boolean;
-  friday: boolean;
-  saturday: boolean;
-  sunday: boolean;
-  startTime: string;
-  endTime: string;
-  breakStart?: string;
-  breakEnd?: string;
-  type?: string;
-  startDate?: string;
-  endDate?: string;
-  mondayHours?: number;
-  tuesdayHours?: number;
-  wednesdayHours?: number;
-  thursdayHours?: number;
-  fridayHours?: number;
+  start_time: string;
+  end_time: string;
+  days_of_week: number[];
 }
 
 export interface WorkSchedule {
-  defaultWorkdayScheduleId: string;
-  useDefaultForAll: boolean;
-  userSchedules: {
-    userId: number;
-    workdayScheduleId: string;
-  }[];
-  regularHours?: {
-    mondayToThursday: number;
-    friday: number;
-  };
-  reducedHours?: number;
-  reducedPeriods?: {
-    startDate: string;
-    endDate: string;
-  }[];
-}
-
-export interface AuthContextType {
-  currentUser: User | null;
-  login: (email: string, password: string) => Promise<User | boolean>;
-  logout: () => void;
-  isAuthenticated: boolean;
-  updateCurrentUser: (user: User) => void;
-  loading?: boolean;
-}
-
-// Define types for calendar components
-export interface UserVacationsCalendarProps {
-  vacationDays: VacationDay[];
-  onRemoveVacationDay: (vacationDay: VacationDay) => Promise<void>;
-}
-
-export interface AllUsersVacationsCalendarProps {
-  vacationDays: VacationDay[];
-  onRemoveVacationDay: (vacationDay: VacationDay) => Promise<void>;
-}
-
-export interface HolidaysCalendarProps {
-  holidays: Holiday[];
-  onRemoveHoliday: (holiday: Holiday) => Promise<void>;
-}
-
-// Import button props type
-export interface ImportUsersButtonProps {
-  onImportComplete: () => void;
+  user_id: number;
+  workday_schedule_id: number;
+  start_date: string;
+  end_date: string | null;
 }

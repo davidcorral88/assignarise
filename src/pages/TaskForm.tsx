@@ -128,9 +128,6 @@ const TaskForm = () => {
             return;
           }
         } else {
-          // For new tasks, we don't need to get a next ID anymore
-          // The server will generate the ID when the task is created
-          
           if (currentUser) {
             setCreatorUser(currentUser);
           }
@@ -166,7 +163,7 @@ const TaskForm = () => {
     
     try {
       const taskData: Task = {
-        id: isEditMode && task ? task.id : '', // For new tasks, we'll leave id empty and let the server generate it
+        id: isEditMode && task ? task.id : '',
         title: tarefa,
         description: description || '',
         status: (status as 'pending' | 'in_progress' | 'completed') || 'pending',
@@ -247,7 +244,7 @@ const TaskForm = () => {
       if (!assignments.some(a => a.user_id === selectedUserId)) {
         setAssignments([
           ...assignments,
-          { user_id: selectedUserId, allocatedHours }
+          { user_id: selectedUserId, allocated_hours: allocatedHours }
         ]);
         
         setSelectedUserId(null);
@@ -361,14 +358,13 @@ const TaskForm = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Remove the ID field for new tasks, only show it in edit mode */}
-                  {isEditMode && (
+                  {isEditMode && task?.id && (
                     <div className="space-y-2">
                       <Label htmlFor="id">ID</Label>
                       <div className="flex">
                         <Input
                           id="id"
-                          type="number"
+                          type="text"
                           value={task?.id || ''}
                           className="bg-gray-100 cursor-not-allowed"
                           readOnly
