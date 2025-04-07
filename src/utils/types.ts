@@ -20,7 +20,7 @@ export interface User {
 export type UserRole = 'admin' | 'director' | 'worker';
 
 export interface Task {
-  id: string;
+  id?: string; // Make ID optional for new tasks
   title: string;
   description: string;
   status: 'pending' | 'in_progress' | 'completed';
