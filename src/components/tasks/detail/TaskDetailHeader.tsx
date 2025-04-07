@@ -29,9 +29,9 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
   // Users can track time if they're assigned to the task
   const isAssignedToCurrentUser = task.assignments && normalizedCurrentUserId && 
     task.assignments.some(a => {
-      const assignmentUserId = typeof a.userId === 'string' 
-        ? parseInt(a.userId, 10) 
-        : a.userId;
+      const assignmentUserId = typeof a.user_id === 'string' 
+        ? parseInt(a.user_id, 10) 
+        : a.user_id;
       return assignmentUserId === normalizedCurrentUserId;
     });
   

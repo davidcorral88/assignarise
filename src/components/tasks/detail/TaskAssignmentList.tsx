@@ -37,10 +37,10 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
   return (
     <div className="space-y-4">
       {assignments.map(assignment => {
-        // Ensure userId is a number for consistent lookup
-        const userId = typeof assignment.userId === 'string' 
-          ? parseInt(assignment.userId, 10) 
-          : assignment.userId;
+        // Ensure user_id is a number for consistent lookup
+        const userId = typeof assignment.user_id === 'string' 
+          ? parseInt(assignment.user_id, 10) 
+          : assignment.user_id;
         
         // Try to find the user in assignedUsers using both numeric and string keys
         const user = assignedUsers[userId] || assignedUsers[userId.toString()] || null;

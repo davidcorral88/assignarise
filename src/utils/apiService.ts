@@ -183,8 +183,8 @@ export const addTask = async (task: Task): Promise<void> => {
     const apiTask = {
       ...task,
       assignments: task.assignments?.map(a => ({
-        userId: a.userId,
-        allocatedHours: a.allocatedHours
+        user_id: a.user_id,
+        allocated_hours: a.allocatedHours
       }))
     };
     
@@ -214,7 +214,7 @@ export const updateTask = async (task: Task): Promise<void> => {
     const normalizedTask = {
       ...task,
       assignments: task.assignments?.map(a => ({
-        user_id: a.userId,
+        user_id: a.user_id,
         allocated_hours: a.allocatedHours
       }))
     };

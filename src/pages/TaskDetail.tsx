@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -17,7 +16,6 @@ import {
 import { Task, TimeEntry, User } from '../utils/types';
 import { parseISO, format } from 'date-fns';
 
-// Import components
 import { TaskDetailHeader } from '@/components/tasks/detail/TaskDetailHeader';
 import { TaskDescription } from '@/components/tasks/detail/TaskDescription';
 import { TaskDetailTabs } from '@/components/tasks/detail/TaskDetailTabs';
@@ -74,7 +72,6 @@ const TaskDetail = () => {
     const getCreator = async () => {
       if (task && task.createdBy) {
         try {
-          // Convert createdBy to a number if it's a string to ensure compatibility
           const createdById = typeof task.createdBy === 'string' 
             ? parseInt(task.createdBy, 10) 
             : task.createdBy;
@@ -99,22 +96,20 @@ const TaskDetail = () => {
         
         for (const assignment of task.assignments) {
           try {
-            // Ensure userId is a number
-            const userId = typeof assignment.userId === 'string' 
-              ? parseInt(assignment.userId, 10) 
-              : assignment.userId;
+            const userId = typeof assignment.user_id === 'string' 
+              ? parseInt(assignment.user_id, 10) 
+              : assignment.user_id;
               
-            console.log(`Fetching user with ID: ${userId} (original: ${assignment.userId})`);
+            console.log(`Fetching user with ID: ${userId} (original: ${assignment.user_id})`);
             const user = await getUserById(userId);
             console.log('User fetched for assignment:', user);
             
-            // Store using both string and number keys to ensure lookups work
             if (user) {
               users[userId.toString()] = user;
               users[userId] = user;
             }
           } catch (error) {
-            console.error(`Error fetching user for assignment with userId ${assignment.userId}:`, error);
+            console.error(`Error fetching user for assignment with userId ${assignment.user_id}:`, error);
           }
         }
         
@@ -136,7 +131,6 @@ const TaskDetail = () => {
         for (const userId of uniqueUserIds) {
           if (!users[userId] && !users[userId.toString()]) {
             try {
-              // Ensure userId is a number
               const userIdNum = typeof userId === 'string' 
                 ? parseInt(userId, 10) 
                 : userId;

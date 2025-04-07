@@ -255,10 +255,10 @@ const TaskForm = () => {
   
   const handleAddAssignment = () => {
     if (selectedUserId && allocatedHours > 0) {
-      if (!assignments.some(a => a.userId === selectedUserId)) {
+      if (!assignments.some(a => a.user_id === selectedUserId)) {
         setAssignments([
           ...assignments,
-          { userId: selectedUserId, allocatedHours }
+          { user_id: selectedUserId, allocatedHours }
         ]);
         
         setSelectedUserId(null);
@@ -280,7 +280,7 @@ const TaskForm = () => {
   };
   
   const handleRemoveAssignment = (userId: number) => {
-    setAssignments(assignments.filter(a => a.userId !== userId));
+    setAssignments(assignments.filter(a => a.user_id !== userId));
   };
   
   const handleAttachmentAdded = (attachment: TaskAttachment) => {
@@ -308,7 +308,7 @@ const TaskForm = () => {
   
   const isTaskCompleted = status === 'completed';
   
-  const isUserAssignedToTask = currentUser && assignments.some(a => a.userId === currentUser.id);
+  const isUserAssignedToTask = currentUser && assignments.some(a => a.user_id === currentUser.id);
   
   const canAddResolutionAttachments = currentUser && (
     currentUser.role === 'director' || isUserAssignedToTask
@@ -565,9 +565,9 @@ const TaskForm = () => {
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
                     {assignments.map((assignment, index) => {
-                      const user = availableUsers.find(u => u.id === assignment.userId);
+                      const user = availableUsers.find(u => u.id === assignment.user_id);
                       return (
-                        <div key={`assignment-${assignment.userId}-${index}`} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                        <div key={`assignment-${assignment.user_id}-${index}`} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                               {user?.avatar ? (
@@ -583,7 +583,7 @@ const TaskForm = () => {
                               <p className="text-sm text-muted-foreground">{assignment.allocatedHours} horas asignadas</p>
                             </div>
                           </div>
-                          <Button variant="ghost" size="icon" onClick={() => handleRemoveAssignment(assignment.userId)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleRemoveAssignment(assignment.user_id)}>
                             <Trash2 className="h-4 w-4 text-red-500" />
                             <span className="sr-only">Eliminar asignación</span>
                           </Button>
