@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -131,15 +130,15 @@ const WorkdayScheduleTable: React.FC = () => {
     if (selectedSchedule) {
       const formValues = {
         name: selectedSchedule.name,
-        monday: selectedSchedule.monday,
-        tuesday: selectedSchedule.tuesday,
-        wednesday: selectedSchedule.wednesday,
-        thursday: selectedSchedule.thursday,
-        friday: selectedSchedule.friday,
-        saturday: selectedSchedule.saturday,
-        sunday: selectedSchedule.sunday,
-        startTime: selectedSchedule.startTime,
-        endTime: selectedSchedule.endTime,
+        monday: selectedSchedule.monday || false,
+        tuesday: selectedSchedule.tuesday || false,
+        wednesday: selectedSchedule.wednesday || false,
+        thursday: selectedSchedule.thursday || false,
+        friday: selectedSchedule.friday || false,
+        saturday: selectedSchedule.saturday || false,
+        sunday: selectedSchedule.sunday || false,
+        startTime: selectedSchedule.startTime || selectedSchedule.start_time,
+        endTime: selectedSchedule.endTime || selectedSchedule.end_time,
         breakStart: selectedSchedule.breakStart,
         breakEnd: selectedSchedule.breakEnd,
         mondayHours: selectedSchedule.mondayHours,
@@ -147,7 +146,6 @@ const WorkdayScheduleTable: React.FC = () => {
         wednesdayHours: selectedSchedule.wednesdayHours,
         thursdayHours: selectedSchedule.thursdayHours,
         fridayHours: selectedSchedule.fridayHours,
-        // Convert string dates to Date objects if they exist
         startDate: selectedSchedule.startDate ? new Date(selectedSchedule.startDate) : undefined,
         endDate: selectedSchedule.endDate ? new Date(selectedSchedule.endDate) : undefined,
       };
@@ -157,7 +155,6 @@ const WorkdayScheduleTable: React.FC = () => {
   
   const addWorkdayScheduleMutation = useMutation({
     mutationFn: (data: FormValues) => {
-      // Generate a random ID for the new schedule
       const newSchedule: WorkdaySchedule = {
         id: Math.random().toString(36).substr(2, 9),
         name: data.name,
@@ -168,6 +165,9 @@ const WorkdayScheduleTable: React.FC = () => {
         friday: data.friday,
         saturday: data.saturday,
         sunday: data.sunday,
+        start_time: data.startTime,
+        end_time: data.endTime,
+        days_of_week: [],
         startTime: data.startTime,
         endTime: data.endTime,
         breakStart: data.breakStart,
@@ -180,6 +180,18 @@ const WorkdayScheduleTable: React.FC = () => {
         startDate: data.startDate ? format(data.startDate, 'yyyy-MM-dd') : undefined,
         endDate: data.endDate ? format(data.endDate, 'yyyy-MM-dd') : undefined,
       };
+      
+      const daysOfWeek = [];
+      if (data.monday) daysOfWeek.push(1);
+      if (data.tuesday) daysOfWeek.push(2);
+      if (data.wednesday) daysOfWeek.push(3);
+      if (data.thursday) daysOfWeek.push(4);
+      if (data.friday) daysOfWeek.push(5);
+      if (data.saturday) daysOfWeek.push(6);
+      if (data.sunday) daysOfWeek.push(0);
+      
+      newSchedule.days_of_week = daysOfWeek;
+      
       return addWorkdaySchedule(newSchedule);
     },
     onSuccess: () => {
@@ -212,6 +224,9 @@ const WorkdayScheduleTable: React.FC = () => {
         friday: data.friday,
         saturday: data.saturday,
         sunday: data.sunday,
+        start_time: data.startTime,
+        end_time: data.endTime,
+        days_of_week: [],
         startTime: data.startTime,
         endTime: data.endTime,
         breakStart: data.breakStart,
@@ -224,6 +239,18 @@ const WorkdayScheduleTable: React.FC = () => {
         startDate: data.startDate ? format(data.startDate, 'yyyy-MM-dd') : undefined,
         endDate: data.endDate ? format(data.endDate, 'yyyy-MM-dd') : undefined,
       };
+      
+      const daysOfWeek = [];
+      if (data.monday) daysOfWeek.push(1);
+      if (data.tuesday) daysOfWeek.push(2);
+      if (data.wednesday) daysOfWeek.push(3);
+      if (data.thursday) daysOfWeek.push(4);
+      if (data.friday) daysOfWeek.push(5);
+      if (data.saturday) daysOfWeek.push(6);
+      if (data.sunday) daysOfWeek.push(0);
+      
+      updatedSchedule.days_of_week = daysOfWeek;
+      
       return updateWorkdaySchedule(updatedSchedule);
     },
     onSuccess: () => {

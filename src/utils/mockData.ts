@@ -9,6 +9,10 @@ export const mockWorkdaySchedules: WorkdaySchedule[] = [];
 export const mockHolidays: Holiday[] = [];
 export const mockVacationDays: VacationDay[] = [];
 export const mockWorkSchedule: WorkSchedule = {
+  user_id: 0,
+  workday_schedule_id: 0,
+  start_date: '',
+  end_date: null,
   defaultWorkdayScheduleId: '',
   useDefaultForAll: true,
   userSchedules: [],
@@ -25,5 +29,5 @@ export const getTaskById = async (id: string): Promise<Task | undefined> => {
 
 export const getTimeEntriesByUserId = async (userId: number): Promise<TimeEntry[]> => {
   console.warn('Using deprecated mockData.getTimeEntriesByUserId - update to use apiService directly');
-  return mockTimeEntries.filter(entry => entry.userId === userId);
+  return mockTimeEntries.filter(entry => entry.user_id === userId);
 };

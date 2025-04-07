@@ -244,7 +244,10 @@ const TaskForm = () => {
       if (!assignments.some(a => a.user_id === selectedUserId)) {
         setAssignments([
           ...assignments,
-          { user_id: selectedUserId, allocated_hours: allocatedHours }
+          { 
+            user_id: selectedUserId, 
+            allocatedHours: allocatedHours 
+          }
         ]);
         
         setSelectedUserId(null);

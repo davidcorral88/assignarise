@@ -64,7 +64,7 @@ export const deleteTaskAttachment = async (
     
     toast({
       title: 'Archivo eliminado',
-      description: 'El archivo ha sido eliminado correctamente',
+      description: 'El archivo ha sido eliminado correctamente.',
     });
     
     return true;

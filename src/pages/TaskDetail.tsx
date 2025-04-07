@@ -123,7 +123,7 @@ const TaskDetail = () => {
   useEffect(() => {
     const fetchTimeEntryUsers = async () => {
       if (timeEntries.length > 0) {
-        const userIds = timeEntries.map(entry => entry.userId);
+        const userIds = timeEntries.map(entry => entry.user_id);
         const uniqueUserIds = [...new Set(userIds)];
         
         const users: Record<string, User | null> = { ...assignedUsers };

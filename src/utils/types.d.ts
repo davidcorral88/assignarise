@@ -23,7 +23,7 @@ export interface TaskAssignment {
 
 export interface TaskAttachment {
   id: string;
-  fileName: string;
+  filename: string;
   fileSize: number;
   uploadDate: string;
   uploadedBy: number;
@@ -50,8 +50,8 @@ export interface Task {
 
 export interface TimeEntry {
   id: string;
-  userId: number;
-  taskId: string;
+  task_id: string;
+  user_id: number;
   date: string;
   hours: number;
   description: string;
@@ -79,15 +79,18 @@ export interface VacationDay {
 export interface WorkdaySchedule {
   id: string;
   name: string;
-  monday: boolean;
-  tuesday: boolean;
-  wednesday: boolean;
-  thursday: boolean;
-  friday: boolean;
-  saturday: boolean;
-  sunday: boolean;
-  startTime: string;
-  endTime: string;
+  start_time: string;
+  end_time: string;
+  days_of_week: number[];
+  monday?: boolean;
+  tuesday?: boolean;
+  wednesday?: boolean;
+  thursday?: boolean;
+  friday?: boolean;
+  saturday?: boolean;
+  sunday?: boolean;
+  startTime?: string;
+  endTime?: string;
   breakStart?: string;
   breakEnd?: string;
   type?: string;
@@ -101,9 +104,13 @@ export interface WorkdaySchedule {
 }
 
 export interface WorkSchedule {
-  defaultWorkdayScheduleId: string;
-  useDefaultForAll: boolean;
-  userSchedules: {
+  user_id: number;
+  workday_schedule_id: string;
+  start_date: string;
+  end_date: string | null;
+  defaultWorkdayScheduleId?: string;
+  useDefaultForAll?: boolean;
+  userSchedules?: {
     userId: number;
     workdayScheduleId: string;
   }[];
