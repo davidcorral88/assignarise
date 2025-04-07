@@ -176,16 +176,16 @@ export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
   }
 };
 
-export const addTask = async (task: Task): Promise<void> => {
+export const addTask = async (task: Task): Promise<Task> => {
   console.log("Guardando tarea en PostgreSQL:", task);
   try {
     // Asegurarse de que las propiedades tienen los formatos correctos para la API
     const apiTask = {
       ...task,
-      // Remove id field to let server generate it
+      // ID will be generated server-side
       id: undefined,
       assignments: task.assignments?.map(a => ({
-        user_id: a.user_id,
+        user_id: a.user_id || a.userId,
         allocated_hours: a.allocatedHours
       }))
     };
@@ -202,7 +202,9 @@ export const addTask = async (task: Task): Promise<void> => {
       throw new Error(`Error HTTP: ${response.status}`);
     }
     
-    console.log("Tarea guardada con éxito");
+    const savedTask = await response.json();
+    console.log("Tarea guardada con éxito:", savedTask);
+    return savedTask;
   } catch (error) {
     return handleFetchError(error, 'Error al crear tarea');
   }

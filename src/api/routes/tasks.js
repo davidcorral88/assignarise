@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -154,11 +155,11 @@ router.post('/', async (req, res) => {
     if (assignments && assignments.length > 0) {
       for (const assignment of assignments) {
         // Extract user_id, handle both formats and ensure it's a number
-        const userIdInput = assignment.user_id;
+        const userIdInput = assignment.user_id || assignment.userId;
         const userId = typeof userIdInput === 'string' ? parseInt(userIdInput, 10) : userIdInput;
         
         // Extract allocatedHours, handle both formats
-        const hours = assignment.allocatedHours;
+        const hours = assignment.allocatedHours || assignment.allocated_hours;
         
         if (userId === undefined || userId === null) {
           console.error('Missing user ID in assignment:', assignment);

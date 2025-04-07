@@ -186,10 +186,11 @@ const TaskForm = () => {
           description: 'A tarefa foi actualizada correctamente.',
         });
       } else {
-        await addTask(taskData);
+        const savedTask = await addTask(taskData);
+        console.log("Tarea creada con ID:", savedTask.id);
         toast({
           title: 'Tarefa creada',
-          description: 'A tarefa foi creada correctamente.',
+          description: `A tarefa foi creada correctamente con ID: ${savedTask.id}`,
         });
       }
       
