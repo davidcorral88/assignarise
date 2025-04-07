@@ -182,6 +182,8 @@ export const addTask = async (task: Task): Promise<void> => {
     // Asegurarse de que las propiedades tienen los formatos correctos para la API
     const apiTask = {
       ...task,
+      // Remove id field to let server generate it
+      id: undefined,
       assignments: task.assignments?.map(a => ({
         user_id: a.user_id,
         allocated_hours: a.allocatedHours

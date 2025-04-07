@@ -1,4 +1,5 @@
 
+
 // Define all types and interfaces for the application
 
 export interface User {

@@ -163,7 +163,7 @@ const TaskForm = () => {
     
     try {
       const taskData: Task = {
-        id: isEditMode && task ? task.id : '',
+        id: isEditMode && task ? task.id : '', // Empty ID for new tasks - server will generate it
         title: tarefa,
         description: description || '',
         status: (status as 'pending' | 'in_progress' | 'completed') || 'pending',
