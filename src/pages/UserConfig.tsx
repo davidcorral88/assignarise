@@ -1,16 +1,22 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { 
   Card, 
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter
 } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { KeyRound } from 'lucide-react';
 import { useAuth } from '@/components/auth/useAuth';
+import ChangePasswordDialog from '@/components/auth/ChangePasswordDialog';
 
 const UserConfig = () => {
   const { currentUser } = useAuth();
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
   
   return (
     <Layout>
@@ -48,8 +54,23 @@ const UserConfig = () => {
               </div>
             </div>
           </CardContent>
+          <CardFooter>
+            <Button 
+              variant="outline"
+              onClick={() => setChangePasswordDialogOpen(true)}
+              className="flex items-center"
+            >
+              <KeyRound className="mr-2 h-4 w-4" />
+              Cambiar contrasinal
+            </Button>
+          </CardFooter>
         </Card>
       </div>
+      
+      <ChangePasswordDialog 
+        open={changePasswordDialogOpen} 
+        onOpenChange={setChangePasswordDialogOpen} 
+      />
     </Layout>
   );
 };

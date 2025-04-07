@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
@@ -300,6 +300,17 @@ const TaskList = () => {
       });
     }
   };
+
+  const handleTaskCreatorRender = React.useCallback(async (userId: number) => {
+    if (!userId) return '-';
+    try {
+      const user = await getUserById(userId);
+      return user?.name || '-';
+    } catch (error) {
+      console.error('Error fetching task creator:', error);
+      return '-';
+    }
+  }, []);
 
   const getUserName = (userId: number | undefined): string => {
     if (!userId) return 'Usuario descoñecido';

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -11,7 +12,8 @@ import {
   X,
   Settings,
   BarChart3,
-  Calendar
+  Calendar,
+  KeyRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ChangePasswordDialog from '../auth/ChangePasswordDialog';
 
 export const Header: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -31,6 +34,7 @@ export const Header: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -183,6 +187,21 @@ export const Header: React.FC = () => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => navigate('/user-config')}
+                className="cursor-pointer"
+              >
+                <User className="mr-2 h-4 w-4" />
+                <span>Perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setChangePasswordDialogOpen(true)}
+                className="cursor-pointer"
+              >
+                <KeyRound className="mr-2 h-4 w-4" />
+                <span>Cambiar contrasinal</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Pechar sesión</span>
@@ -214,6 +233,11 @@ export const Header: React.FC = () => {
           </nav>
         </div>
       )}
+
+      <ChangePasswordDialog 
+        open={changePasswordDialogOpen} 
+        onOpenChange={setChangePasswordDialogOpen} 
+      />
     </header>
   );
 };
