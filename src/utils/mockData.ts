@@ -10,7 +10,7 @@ export const mockHolidays: Holiday[] = [];
 export const mockVacationDays: VacationDay[] = [];
 export const mockWorkSchedule: WorkSchedule = {
   user_id: 0,
-  workday_schedule_id: 0, // Ensure this is a number to match the type
+  workday_schedule_id: 0, // Use a number to match the type
   start_date: '',
   end_date: null,
   defaultWorkdayScheduleId: '',

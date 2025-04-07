@@ -19,6 +19,7 @@ export type UserRole = 'admin' | 'director' | 'worker';
 export interface TaskAssignment {
   user_id: number;
   allocatedHours: number;
+  task_id?: string;
 }
 
 export interface TaskAttachment {
@@ -46,6 +47,8 @@ export interface Task {
   tags: string[];
   assignments: TaskAssignment[];
   attachments?: TaskAttachment[];
+  category?: string;
+  project?: string;
 }
 
 export interface TimeEntry {

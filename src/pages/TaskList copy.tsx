@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
@@ -47,12 +47,14 @@ import {
 } from '@/components/ui/popover';
 import { 
   getTasks, 
+  getTasksAssignments,
+  getTaskById as getTaskByIdFn, 
   getTasksByUserId, 
   getUserById,
   deleteTask,
   getUsers
 } from '../utils/dataService';
-import { Task, User } from '../utils/types';
+import { Task, User, TaskAssignment } from '../utils/types';
 import { format, isAfter, isBefore, parseISO } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -68,8 +70,9 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
-const TaskListCopy = () => {
+const TaskList = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -92,21 +95,25 @@ const TaskListCopy = () => {
     try {
       setIsLoading(true);
       let tasksData;
+      let tasksDataAssignments;
       
-      if (currentUser && currentUser.role === 'worker') {
-        const userId = currentUser.id;
-        tasksData = await getTasksByUserId(userId);
-      } else {
-        tasksData = await getTasks();
-      }
-      
+      const userId = currentUser.id;
+      // Fix: Convert userId to string when needed
+      tasksData = await getTasks();
+      tasksDataAssignments = await getTasksAssignments();
+
       const normalizedTasks = tasksData.map(task => ({
         ...task,
         assignments: task.assignments || []
       }));
-      
-      setTasks(normalizedTasks);
-      setFilteredTasks(normalizedTasks);
+
+      const normalizedTasks2 = tasksDataAssignments.map(task => ({
+        ...task,
+        assignments: task.assignments || []
+      }));
+
+      setTasks(normalizedTasks2);
+      setFilteredTasks(normalizedTasks2);
       
       const usersData = await getUsers();
       const userMap: Record<number, User> = {};
@@ -120,7 +127,7 @@ const TaskListCopy = () => {
       setAllUsers(usersData);
       
       console.log("User map:", userMap);
-      console.log("Normalized tasks:", normalizedTasks);
+      console.log("Normalized tasks:", normalizedTasks2);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast({
@@ -160,9 +167,11 @@ const TaskListCopy = () => {
 
     if (creatorFilter) {
       result = result.filter(task => {
-        const createdByNum = typeof task.createdBy === 'string' 
-          ? parseInt(task.createdBy, 10) 
-          : task.createdBy;
+        const createdByNum = task.createdBy ? 
+          (typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy) : 
+          null;
+        
+        console.log(`Filtering task ${task.id}: createdBy=${createdByNum}, filter=${creatorFilter}, match=${createdByNum === creatorFilter}`);
         return createdByNum === creatorFilter;
       });
     }
@@ -214,6 +223,7 @@ const TaskListCopy = () => {
     setFilteredTasks(result);
   }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
   
+  
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -225,6 +235,11 @@ const TaskListCopy = () => {
       default:
         return null;
     }
+  };
+
+  // Fix: Update getTaskById to use the imported function
+  const getTaskById = async (id: string): Promise<Task | undefined> => {
+    return await getTaskByIdFn(id);
   };
   
   const getStatusText = (status: string) => {
@@ -291,15 +306,28 @@ const TaskListCopy = () => {
     }
   };
 
-  const handleTaskById = async (taskId: number) => {
-    return await getTaskById(taskId.toString());
-  };
+  const handleTaskCreatorRender = useCallback(async (userId: number) => {
+    if (!userId) return '-';
+    try {
+      const user = await getUserById(userId);
+      return user?.name || '-';
+    } catch (error) {
+      console.error('Error fetching task creator:', error);
+      return '-';
+    }
+  }, []);
 
   const getUserName = (userId: number | undefined): string => {
     if (!userId) return 'Usuario descoñecido';
     
     const user = users[userId];
     return user ? user.name : 'Usuario descoñecido';
+  };
+
+  // Modify the render function to handle the Promise correctly
+  const renderCreatorName = async (userId: number) => {
+    const name = await handleTaskCreatorRender(userId);
+    return name;
   };
 
   const handleViewTask = (taskId: string) => {
@@ -310,65 +338,23 @@ const TaskListCopy = () => {
     navigate(`/tasks/${taskId}/edit`);
   };
 
-  const renderTaskCreatorName = (userId: number | undefined): React.ReactNode => {
-    if (!userId) return '-';
-    const user = users[userId];
-    return user?.name || '-';
-  };
-
-  const renderAssignments = (assignments: TaskAssignment[]) => {
+  const renderCreatorCell = (task: Task) => {
+    const creator = Object.values(users).find(u => u.id === task.createdBy);
+    
     return (
-      <div className="flex -space-x-2">
-        {assignments && assignments.length > 0 ? (
-          <>
-            {assignments.slice(0, 3).map((assignment) => {
-              const assignedUserId = typeof assignment.user_id === 'string' 
-                ? parseInt(assignment.user_id, 10) 
-                : assignment.user_id;
-              
-              const user = users[assignedUserId];
-              return (
-                <div 
-                  key={assignedUserId} 
-                  className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" 
-                  title={user?.name || `User ${assignedUserId}`}
-                >
-                  {user && user.avatar ? (
-                    <img 
-                      src={user.avatar} 
-                      alt={user.name} 
-                      className="h-full w-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-xs font-medium text-primary-foreground">
-                      {user ? user.name.substring(0, 2) : assignedUserId.toString().substring(0, 2)}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-            {assignments.length > 3 && (
-              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
-                <span className="text-xs">+{assignments.length - 3}</span>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-            <span className="text-xs text-muted-foreground">0</span>
-          </div>
-        )}
+      <div className="flex items-center">
+        <Avatar className="h-7 w-7 mr-2">
+          <AvatarImage src={creator?.avatar || ''} alt={creator?.name || ''} />
+          <AvatarFallback>{creator?.name ? creator.name.substring(0, 2) : 'U'}</AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="text-sm font-medium">{creator?.name || 'Usuario descoñecido'}</p>
+          <p className="text-xs text-muted-foreground">
+            {creator?.role === 'director' ? 'Xerente' : 'Traballador'}
+          </p>
+        </div>
       </div>
     );
-  };
-
-  const handleUserById = async (userId: string): Promise<User | null> => {
-    try {
-      return await getUserById(parseInt(userId, 10));
-    } catch (error) {
-      console.error('Error fetching user by ID:', error);
-      return null;
-    }
   };
 
   return (
@@ -708,14 +694,9 @@ const TaskListCopy = () => {
                 </TableRow>
               ) : filteredTasks.length > 0 ? (
                 filteredTasks.map((task) => {
-                  const createdById = typeof task.createdBy === 'string' 
-                    ? parseInt(task.createdBy, 10) 
-                    : task.createdBy;
-              
-                    
-                    console.log("Datos de la tarea:", task); // Ver todo el objeto
-                    console.log("Usuario creador:", task.createdBy);
-                    console.log("Tipo de dato del usuario:", typeof task.createdBy);   
+                  const createdById = task.createdBy;
+                  const taskCreator = createdById ? users[createdById] : null;
+                  
                   return (
                     <TableRow key={task.id}>
                       <TableCell className="font-mono text-xs">
@@ -733,22 +714,22 @@ const TaskListCopy = () => {
                       <TableCell>{getStatusText(task.status)}</TableCell>
                       <TableCell>{getPriorityBadge(task.priority)}</TableCell>
                       <TableCell>
-                        {createdById ? (
+                        {taskCreator ? (
                           <div className="flex items-center">
                             <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                              {users[createdById]?.avatar ? (
+                              {taskCreator.avatar ? (
                                 <img 
-                                  src={users[createdById]?.avatar} 
-                                  alt={users[createdById]?.name} 
+                                  src={taskCreator.avatar} 
+                                  alt={taskCreator.name} 
                                   className="h-full w-full rounded-full object-cover"
                                 />
                               ) : (
                                 <span className="text-xs font-medium text-primary-foreground">
-                                  {getUserName(createdById).substring(0, 2)}
+                                  {taskCreator.name.substring(0, 2)}
                                 </span>
                               )}
                             </div>
-                            <span className="text-sm">{getUserName(createdById)}</span>
+                            <span className="text-sm">{taskCreator.name}</span>
                           </div>
                         ) : (
                           <span className="text-muted-foreground">Sen asignar</span>
@@ -764,7 +745,6 @@ const TaskListCopy = () => {
                                   : assignment.user_id;
                                 
                                 const user = users[assignedUserId];
-                                
                                 return (
                                   <div 
                                     key={assignedUserId} 
@@ -869,4 +849,4 @@ const TaskListCopy = () => {
   );
 };
 
-export default TaskListCopy;
+export default TaskList;

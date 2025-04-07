@@ -167,7 +167,7 @@ const TaskList = () => {
       result = result.filter(task => {
         const createdByNum = task.createdBy ? 
           (typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy) : 
-          (task.created_by ? (typeof task.created_by === 'string' ? parseInt(task.created_by, 10) : task.created_by) : null);
+          null;
         
         console.log(`Filtering task ${task.id}: createdBy=${createdByNum}, filter=${creatorFilter}, match=${createdByNum === creatorFilter}`);
         return createdByNum === creatorFilter;
