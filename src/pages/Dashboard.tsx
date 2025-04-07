@@ -103,7 +103,6 @@ const Dashboard = () => {
     }
   };
   
-  // Prepare chart data
   const getChartData = () => {
     if (currentUser?.role === 'director' || currentUser?.role === 'admin') {
       // For directors and admins: tasks by status
@@ -123,7 +122,7 @@ const Dashboard = () => {
       const taskHours: Record<string, number> = {};
       
       userTimeEntries.forEach(entry => {
-        const task = userTasks.find(t => t.id === entry.taskId);
+        const task = userTasks.find(t => t.id === entry.task_id);
         if (task) {
           const taskName = task.title.substring(0, 20) + (task.title.length > 20 ? '...' : '');
           taskHours[taskName] = (taskHours[taskName] || 0) + entry.hours;

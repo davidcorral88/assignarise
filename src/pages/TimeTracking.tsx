@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -131,7 +132,7 @@ const TimeTracking = () => {
                 <TableBody>
                   {timeEntries.length > 0 ? (
                     timeEntries.map((entry) => {
-                      const task = tasks.find(t => t.id === entry.taskId);
+                      const task = tasks.find(t => t.id === entry.task_id);
                       return (
                         <TableRow key={entry.id}>
                           <TableCell className="font-medium">
@@ -210,7 +211,7 @@ const TimeTracking = () => {
           <CardContent>
             <div className="space-y-6">
               {tasks.map(task => {
-                const taskEntries = timeEntries.filter(entry => entry.taskId === task.id);
+                const taskEntries = timeEntries.filter(entry => entry.task_id === task.id);
                 const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
                 const taskAssignment = task.assignments.find(a => currentUser && a.user_id === currentUser.id);
                 const allocatedHours = taskAssignment?.allocatedHours || 0;

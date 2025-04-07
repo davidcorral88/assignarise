@@ -96,12 +96,6 @@ const TaskList = () => {
       let tasksData;
       let tasksDataAssignments;
       
-      //if (currentUser && currentUser.role === 'worker') {
-      //  const userId = currentUser.id;
-      //  tasksData = await getTasksByUserId(userId);
-      //} else {
-      //  tasksData = await getTasks();
-      //}
       const userId = currentUser.id;
       tasksData = await getTasks();
       tasksDataAssignments = await getTasksAssignments();
@@ -171,11 +165,11 @@ const TaskList = () => {
 
     if (creatorFilter) {
       result = result.filter(task => {
-        // Corregir esta parte para usar created_by en lugar de createdBy
-        const createdByNum = task.created_by ? 
-          (typeof task.created_by === 'string' ? parseInt(task.created_by, 10) : task.created_by) : null;
+        const createdByNum = task.createdBy ? 
+          (typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy) : 
+          (task.created_by ? (typeof task.created_by === 'string' ? parseInt(task.created_by, 10) : task.created_by) : null);
         
-        console.log(`Filtering task ${task.id}: createdBy=${task.created_by}, filter=${creatorFilter}, match=${createdByNum === creatorFilter}`);
+        console.log(`Filtering task ${task.id}: createdBy=${createdByNum}, filter=${creatorFilter}, match=${createdByNum === creatorFilter}`);
         return createdByNum === creatorFilter;
       });
     }
@@ -687,21 +681,9 @@ const TaskList = () => {
                 </TableRow>
               ) : filteredTasks.length > 0 ? (
                 filteredTasks.map((task) => {
-                  const createdById = typeof task.createdBy === 'string' 
-                    ? parseInt(task.createdBy, 10) 
-                    : task.createdBy;
-              
-                    console.log("Datos de la tarea:", task); // dcorral
-                    console.log("Usuario creador:", task.created_by);
-                    console.log("Tipo de dato del usuario:", typeof task.created_by);
-                    console.log("users:", users);
-                    console.log("Claves en users:", Object.keys(users)); // Ver qué claves existen realmente
-                    console.log("¿users[5] existe?", users[5] !== undefined);
-                    console.log("Avatar:", users[createdById]?.avatar); // dcorral
-                    console.log("Nombre:", users[task.created_by]?.name);
-                    console.log("Datos completos de users[5]:", users[5]);
-                    console.log("createdById:", createdById);
-
+                  const createdById = task.createdBy || task.created_by;
+                  const taskCreator = createdById ? users[createdById] : null;
+                  
                   return (
                     <TableRow key={task.id}>
                       <TableCell className="font-mono text-xs">
@@ -719,22 +701,22 @@ const TaskList = () => {
                       <TableCell>{getStatusText(task.status)}</TableCell>
                       <TableCell>{getPriorityBadge(task.priority)}</TableCell>
                       <TableCell>
-                        {task.created_by  ? (
+                        {taskCreator ? (
                           <div className="flex items-center">
                             <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                              {users[task.created_by]?.avatar ? (
+                              {taskCreator.avatar ? (
                                 <img 
-                                  src={users[task.created_by]?.avatar} 
-                                  alt={users[task.created_by]?.name} 
+                                  src={taskCreator.avatar} 
+                                  alt={taskCreator.name} 
                                   className="h-full w-full rounded-full object-cover"
                                 />
                               ) : (
                                 <span className="text-xs font-medium text-primary-foreground">
-                                  {getUserName(task.created_by).substring(0, 2)}
+                                  {taskCreator.name.substring(0, 2)}
                                 </span>
                               )}
                             </div>
-                            <span className="text-sm">{getUserName(task.created_by)}</span>
+                            <span className="text-sm">{taskCreator.name}</span>
                           </div>
                         ) : (
                           <span className="text-muted-foreground">Sen asignar</span>

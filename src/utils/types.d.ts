@@ -1,6 +1,4 @@
 
-
-
 // Define all types and interfaces for the application
 
 export interface User {
@@ -54,6 +52,7 @@ export interface Task {
 export interface TimeEntry {
   id: string;
   task_id: string;
+  taskId?: string; // Para compatibilidad con código existente
   user_id: number;
   date: string;
   hours: number;
@@ -141,4 +140,3 @@ export interface AuthContextType {
 export interface ImportUsersButtonProps {
   onImportComplete: () => void;
 }
-
