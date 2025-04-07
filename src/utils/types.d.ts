@@ -1,5 +1,6 @@
 
 
+
 // Define all types and interfaces for the application
 
 export interface User {
@@ -41,6 +42,7 @@ export interface Task {
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   createdBy: number;
+  created_by?: number;  // Añadido para compatibilidad con la API de PostgreSQL
   createdAt: string;
   startDate?: string;
   dueDate?: string;
@@ -139,3 +141,4 @@ export interface AuthContextType {
 export interface ImportUsersButtonProps {
   onImportComplete: () => void;
 }
+

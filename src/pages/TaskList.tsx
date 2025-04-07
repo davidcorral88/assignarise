@@ -171,9 +171,11 @@ const TaskList = () => {
 
     if (creatorFilter) {
       result = result.filter(task => {
-        const createdByNum = typeof task.createdBy === 'string' 
-          ? parseInt(task.createdBy, 10) 
-          : task.createdBy;
+        // Corregir esta parte para usar created_by en lugar de createdBy
+        const createdByNum = task.created_by ? 
+          (typeof task.created_by === 'string' ? parseInt(task.created_by, 10) : task.created_by) : null;
+        
+        console.log(`Filtering task ${task.id}: createdBy=${task.created_by}, filter=${creatorFilter}, match=${createdByNum === creatorFilter}`);
         return createdByNum === creatorFilter;
       });
     }
@@ -224,6 +226,7 @@ const TaskList = () => {
     
     setFilteredTasks(result);
   }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
+  
   
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -445,7 +448,7 @@ const TaskList = () => {
                     <DropdownMenuItem onClick={() => setPriorityFilter('medium')}>
                       <Badge variant="outline" className="mr-2 bg-amber-100 text-amber-800 border-amber-200">Media</Badge>
                       Media prioridade
-                    </DropdownMenuItem>
+                    DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setPriorityFilter('low')}>
                       <Badge variant="outline" className="mr-2 bg-green-100 text-green-800 border-green-200">Baixa</Badge>
                       Baixa prioridade
