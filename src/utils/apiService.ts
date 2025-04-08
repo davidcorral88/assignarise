@@ -151,7 +151,7 @@ export const getTaskById = async (id: string): Promise<Task | undefined> => {
   }
 };
 
-export const getTasksByUserId = async (userId: string | number): Promise<Task[]> => {
+export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
   try {
     // Ensure userId is a string
     const userIdStr = userId.toString();

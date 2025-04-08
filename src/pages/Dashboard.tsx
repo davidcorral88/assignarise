@@ -46,7 +46,8 @@ const Dashboard = () => {
             console.log(`Fetching tasks for worker with ID: ${userId}`);
             
             try {
-              tasksData = await getTasksByUserId(userId);
+              // Convert userId to string before passing it to getTasksByUserId
+              tasksData = await getTasksByUserId(userId.toString());
               console.log(`Retrieved ${tasksData.length} tasks for worker`);
             } catch (error) {
               console.error("Error fetching worker tasks:", error);
@@ -69,7 +70,8 @@ const Dashboard = () => {
           // Fetch time entries for the user
           if (currentUser.role === 'worker') {
             try {
-              const entries = await getTimeEntriesByUserId(currentUser.id);
+              // Convert user ID to string for the time entries API call as well
+              const entries = await getTimeEntriesByUserId(currentUser.id.toString());
               setUserTimeEntries(entries);
             } catch (error) {
               console.error("Error fetching time entries:", error);
