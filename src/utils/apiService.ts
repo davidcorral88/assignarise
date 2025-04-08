@@ -3,24 +3,9 @@ import { toast } from '@/components/ui/use-toast';
 import { API_URL } from './dbConfig';
 
 // Función genérica para manejar errores de fetch
-const handleFetchError = (error: any, message: string): never => {
-  console.error(`${message}:`, error);
-  
-  // Mostrar más detalles del error en la consola para depuración
-  if (error.response) {
-    console.error('Detalles de respuesta:', {
-      status: error.response.status,
-      statusText: error.response.statusText,
-      data: error.response.data
-    });
-  }
-  
-  toast({
-    title: 'Error de conexión',
-    description: `${message}. Compruebe la consola para más detalles.`,
-    variant: 'destructive',
-  });
-  throw error;
+const handleFetchError = (error: any, operation: string) => {
+  console.error(`Error al ${operation}:`, error);
+  throw new Error(`Error HTTP: ${error.status || 'Desconocido'}`);
 };
 
 // Función genérica para realizar solicitudes HTTP con manejo de errores
@@ -166,13 +151,29 @@ export const getTaskById = async (id: string): Promise<Task | undefined> => {
   }
 };
 
-export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
+export const getTasksByUserId = async (userId: string | number): Promise<Task[]> => {
   try {
-    const response = await fetch(`${API_URL}/tasks/${userId}`);
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-    return await response.json();
+    // Ensure userId is a string
+    const userIdStr = userId.toString();
+    
+    console.log(`Realizando GET a: ${API_URL}/tasks/user/${userIdStr}`);
+    const response = await fetch(`${API_URL}/tasks/user/${userIdStr}`);
+    
+    if (!response.ok) {
+      // If there's a 404, it means no tasks found, return empty array
+      if (response.status === 404) {
+        console.log(`No se encontraron tareas para el usuario ${userIdStr}`);
+        return [];
+      }
+      throw new Error(`${response.status}`);
+    }
+    
+    const tasks: Task[] = await response.json();
+    return tasks;
   } catch (error) {
-    return handleFetchError(error, `Error al obtener tareas del usuario ${userId}`);
+    // For user tasks, return empty array instead of throwing
+    console.warn(`Error al obtener tareas del usuario ${userId}:`, error);
+    return [];
   }
 };
 

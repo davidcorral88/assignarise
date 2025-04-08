@@ -14,6 +14,48 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get tasks by user ID
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Ensure userId is an integer
+    const userIdInt = parseInt(userId, 10);
+    
+    if (isNaN(userIdInt)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    
+    // Query to get tasks assigned to user through task_assignments
+    const query = `
+      SELECT t.*, 
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'task_id', ta.task_id,
+              'user_id', ta.user_id,
+              'allocated_hours', ta.allocated_hours
+            )
+          ) FILTER (WHERE ta.task_id IS NOT NULL), '[]'
+        ) AS assignments
+      FROM tasks t
+      INNER JOIN task_assignments ta ON t.id = ta.task_id
+      WHERE ta.user_id = $1
+      GROUP BY t.id
+      ORDER BY t.id
+    `;
+    
+    console.log(`Fetching tasks for user ID: ${userIdInt}`);
+    const result = await pool.query(query, [userIdInt]);
+    console.log(`Found ${result.rows.length} tasks for user ID ${userIdInt}`);
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error(`Error fetching tasks for user ${req.params.userId}:`, error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get all tasks with task_assignments [dcorral]
 router.get('/conassignments/', async (req, res) => {
   try {

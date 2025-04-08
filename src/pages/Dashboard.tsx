@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -37,14 +38,24 @@ const Dashboard = () => {
           setUserCount(users.length);
           
           // Fetch tasks
-          let tasksData;
+          let tasksData: Task[] = [];
+          
           if (currentUser.role === 'worker') {
             // Workers only see tasks assigned to them
-            const userId = String(currentUser.id);
-            tasksData = await getTasksByUserId(userId);
+            const userId = currentUser.id;
+            console.log(`Fetching tasks for worker with ID: ${userId}`);
+            
+            try {
+              tasksData = await getTasksByUserId(userId);
+              console.log(`Retrieved ${tasksData.length} tasks for worker`);
+            } catch (error) {
+              console.error("Error fetching worker tasks:", error);
+              tasksData = []; // Set empty array on error
+            }
           } else {
             // Directors and Admins see all tasks
             tasksData = await getTasks();
+            console.log(`Retrieved ${tasksData.length} tasks for admin/director`);
           }
           
           // Ensure all tasks have an assignments array
@@ -57,9 +68,13 @@ const Dashboard = () => {
           
           // Fetch time entries for the user
           if (currentUser.role === 'worker') {
-            const userId = String(currentUser.id);
-            const entries = await getTimeEntriesByUserId(userId);
-            setUserTimeEntries(entries);
+            try {
+              const entries = await getTimeEntriesByUserId(currentUser.id);
+              setUserTimeEntries(entries);
+            } catch (error) {
+              console.error("Error fetching time entries:", error);
+              setUserTimeEntries([]);
+            }
           }
         } catch (error) {
           console.error("Error fetching data:", error);
