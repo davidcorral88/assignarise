@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { 
-  getTasks, getTimeEntriesByUserId, addTimeEntry, 
+  getTasksAssignments, getTimeEntriesByUserId, addTimeEntry, 
   setStateFromPromise 
 } from '../utils/dataService';
 import { useAuth } from '../components/auth/useAuth';
@@ -39,12 +39,13 @@ const TimeTracking = () => {
     const fetchData = async () => {
       if (currentUser) {
         try {
-          const fetchedTasks = await getTasks();
-          const userTasks = currentUser.role === 'worker'
-            ? fetchedTasks.filter(task => task.assignments.some(a => a.user_id === currentUser.id))
-            : fetchedTasks;
+          // Use getTasksAssignments instead of getTasks to get assignments
+          const fetchedTasks = await getTasksAssignments();
+          console.log('Fetched tasks with assignments:', fetchedTasks);
           
-          setTasks(userTasks);
+          // No need to filter here, we'll pass all tasks to the TimeTrackingForm
+          // and let it filter based on assignments
+          setTasks(fetchedTasks);
           
           // Convert user ID to string for the API call
           const fetchedEntries = await getTimeEntriesByUserId(String(currentUser.id));
@@ -81,6 +82,17 @@ const TimeTracking = () => {
       </Layout>
     );
   }
+  
+  // Filter tasks to get only those assigned to the current user
+  const userTasks = tasks.filter(task => 
+    task.assignments && task.assignments.some(assignment => {
+      // Handle both string and number user_id values
+      const assignmentUserId = typeof assignment.user_id === 'string' 
+        ? parseInt(assignment.user_id, 10) 
+        : assignment.user_id;
+      return currentUser && assignmentUserId === currentUser.id;
+    })
+  );
   
   return (
     <Layout>
@@ -210,54 +222,63 @@ const TimeTracking = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {tasks.map(task => {
-                const taskEntries = timeEntries.filter(entry => entry.task_id === task.id);
-                const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
-                const taskAssignment = task.assignments.find(a => currentUser && a.user_id === currentUser.id);
-                const allocatedHours = taskAssignment?.allocatedHours || 0;
-                
-                const progress = allocatedHours > 0 
-                  ? Math.min(Math.round((totalHoursWorked / allocatedHours) * 100), 100) 
-                  : 0;
-                
-                return (
-                  <div key={task.id} className="p-4 rounded-lg border bg-muted/30">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-lg mb-1">{task.title}</h3>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Clock className="mr-1.5 h-4 w-4" />
-                          <span>Estado: {task.status === 'completed' ? 'Completada' : task.status === 'in_progress' ? 'En progreso' : 'Pendente'}</span>
+              {userTasks.length > 0 ? (
+                userTasks.map(task => {
+                  const taskEntries = timeEntries.filter(entry => entry.task_id === task.id);
+                  const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
+                  
+                  // Find the assignment for the current user
+                  const taskAssignment = task.assignments.find(a => {
+                    // Convert user_id to number if it's a string for comparison
+                    const assignmentUserId = typeof a.user_id === 'string' 
+                      ? parseInt(a.user_id, 10) 
+                      : a.user_id;
+                    return currentUser && assignmentUserId === currentUser.id;
+                  });
+                  
+                  const allocatedHours = taskAssignment?.allocatedHours || 0;
+                  
+                  const progress = allocatedHours > 0 
+                    ? Math.min(Math.round((totalHoursWorked / allocatedHours) * 100), 100) 
+                    : 0;
+                  
+                  return (
+                    <div key={task.id} className="p-4 rounded-lg border bg-muted/30">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-lg mb-1">{task.title}</h3>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Clock className="mr-1.5 h-4 w-4" />
+                            <span>Estado: {task.status === 'completed' ? 'Completada' : task.status === 'in_progress' ? 'En progreso' : 'Pendente'}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col sm:items-end">
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/tasks/${task.id}`)}>
+                            <Eye className="mr-2 h-3 w-3" />
+                            Ver detalles
+                          </Button>
                         </div>
                       </div>
                       
-                      <div className="flex flex-col sm:items-end">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/tasks/${task.id}`)}>
-                          <Eye className="mr-2 h-3 w-3" />
-                          Ver detalles
-                        </Button>
+                      <Separator className="my-4" />
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progreso: {progress}%</span>
+                          <span>{totalHoursWorked} / {allocatedHours} horas</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary" 
+                            style={{ width: `${progress}%` }} 
+                          />
+                        </div>
                       </div>
                     </div>
-                    
-                    <Separator className="my-4" />
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Progreso: {progress}%</span>
-                        <span>{totalHoursWorked} / {allocatedHours} horas</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary" 
-                          style={{ width: `${progress}%` }} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {tasks.length === 0 && (
+                  );
+                })
+              ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <Clock className="h-12 w-12 text-muted-foreground/50 mb-4" />
                   <p className="text-muted-foreground mb-4">Non tes tarefas asignadas</p>

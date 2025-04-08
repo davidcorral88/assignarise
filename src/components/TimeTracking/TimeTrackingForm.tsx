@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
@@ -43,6 +44,17 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
   const [date, setDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+  
+  // Filter tasks to only include ones assigned to the current user
+  const assignedTasks = tasks.filter(task => 
+    task.assignments && task.assignments.some(assignment => {
+      // Convert user_id to number if it's a string for comparison
+      const assignmentUserId = typeof assignment.user_id === 'string' 
+        ? parseInt(assignment.user_id, 10) 
+        : assignment.user_id;
+      return assignmentUserId === userId;
+    })
+  );
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,13 +121,18 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
                 <SelectValue placeholder="Seleccionar tarefa" />
               </SelectTrigger>
               <SelectContent>
-                {tasks.map(task => (
+                {assignedTasks.map(task => (
                   <SelectItem key={task.id} value={task.id}>
                     {task.title}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {assignedTasks.length === 0 && (
+              <p className="text-sm text-amber-600 mt-2">
+                Non tes tarefas asignadas. Contacta co administrador.
+              </p>
+            )}
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

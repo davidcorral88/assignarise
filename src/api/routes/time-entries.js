@@ -38,7 +38,9 @@ router.get('/', async (req, res) => {
     
     query += ' ORDER BY date DESC';
     
+    console.log('Time entries query:', query, params);
     const result = await pool.query(query, params);
+    console.log(`Retrieved ${result.rows.length} time entries`);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching time entries:', error);
@@ -54,12 +56,15 @@ router.post('/', async (req, res) => {
     // Ensure user_id is an integer
     const userIdInt = parseInt(user_id, 10);
     
+    console.log('Creating time entry:', { id, task_id, user_id: userIdInt, hours, date });
+    
     const result = await pool.query(
       `INSERT INTO time_entries (id, task_id, user_id, hours, date, notes, category, project, activity, time_format) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [id, task_id, userIdInt, hours, date, notes, category, project, activity, time_format]
     );
     
+    console.log('Time entry created:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating time entry:', error);
