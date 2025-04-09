@@ -71,9 +71,16 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
     setSubmitting(true);
     
     try {
+      // Ensure task_id is properly formatted as a number
+      const taskId = parseInt(selectedTask, 10);
+      
+      if (isNaN(taskId)) {
+        throw new Error('ID de tarea inválido');
+      }
+      
       const timeEntry: TimeEntry = {
         id: uuidv4(),
-        task_id: selectedTask,
+        task_id: taskId, // Use the parsed number
         user_id: userId,
         hours: hours,
         date: format(date, 'yyyy-MM-dd'),
@@ -81,18 +88,22 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
         description: `Registro de ${hours} horas para la tarea`,
       };
       
-      await addTimeEntry(timeEntry);
-      onEntryAdded(timeEntry);
+      console.log('Enviando registro de tiempo:', timeEntry);
+      
+      const savedEntry = await addTimeEntry(timeEntry);
+      console.log('Registro guardado con éxito:', savedEntry);
+      
+      onEntryAdded(savedEntry);
       
       toast({
-        title: 'Tiempo registrado',
-        description: 'El registro de horas se ha guardado correctamente',
+        title: 'Tempo rexistrado',
+        description: 'O rexistro de horas gardouse correctamente',
       });
     } catch (error) {
-      console.error('Error al registrar tiempo:', error);
+      console.error('Error ao rexistrar tempo:', error);
       toast({
-        title: 'Error',
-        description: 'No se pudo guardar el registro de tiempo',
+        title: 'Erro',
+        description: 'Non se puido gardar o rexistro de tempo. Comproba que a tarefa existe.',
         variant: 'destructive',
       });
     } finally {
@@ -114,15 +125,18 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
             <Label htmlFor="task">Tarefa *</Label>
             <Select 
               value={selectedTask} 
-              onValueChange={setSelectedTask}
+              onValueChange={(value) => {
+                console.log('Tarefa seleccionada:', value);
+                setSelectedTask(value);
+              }}
               required
             >
-              <SelectTrigger>
+              <SelectTrigger id="task">
                 <SelectValue placeholder="Seleccionar tarefa" />
               </SelectTrigger>
               <SelectContent>
                 {assignedTasks.map(task => (
-                  <SelectItem key={task.id} value={task.id}>
+                  <SelectItem key={task.id} value={String(task.id)}>
                     {task.title}
                   </SelectItem>
                 ))}

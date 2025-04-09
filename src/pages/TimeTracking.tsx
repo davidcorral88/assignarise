@@ -3,14 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { 
-  getTasksAssignments, getTimeEntriesByUserId, addTimeEntry, 
+  getTasksAssignments, getTimeEntriesByUserId, deleteTimeEntry,
   setStateFromPromise 
 } from '../utils/dataService';
 import { useAuth } from '../components/auth/useAuth';
 import { Task, TimeEntry } from '../utils/types';
 import { format } from 'date-fns';
-import { v4 as uuidv4 } from 'uuid';
-import { toast } from '@/components/ui/use-toast';
 import { Clock, Calendar, PlusCircle, Timer, Save, Eye, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { toast } from '@/components/ui/use-toast';
 import TimeTrackingForm from '@/components/TimeTracking/TimeTrackingForm';
 
 const TimeTracking = () => {
@@ -39,6 +38,8 @@ const TimeTracking = () => {
     const fetchData = async () => {
       if (currentUser) {
         try {
+          setLoading(true);
+          
           // Use getTasksAssignments instead of getTasks to get assignments
           const fetchedTasks = await getTasksAssignments();
           console.log('Fetched tasks with assignments:', fetchedTasks);
@@ -49,12 +50,13 @@ const TimeTracking = () => {
           
           // Convert user ID to string for the API call
           const fetchedEntries = await getTimeEntriesByUserId(String(currentUser.id));
+          console.log('Fetched time entries:', fetchedEntries);
           setTimeEntries(fetchedEntries);
         } catch (error) {
           console.error('Error fetching data:', error);
           toast({
             title: 'Error',
-            description: 'No se pudieron cargar los datos',
+            description: 'Non se puideron cargar os datos',
             variant: 'destructive',
           });
         } finally {
@@ -67,8 +69,27 @@ const TimeTracking = () => {
   }, [currentUser]);
   
   const handleTimeEntryAdded = (entry: TimeEntry) => {
-    setTimeEntries([...timeEntries, entry]);
+    console.log('Entry added successfully, updating state:', entry);
+    setTimeEntries(prevEntries => [entry, ...prevEntries]);
     setIsAddingEntry(false);
+  };
+  
+  const handleDeleteEntry = async (entryId: string | number) => {
+    try {
+      await deleteTimeEntry(entryId);
+      setTimeEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
+      toast({
+        title: 'Rexistro eliminado',
+        description: 'O rexistro de horas eliminouse correctamente',
+      });
+    } catch (error) {
+      console.error('Error deleting time entry:', error);
+      toast({
+        title: 'Error',
+        description: 'Non se puido eliminar o rexistro de horas',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading) {
@@ -144,7 +165,15 @@ const TimeTracking = () => {
                 <TableBody>
                   {timeEntries.length > 0 ? (
                     timeEntries.map((entry) => {
-                      const task = tasks.find(t => t.id === entry.task_id);
+                      const taskId = typeof entry.task_id === 'string' 
+                        ? parseInt(entry.task_id, 10) 
+                        : entry.task_id;
+                        
+                      const task = tasks.find(t => {
+                        const tId = typeof t.id === 'string' ? parseInt(t.id, 10) : t.id;
+                        return tId === taskId;
+                      });
+                      
                       return (
                         <TableRow key={entry.id}>
                           <TableCell className="font-medium">
@@ -170,7 +199,7 @@ const TimeTracking = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Accións</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => navigate(`/tasks/${task?.id}`)}>
+                                <DropdownMenuItem onClick={() => navigate(`/tasks/${taskId}`)}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   Ver tarefa
                                 </DropdownMenuItem>
@@ -179,7 +208,10 @@ const TimeTracking = () => {
                                   Editar rexistro
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-500">
+                                <DropdownMenuItem 
+                                  className="text-red-500" 
+                                  onClick={() => handleDeleteEntry(entry.id)}
+                                >
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Eliminar
                                 </DropdownMenuItem>
@@ -224,7 +256,15 @@ const TimeTracking = () => {
             <div className="space-y-6">
               {userTasks.length > 0 ? (
                 userTasks.map(task => {
-                  const taskEntries = timeEntries.filter(entry => entry.task_id === task.id);
+                  const taskId = typeof task.id === 'string' ? parseInt(task.id, 10) : task.id;
+                  
+                  const taskEntries = timeEntries.filter(entry => {
+                    const entryTaskId = typeof entry.task_id === 'string' 
+                      ? parseInt(entry.task_id, 10) 
+                      : entry.task_id;
+                    return entryTaskId === taskId;
+                  });
+                  
                   const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
                   
                   // Find the assignment for the current user
@@ -254,7 +294,7 @@ const TimeTracking = () => {
                         </div>
                         
                         <div className="flex flex-col sm:items-end">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/tasks/${task.id}`)}>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/tasks/${taskId}`)}>
                             <Eye className="mr-2 h-3 w-3" />
                             Ver detalles
                           </Button>

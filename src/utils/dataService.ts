@@ -51,6 +51,7 @@ export const {
   getTimeEntriesByTaskId,
   addTimeEntry,
   updateTimeEntry,
+  deleteTimeEntry,
   getTotalHoursByTask,
   getTotalHoursAllocatedByTask,
   getNextTaskId,

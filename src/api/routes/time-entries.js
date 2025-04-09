@@ -53,6 +53,8 @@ router.post('/', async (req, res) => {
   try {
     const { task_id, user_id, hours, date, notes, category, project, activity, time_format } = req.body;
     
+    console.log('Received time entry data:', req.body);
+    
     // Get next ID
     const nextIdResult = await pool.query('SELECT MAX(id) as max_id FROM time_entries');
     const nextId = nextIdResult.rows[0].max_id ? parseInt(nextIdResult.rows[0].max_id) + 1 : 1;
@@ -62,6 +64,7 @@ router.post('/', async (req, res) => {
     const taskIdInt = parseInt(task_id, 10);
     
     if (isNaN(userIdInt) || isNaN(taskIdInt)) {
+      console.error('Invalid user_id or task_id:', { user_id, task_id });
       return res.status(400).json({ error: 'Invalid user_id or task_id' });
     }
     
@@ -77,7 +80,7 @@ router.post('/', async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating time entry:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

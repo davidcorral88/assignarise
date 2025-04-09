@@ -67,6 +67,8 @@ Debería ver un único usuario administrador con el correo `admin@ticmoveo.com`.
 - Las contraseñas se almacenan en la tabla `user_passwords` separada de los datos de usuario.
 - No se crean registros de ejemplo adicionales en ninguna tabla.
 - Los IDs de usuarios se manejan como tipo INTEGER para mayor eficiencia y consistencia.
+- Las asignaciones de tareas (task_assignments) utilizan user_id de tipo INTEGER.
+- Los registros de tiempo (time_entries) aseguran que tanto user_id como task_id son de tipo INTEGER.
 
 ## Estructura de la Base de Datos
 
@@ -77,7 +79,7 @@ La base de datos recién reiniciada contiene las siguientes tablas principales:
 - `tasks` - Tareas del sistema
 - `task_tags` - Etiquetas de tareas
 - `task_assignments` - Asignaciones de tareas a usuarios (user_id de tipo INTEGER)
-- `time_entries` - Registros de tiempo (user_id de tipo INTEGER)
+- `time_entries` - Registros de tiempo (user_id y task_id de tipo INTEGER)
 - `holidays` - Días festivos
 - `vacation_days` - Días de vacaciones (user_id de tipo INTEGER)
 - `workday_schedules` - Horarios de trabajo (user_id de tipo INTEGER)
