@@ -43,13 +43,26 @@ const TimeTracking = () => {
           // Use getTasksAssignments instead of getTasks to get assignments
           const fetchedTasks = await getTasksAssignments();
           console.log('Fetched tasks with assignments:', fetchedTasks);
+          console.log('Current user ID:', currentUser.id);
           
-          // No need to filter here, we'll pass all tasks to the TimeTrackingForm
-          // and let it filter based on assignments
+          // Log each task with assignments to debug
+          if (fetchedTasks && fetchedTasks.length > 0) {
+            fetchedTasks.forEach(task => {
+              if (task.assignments) {
+                console.log(`Task ${task.id} (${task.title}) has ${task.assignments.length} assignments:`, 
+                  task.assignments.map(a => `User ${a.user_id} (${typeof a.user_id}) with ${a.allocatedHours} hours`).join(', ')
+                );
+              } else {
+                console.log(`Task ${task.id} (${task.title}) has no assignments`);
+              }
+            });
+          }
+          
           setTasks(fetchedTasks);
           
-          // Convert user ID to string for the API call
-          const fetchedEntries = await getTimeEntriesByUserId(String(currentUser.id));
+          // Convert user ID to number for the API call if it's a string
+          const userId = typeof currentUser.id === 'string' ? currentUser.id : String(currentUser.id);
+          const fetchedEntries = await getTimeEntriesByUserId(userId);
           console.log('Fetched time entries:', fetchedEntries);
           setTimeEntries(fetchedEntries);
         } catch (error) {
@@ -106,14 +119,21 @@ const TimeTracking = () => {
   
   // Filter tasks to get only those assigned to the current user
   const userTasks = tasks.filter(task => 
-    task.assignments && task.assignments.some(assignment => {
+    task.assignments && Array.isArray(task.assignments) && task.assignments.some(assignment => {
       // Handle both string and number user_id values
       const assignmentUserId = typeof assignment.user_id === 'string' 
         ? parseInt(assignment.user_id, 10) 
         : assignment.user_id;
-      return currentUser && assignmentUserId === currentUser.id;
+      
+      const userIdNumber = typeof currentUser?.id === 'string' 
+        ? parseInt(currentUser.id, 10) 
+        : currentUser?.id;
+        
+      return currentUser && assignmentUserId === userIdNumber;
     })
   );
+  
+  console.log(`Filtered user tasks: ${userTasks.length}`);
   
   return (
     <Layout>
@@ -273,7 +293,12 @@ const TimeTracking = () => {
                     const assignmentUserId = typeof a.user_id === 'string' 
                       ? parseInt(a.user_id, 10) 
                       : a.user_id;
-                    return currentUser && assignmentUserId === currentUser.id;
+                    
+                    const userIdNumber = typeof currentUser?.id === 'string' 
+                      ? parseInt(currentUser.id, 10) 
+                      : currentUser?.id;
+                      
+                    return currentUser && assignmentUserId === userIdNumber;
                   });
                   
                   const allocatedHours = taskAssignment?.allocatedHours || 0;

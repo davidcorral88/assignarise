@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -43,16 +44,35 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   
-  // Filter tasks to only include ones assigned to the current user
-  const assignedTasks = tasks.filter(task => 
-    task.assignments && task.assignments.some(assignment => {
-      // Convert user_id to number if it's a string for comparison
+  // Improve task assignment detection to properly filter assigned tasks
+  const assignedTasks = tasks.filter(task => {
+    // Check if the task has assignments array
+    if (!task.assignments || !Array.isArray(task.assignments) || task.assignments.length === 0) {
+      return false;
+    }
+    
+    // Check if any assignment matches the current user ID
+    return task.assignments.some(assignment => {
+      // Handle case where assignment might not have user_id
+      if (!assignment || assignment.user_id === undefined) {
+        return false;
+      }
+      
+      // Convert both to numbers for comparison
       const assignmentUserId = typeof assignment.user_id === 'string' 
         ? parseInt(assignment.user_id, 10) 
         : assignment.user_id;
-      return assignmentUserId === userId;
-    })
-  );
+        
+      // Make sure we're comparing numbers
+      const userIdNumber = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      
+      console.log(`Comparing assignment user ID ${assignmentUserId} with current user ID ${userIdNumber}. Match: ${assignmentUserId === userIdNumber}`);
+      
+      return assignmentUserId === userIdNumber;
+    });
+  });
+  
+  console.log(`Total tasks: ${tasks.length}, Filtered assigned tasks: ${assignedTasks.length}, User ID: ${userId}`);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,11 +151,17 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
                 <SelectValue placeholder="Seleccionar tarefa" />
               </SelectTrigger>
               <SelectContent>
-                {assignedTasks.map(task => (
-                  <SelectItem key={task.id} value={String(task.id)}>
-                    {task.title}
+                {assignedTasks.length > 0 ? (
+                  assignedTasks.map(task => (
+                    <SelectItem key={task.id} value={String(task.id)}>
+                      {task.title}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-tasks" disabled>
+                    Non hai tarefas asignadas
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
             {assignedTasks.length === 0 && (
