@@ -41,12 +41,10 @@ const TimeTracking = () => {
         try {
           setLoading(true);
           
-          // Use getTasksAssignments instead of getTasks to get assignments
           const fetchedTasks = await getTasksAssignments();
           console.log('Fetched tasks with assignments:', fetchedTasks);
           console.log('Current user ID:', currentUser.id);
           
-          // Log each task with assignments to debug
           if (fetchedTasks && fetchedTasks.length > 0) {
             fetchedTasks.forEach(task => {
               if (task.assignments) {
@@ -61,7 +59,6 @@ const TimeTracking = () => {
           
           setTasks(fetchedTasks);
           
-          // Convert user ID to number for the API call if it's a string
           const userId = typeof currentUser.id === 'string' ? currentUser.id : String(currentUser.id);
           const fetchedEntries = await getTimeEntriesByUserId(userId);
           console.log('Fetched time entries:', fetchedEntries);
@@ -118,10 +115,8 @@ const TimeTracking = () => {
     );
   }
   
-  // Filter tasks to get only those assigned to the current user
   const userTasks = tasks.filter(task => 
     task.assignments && Array.isArray(task.assignments) && task.assignments.some(assignment => {
-      // Handle both string and number user_id values
       const assignmentUserId = typeof assignment.user_id === 'string' 
         ? parseInt(assignment.user_id, 10) 
         : assignment.user_id;
@@ -288,9 +283,7 @@ const TimeTracking = () => {
                   
                   const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
                   
-                  // Find the assignment for the current user
                   const taskAssignment = task.assignments?.find(a => {
-                    // Convert user_id to number if it's a string for comparison
                     const assignmentUserId = typeof a.user_id === 'string' 
                       ? parseInt(a.user_id, 10) 
                       : a.user_id;
@@ -304,9 +297,6 @@ const TimeTracking = () => {
                   
                   const allocatedHours = taskAssignment?.allocatedHours || 0;
                   
-                  // Calculate progress percentage correctly
-                  // If allocated hours is zero, progress is 0%
-                  // Otherwise calculate the percentage but cap it at 100%
                   const progress = allocatedHours > 0 
                     ? Math.min(Math.round((totalHoursWorked / allocatedHours) * 100), 100) 
                     : 0;
@@ -337,7 +327,7 @@ const TimeTracking = () => {
                           <span>Progreso: {progress}%</span>
                           <span>
                             {formatHoursToTimeFormat(totalHoursWorked)} / 
-                            {allocatedHours ? formatHoursToTimeFormat(allocatedHours) : '0:00'} horas
+                            {allocatedHours ? formatHoursToTimeFormat(allocatedHours) : '0.0'} horas
                           </span>
                         </div>
                         <Progress value={progress} className="h-2" />

@@ -13,7 +13,7 @@ interface AnalyticsChartProps {
   loading: boolean;
 }
 
-// Custom tooltip formatter for time format display
+// Custom tooltip formatter for decimal format display
 const CustomTooltipFormatter = (value: number) => {
   return formatHoursToTimeFormat(value);
 };
@@ -70,7 +70,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
     }
   };
 
-  // Custom tooltip component to display hours in HH:MM format
+  // Custom tooltip component to display hours with one decimal place
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;

@@ -40,7 +40,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
 }) => {
   const [selectedTask, setSelectedTask] = useState<string>('');
   const [hours, setHours] = useState<number>(1);
-  const [timeString, setTimeString] = useState<string>('1:00');
+  const [timeString, setTimeString] = useState<string>('1.0');
   const [date, setDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
@@ -173,7 +173,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Formato: HH:MM (exemplo: 1:30 para unha hora e media)
+                Formato decimal (exemplo: 1.5 para unha hora e media)
               </p>
             </div>
             
