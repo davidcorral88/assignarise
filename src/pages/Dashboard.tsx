@@ -139,7 +139,14 @@ const Dashboard = () => {
       const taskHours: Record<string, number> = {};
       
       userTimeEntries.forEach(entry => {
-        const task = userTasks.find(t => t.id === entry.task_id);
+        // Fix the type comparison by ensuring both are the same type (convert task.id to number if needed)
+        const task = userTasks.find(t => {
+          // Ensure both are compared as the same type (string or number)
+          // Convert task.id to number if it's a string for proper comparison with entry.task_id
+          const taskId = typeof t.id === 'string' ? parseInt(t.id, 10) : t.id;
+          return taskId === entry.task_id;
+        });
+        
         if (task) {
           const taskName = task.title.substring(0, 20) + (task.title.length > 20 ? '...' : '');
           taskHours[taskName] = (taskHours[taskName] || 0) + entry.hours;
