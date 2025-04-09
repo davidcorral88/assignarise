@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
   try {
     const { task_id, user_id, hours, date, notes, category, project, activity, time_format } = req.body;
     
-    console.log('Received time entry data:', req.body);
+    console.log('Received time entry data:', JSON.stringify(req.body));
     
     // Validate input data
     if (!task_id || !user_id || !hours || !date) {
@@ -75,12 +75,6 @@ router.post('/', async (req, res) => {
       });
     }
     
-    // Get next ID
-    const nextIdResult = await pool.query('SELECT MAX(id) as max_id FROM time_entries');
-    const nextId = nextIdResult.rows[0].max_id ? parseInt(nextIdResult.rows[0].max_id) + 1 : 1;
-    
-    console.log('Creating time entry:', { id: nextId, task_id: taskIdInt, user_id: userIdInt, hours, date });
-    
     // Ensure hours is a number
     const hoursNumber = parseFloat(hours);
     if (isNaN(hoursNumber)) {
@@ -90,14 +84,43 @@ router.post('/', async (req, res) => {
       });
     }
     
-    const result = await pool.query(
-      `INSERT INTO time_entries (id, task_id, user_id, hours, date, notes, category, project, activity, time_format) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [nextId, taskIdInt, userIdInt, hoursNumber, date, notes, category, project, activity, time_format]
-    );
+    // Validate date format (YYYY-MM-DD)
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (!datePattern.test(date)) {
+      return res.status(400).json({
+        error: 'Invalid date format. Expected YYYY-MM-DD',
+        received: { date }
+      });
+    }
     
-    console.log('Time entry created:', result.rows[0]);
-    res.status(201).json(result.rows[0]);
+    // Get next ID
+    const nextIdResult = await pool.query('SELECT MAX(id) as max_id FROM time_entries');
+    const nextId = nextIdResult.rows[0].max_id ? parseInt(nextIdResult.rows[0].max_id) + 1 : 1;
+    
+    console.log('Creating time entry:', { id: nextId, task_id: taskIdInt, user_id: userIdInt, hours: hoursNumber, date });
+    
+    try {
+      const result = await pool.query(
+        `INSERT INTO time_entries (id, task_id, user_id, hours, date, notes, category, project, activity, time_format) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [nextId, taskIdInt, userIdInt, hoursNumber, date, notes || null, category || null, project || null, activity || null, time_format || null]
+      );
+      
+      console.log('Time entry created:', result.rows[0]);
+      res.status(201).json(result.rows[0]);
+    } catch (dbError) {
+      console.error('Database error creating time entry:', dbError);
+      
+      // Check if it's a foreign key constraint error
+      if (dbError.code === '23503') { // Foreign key violation
+        return res.status(400).json({ 
+          error: 'Invalid task_id or user_id. The specified task or user does not exist.',
+          details: dbError.detail 
+        });
+      }
+      
+      throw dbError; // Re-throw for the outer catch
+    }
   } catch (error) {
     console.error('Error creating time entry:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });

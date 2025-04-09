@@ -77,17 +77,18 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
         throw new Error('ID de tarea inválido');
       }
       
-      const timeEntry: TimeEntry = {
-        id: String(Date.now()), // Use a timestamp string as ID instead of UUID
-        task_id: taskId, // This is now a number type
-        user_id: userId, // Already a number
-        hours: hours,
-        date: format(date, 'yyyy-MM-dd'),
-        notes: notes,
-        description: `Registro de ${hours} horas para la tarea`,
+      const timeEntry = {
+        // Use STRING for id since the TimeEntry type expects id as string
+        // The API will generate the actual numeric ID
+        task_id: taskId,           // NUMBER
+        user_id: userId,           // NUMBER 
+        hours: hours,              // NUMBER
+        date: format(date, 'yyyy-MM-dd'), // STRING in YYYY-MM-DD format
+        notes: notes || '',        // STRING
+        description: `Registro de ${hours} horas para la tarea`, // STRING
       };
       
-      console.log('Enviando registro de tiempo:', timeEntry);
+      console.log('Enviando registro de tiempo:', JSON.stringify(timeEntry));
       
       const savedEntry = await addTimeEntry(timeEntry);
       console.log('Registro guardado con éxito:', savedEntry);
