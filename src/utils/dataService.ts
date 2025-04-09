@@ -29,8 +29,7 @@ const resolvePromise = async <T>(promise: Promise<T>): Promise<T> => {
   }
 };
 
-// Re-export functions from apiService
-// We're going to keep getNextTaskId for backward compatibility, but it won't be used in the new approach
+// Re-export functions from apiService with properly typed re-exports
 export const { 
   getUsers,
   getUserById,
@@ -70,10 +69,13 @@ export const {
   updateWorkSchedule,
   verifyUserPassword,
   changeUserPassword,
-  resetUserPassword
+  resetUserPassword,
+  uploadTaskAttachment,
+  getTaskAttachments,
+  deleteTaskAttachment
 } = apiService;
 
-// Helper functions for React useState
+// Helper functions for React useState - these all need to be adjusted to work with the correct typings
 export const getTaskByIdForState = async (id: string, setState: React.Dispatch<React.SetStateAction<Task | null>>) => {
   try {
     console.log(`Fetching task with ID: ${id}`);
@@ -89,13 +91,12 @@ export const getTaskByIdForState = async (id: string, setState: React.Dispatch<R
 };
 
 export const getUserByIdForState = async (
-  id: string | number, 
+  id: number, 
   setState: React.Dispatch<React.SetStateAction<User | null>>
 ) => {
   try {
-    const userId = typeof id === 'string' ? parseInt(id, 10) : id;
-    console.log(`Fetching user with ID: ${userId}`);
-    const user = await apiService.getUserById(userId);
+    console.log(`Fetching user with ID: ${id}`);
+    const user = await apiService.getUserById(id);
     console.log(`User retrieved:`, user);
     setState(user || null);
     return user;

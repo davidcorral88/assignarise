@@ -111,7 +111,7 @@ const TaskForm = () => {
             
             if (taskData.createdBy) {
               try {
-                const creator = await getUserById(taskData.createdBy);
+                const creator = await getUserById(Number(taskData.createdBy));
                 setCreatorUser(creator || null);
               } catch (error) {
                 console.error('Error fetching creator user:', error);

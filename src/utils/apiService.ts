@@ -1,5 +1,4 @@
-
-import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
+import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule, TaskAttachment } from './types';
 import { API_URL } from './dbConfig';
 
 // Helper functions for better logging and error handling
@@ -36,7 +35,39 @@ async function apiRequest<T>(endpoint: string, method: string = 'GET', body?: an
     handleFetchError(error, `Error en ${method} ${endpoint}:`);
     throw error; // Re-throw for proper handling upstream
   }
-}
+};
+
+// File handling multipart/form-data requests
+async function apiFileRequest<T>(endpoint: string, method: string = 'POST', file?: File, formData?: FormData): Promise<T> {
+  console.log(`Realizando ${method} con archivo a: ${API_URL}${endpoint}`);
+  
+  try {
+    let data: FormData;
+    
+    if (formData) {
+      data = formData;
+    } else {
+      data = new FormData();
+      if (file) {
+        data.append('file', file);
+      }
+    }
+    
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method,
+      body: data
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    handleFetchError(error, `Error en ${method} con archivo ${endpoint}:`);
+    throw error;
+  }
+};
 
 // User related functions
 export const getUsers = async (): Promise<User[]> => {
@@ -134,10 +165,10 @@ export const getTaskById = async (id: string | number): Promise<Task> => {
   }
 };
 
-export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
+export const getTasksByUserId = async (userId: string | number): Promise<Task[]> => {
   try {
     // Ensure userId is correctly processed
-    const userIdInt = parseInt(userId, 10);
+    const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
     if (isNaN(userIdInt)) {
       throw new Error(`Invalid user ID: ${userId}`);
     }
@@ -409,7 +440,7 @@ export const updateWorkdaySchedule = async (id: number, schedule: Partial<Workda
   }
 };
 
-export const deleteWorkdaySchedule = async (id: number): Promise<void> => {
+export const deleteWorkdaySchedule = async (id: string): Promise<void> => {
   try {
     await apiRequest<void>(`/workday_schedules/${id}`, 'DELETE');
   } catch (error) {
@@ -473,5 +504,43 @@ export const resetUserPassword = async (userId: number): Promise<{ success: bool
   } catch (error) {
     handleFetchError(error, `Error al restablecer contraseña del usuario ${userId}:`);
     return { success: false };
+  }
+};
+
+// File attachment related functions
+export const uploadTaskAttachment = async (
+  taskId: string,
+  file: File,
+  userId: string,
+  isResolution: boolean
+): Promise<TaskAttachment> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('userId', userId);
+    formData.append('isResolution', String(isResolution));
+    
+    return await apiFileRequest<TaskAttachment>(`/tasks/${taskId}/attachments`, 'POST', undefined, formData);
+  } catch (error) {
+    handleFetchError(error, `Error al subir archivo para la tarea ${taskId}:`);
+    throw error;
+  }
+};
+
+export const getTaskAttachments = async (taskId: string): Promise<TaskAttachment[]> => {
+  try {
+    return await apiRequest<TaskAttachment[]>(`/tasks/${taskId}/attachments`);
+  } catch (error) {
+    handleFetchError(error, `Error al obtener archivos adjuntos para la tarea ${taskId}:`);
+    return [];
+  }
+};
+
+export const deleteTaskAttachment = async (taskId: string, attachmentId: string): Promise<void> => {
+  try {
+    await apiRequest<void>(`/tasks/${taskId}/attachments/${attachmentId}`, 'DELETE');
+  } catch (error) {
+    handleFetchError(error, `Error al eliminar archivo adjunto ${attachmentId} de la tarea ${taskId}:`);
+    throw error;
   }
 };
