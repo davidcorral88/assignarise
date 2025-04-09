@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -47,10 +46,16 @@ const Dashboard = () => {
             
             try {
               // Convert userId to string before passing it to getTasksByUserId
-              tasksData = await getTasksByUserId(userId.toString());
+              const userIdStr = userId.toString();
+              tasksData = await getTasksByUserId(userIdStr);
               console.log(`Retrieved ${tasksData.length} tasks for worker`);
             } catch (error) {
               console.error("Error fetching worker tasks:", error);
+              toast({
+                title: 'Erro',
+                description: 'Non se puideron cargar as tarefas',
+                variant: 'destructive',
+              });
               tasksData = []; // Set empty array on error
             }
           } else {
@@ -71,17 +76,23 @@ const Dashboard = () => {
           if (currentUser.role === 'worker') {
             try {
               // Convert user ID to string for the time entries API call as well
-              const entries = await getTimeEntriesByUserId(currentUser.id.toString());
-              setUserTimeEntries(entries);
+              const userIdStr = currentUser.id.toString();
+              const entries = await getTimeEntriesByUserId(userIdStr);
+              setUserTimeEntries(entries || []);
             } catch (error) {
               console.error("Error fetching time entries:", error);
+              toast({
+                title: 'Erro',
+                description: 'Non se puideron cargar os rexistros de tempo',
+                variant: 'destructive',
+              });
               setUserTimeEntries([]);
             }
           }
         } catch (error) {
           console.error("Error fetching data:", error);
           toast({
-            title: 'Error',
+            title: 'Erro',
             description: 'Non se puideron cargar os datos',
             variant: 'destructive',
           });
@@ -121,6 +132,10 @@ const Dashboard = () => {
   };
   
   const getChartData = () => {
+    if (!userTasks || userTasks.length === 0) {
+      return [];
+    }
+    
     if (currentUser?.role === 'director' || currentUser?.role === 'admin') {
       // For directors and admins: tasks by status
       const statusCounts = {
@@ -138,13 +153,17 @@ const Dashboard = () => {
       // For workers: hours by task for their tasks
       const taskHours: Record<string, number> = {};
       
+      if (!userTimeEntries || userTimeEntries.length === 0 || !userTasks || userTasks.length === 0) {
+        return [];
+      }
+      
       userTimeEntries.forEach(entry => {
-        // Fix the type comparison by ensuring both are the same type (convert task.id to number if needed)
+        // Fix the type comparison by ensuring both are the same type
         const task = userTasks.find(t => {
-          // Ensure both are compared as the same type (string or number)
-          // Convert task.id to number if it's a string for proper comparison with entry.task_id
+          // Convert both IDs to the same type for comparison
           const taskId = typeof t.id === 'string' ? parseInt(t.id, 10) : t.id;
-          return taskId === entry.task_id;
+          const entryTaskId = typeof entry.task_id === 'string' ? parseInt(entry.task_id, 10) : entry.task_id;
+          return taskId === entryTaskId;
         });
         
         if (task) {
@@ -293,7 +312,7 @@ const Dashboard = () => {
                   </div>
                 ))}
                 
-                {userTasks.length === 0 && (
+                {userTasks.length === 0 && !loading && (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <CheckSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
                     <h3 className="text-lg font-medium mb-1">Non hai tarefas</h3>
@@ -306,6 +325,12 @@ const Dashboard = () => {
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Crear tarefa
                     </Button>
+                  </div>
+                )}
+                
+                {loading && (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
                 )}
               </div>
@@ -331,15 +356,32 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="h-[300px] mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={getChartData()}>
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="value" fill="hsl(var(--primary))" name={currentUser?.role === 'director' ? 'Tarefas' : 'Horas'} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {!loading ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={getChartData()}>
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="value" fill="hsl(var(--primary))" name={currentUser?.role === 'director' ? 'Tarefas' : 'Horas'} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex justify-center items-center h-full">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                )}
+                
+                {!loading && getChartData().length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <BarChart2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                    <p className="text-sm text-muted-foreground">
+                      {currentUser?.role === 'director' 
+                        ? 'Non hai datos suficientes para mostrar a análise.' 
+                        : 'Non hai horas rexistradas para mostrar.'}
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
