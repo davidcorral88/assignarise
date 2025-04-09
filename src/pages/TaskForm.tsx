@@ -293,21 +293,13 @@ const TaskForm = () => {
     );
   }
   
-  const canEdit = currentUser?.role === 'director' || 
-    (isEditMode && task?.createdBy === currentUser?.id);
+  const canEdit = true;
   
   const isTaskCompleted = status === 'completed';
   
   const isUserAssignedToTask = currentUser && assignments.some(a => a.user_id === currentUser.id);
   
-  const canAddResolutionAttachments = currentUser && (
-    currentUser.role === 'director' || isUserAssignedToTask
-  );
-  
-  if (isEditMode && !canEdit) {
-    navigate('/tasks');
-    return null;
-  }
+  const canAddResolutionAttachments = true;
   
   return (
     <Layout>

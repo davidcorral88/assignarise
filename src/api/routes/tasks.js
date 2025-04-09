@@ -246,7 +246,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update task
+// Update task - Modificado para permitir que cualquier usuario pueda editar cualquier tarea
 router.put('/:id', async (req, res) => {
   const client = await pool.connect();
   

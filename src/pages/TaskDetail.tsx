@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -203,6 +204,7 @@ const TaskDetail = () => {
         <TaskDetailHeader 
           task={task} 
           currentUserId={currentUserId} 
+          canEdit={true} // Modificado para permitir editar a cualquier usuario
         />
         
         {timeEntries.length === 0 && (
