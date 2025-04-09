@@ -5,7 +5,7 @@ import { ArrowLeft, Edit } from 'lucide-react';
 import { Task } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import { TaskStatusIcon } from './TaskStatusIcon';
-import { TaskBadges } from './TaskBadges';
+import { TaskStatusBadge, TaskPriorityBadge, TagBadge } from './TaskBadges';
 
 interface TaskDetailHeaderProps {
   task: Task;
@@ -52,7 +52,13 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
           <span className="text-sm text-muted-foreground">
             {getStatusText(task.status)}
           </span>
-          <TaskBadges task={task} />
+          <div className="flex flex-wrap gap-2">
+            <TaskStatusBadge status={task.status} />
+            <TaskPriorityBadge priority={task.priority} />
+            {task.tags && task.tags.map(tag => (
+              <TagBadge key={tag} tag={tag} />
+            ))}
+          </div>
         </div>
       </div>
       
