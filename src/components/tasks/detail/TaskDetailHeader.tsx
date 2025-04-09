@@ -31,18 +31,7 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
 
   return (
     <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center">
-      <div>
-        <Button 
-          variant="ghost" 
-          className="pl-0 hover:pl-0 hover:bg-transparent" 
-          onClick={() => navigate('/tasks')}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver a tarefas
-        </Button>
-      </div>
-      
-      <div className="flex-1 mx-0 sm:mx-4">
+      <div className="flex-1">
         <div className="flex items-center">
           <TaskStatusIcon status={task.status} className="mr-2 h-5 w-5" />
           <h1 className="text-2xl font-bold">{task.title}</h1>
@@ -62,15 +51,23 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
         </div>
       </div>
       
-      {canEdit && (
+      <div className="flex items-center gap-2 self-start sm:self-center">
         <Button 
-          onClick={() => navigate(`/tasks/${task.id}/edit`)} 
-          className="self-start sm:self-center"
+          variant="ghost" 
+          className="hover:bg-transparent" 
+          onClick={() => navigate('/tasks')}
         >
-          <Edit className="mr-2 h-4 w-4" />
-          Editar tarefa
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Volver a tarefas
         </Button>
-      )}
+        
+        {canEdit && (
+          <Button onClick={() => navigate(`/tasks/${task.id}/edit`)}>
+            <Edit className="mr-2 h-4 w-4" />
+            Editar tarefa
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
