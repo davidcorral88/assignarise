@@ -180,7 +180,7 @@ const TaskForm = () => {
       console.log("Saving task data:", taskData);
       
       if (isEditMode) {
-        await updateTask(taskData);
+        await updateTask(task!.id, taskData);
         toast({
           title: 'Tarefa actualizada',
           description: 'A tarefa foi actualizada correctamente.',

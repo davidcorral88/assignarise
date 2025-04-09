@@ -151,7 +151,7 @@ const UserList = () => {
           ...user,
           active: currentActive === undefined ? true : !currentActive
         };
-        await updateUser(updatedUser);
+        await updateUser(userId, updatedUser);
         
         loadUsers();
         

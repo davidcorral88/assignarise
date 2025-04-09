@@ -112,7 +112,8 @@ const UserForm = () => {
     
     try {
       if (isEditMode) {
-        await updateUser(userData);
+        // Fix: Pass user ID and user data as separate arguments
+        await updateUser(userId, userData);
         toast({
           title: 'Usuario actualizado',
           description: 'El usuario se ha actualizado correctamente.',
