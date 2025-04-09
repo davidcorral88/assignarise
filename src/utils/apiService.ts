@@ -494,12 +494,18 @@ export const verifyUserPassword = async (userId: number, password: string): Prom
   }
 };
 
-export const changeUserPassword = async (userId: number, oldPassword: string, newPassword: string): Promise<boolean> => {
+export const changeUserPassword = async (
+  userId: number, 
+  currentPassword: string, 
+  newPassword: string, 
+  adminOverride: boolean = false
+): Promise<boolean> => {
   try {
     const response = await apiRequest<{ success: boolean }>('/passwords/change', 'POST', {
       userId,
-      oldPassword,
-      newPassword
+      currentPassword,
+      newPassword,
+      adminOverride
     });
     return response.success;
   } catch (error) {

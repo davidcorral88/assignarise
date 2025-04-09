@@ -14,15 +14,14 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { User } from '@/utils/types';
+import { resetUserPassword } from '@/utils/apiService';
+import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
 
 interface ResetPasswordDialogProps {
   user: User;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-// Contraseña predeterminada para usuarios nuevos
-const DEFAULT_PASSWORD = 'dxm2025';
 
 const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
   user,
@@ -36,24 +35,24 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
     setIsLoading(true);
     
     try {
-      // Simulamos un tiempo de procesamiento
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const result = await resetUserPassword(user.id);
       
-      // Aquí se implementaría la lógica real para resetear la contraseña
-      // Por ahora se establece a la contraseña predeterminada
-      
-      setIsSuccess(true);
-      
-      toast({
-        title: "Contrasinal resetado",
-        description: `A contrasinal foi resetada á predeterminada (${DEFAULT_PASSWORD}). Informa ó usuario para que a cambie no seguinte inicio de sesión.`,
-      });
-      
-      // Cerrar el diálogo después de un tiempo
-      setTimeout(() => {
-        onOpenChange(false);
-        setIsSuccess(false);
-      }, 2000);
+      if (result.success) {
+        setIsSuccess(true);
+        
+        toast({
+          title: "Contrasinal resetado",
+          description: `A contrasinal foi resetada á predeterminada. Informa ó usuario para que a cambie no seguinte inicio de sesión.`,
+        });
+        
+        // Close the dialog after a time
+        setTimeout(() => {
+          onOpenChange(false);
+          setIsSuccess(false);
+        }, 2000);
+      } else {
+        throw new Error("Non se puido resetear o contrasinal");
+      }
     } catch (error) {
       toast({
         title: "Erro",
@@ -100,7 +99,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
             <Alert className="bg-blue-50 border-blue-200">
               <Info className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-700">
-                A contrasinal será reseteada a <strong>{DEFAULT_PASSWORD}</strong>
+                A contrasinal será reseteada á predeterminada do sistema
               </AlertDescription>
             </Alert>
             

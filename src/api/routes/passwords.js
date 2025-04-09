@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -38,28 +39,31 @@ router.post('/verify', async (req, res) => {
 // Change user password
 router.post('/change', async (req, res) => {
   try {
-    const { userId, currentPassword, newPassword } = req.body;
+    const { userId, currentPassword, newPassword, adminOverride } = req.body;
     
-    if (!userId || !currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'User ID, current password, and new password are required' });
+    if (!userId || (!currentPassword && !adminOverride) || !newPassword) {
+      return res.status(400).json({ error: 'Required parameters missing' });
     }
 
-    // First verify current password
-    let isCurrentPasswordValid = false;
+    // If adminOverride is true, skip current password verification
+    let isCurrentPasswordValid = !!adminOverride;
     
-    // Check if default password
-    if (currentPassword === DEFAULT_PASSWORD) {
-      isCurrentPasswordValid = true;
-    } else {
-      // Check in user_passwords table
-      const result = await pool.query('SELECT password FROM user_passwords WHERE user_id = $1', [userId]);
-      if (result.rows.length > 0) {
-        isCurrentPasswordValid = result.rows[0].password === currentPassword;
+    if (!adminOverride) {
+      // Verify current password
+      // Check if default password
+      if (currentPassword === DEFAULT_PASSWORD) {
+        isCurrentPasswordValid = true;
+      } else {
+        // Check in user_passwords table
+        const result = await pool.query('SELECT password FROM user_passwords WHERE user_id = $1', [userId]);
+        if (result.rows.length > 0) {
+          isCurrentPasswordValid = result.rows[0].password === currentPassword;
+        }
       }
-    }
 
-    if (!isCurrentPasswordValid) {
-      return res.status(401).json({ error: 'Current password is incorrect' });
+      if (!isCurrentPasswordValid) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
     }
 
     // Now update or insert the new password
