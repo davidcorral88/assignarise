@@ -54,11 +54,11 @@ export interface Task {
 
 export interface TimeEntry {
   id: string;
-  task_id: string;
+  task_id: number; // Changed from string to number to match the DB schema
   user_id: number;
   date: string;
   hours: number;
-  description: string;
+  description?: string;
   notes?: string;
   category?: string;
   project?: string;

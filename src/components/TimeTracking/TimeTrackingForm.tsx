@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -78,8 +77,8 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
       }
       
       const timeEntry: Partial<TimeEntry> = {
-        task_id: String(taskId),   // Convert to STRING to match TimeEntry type
-        user_id: String(userId),   // Convert to STRING to match TimeEntry type
+        task_id: taskId,           // Use NUMBER as TimeEntry expects number
+        user_id: userId,           // Use NUMBER as TimeEntry expects number
         hours: hours,              // NUMBER
         date: format(date, 'yyyy-MM-dd'), // STRING in YYYY-MM-DD format
         notes: notes || '',        // STRING
