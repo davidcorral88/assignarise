@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -14,6 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -135,6 +135,13 @@ const TimeTracking = () => {
   
   console.log(`Filtered user tasks: ${userTasks.length}`);
   
+  // Helper function to format hours in HH:MM format
+  const formatHoursToTimeFormat = (hours: number): string => {
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    return `${wholeHours}:${minutes.toString().padStart(2, '0')}`;
+  };
+  
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -203,7 +210,7 @@ const TimeTracking = () => {
                             </div>
                           </TableCell>
                           <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy')}</TableCell>
-                          <TableCell>{entry.hours} horas</TableCell>
+                          <TableCell>{formatHoursToTimeFormat(entry.hours)}</TableCell>
                           <TableCell>
                             <span className="truncate block max-w-[200px]">
                               {entry.notes || '—'}
@@ -303,6 +310,9 @@ const TimeTracking = () => {
                   
                   const allocatedHours = taskAssignment?.allocatedHours || 0;
                   
+                  // Calculate progress percentage correctly
+                  // If allocated hours is zero, progress is 0%
+                  // Otherwise calculate the percentage but cap it at 100%
                   const progress = allocatedHours > 0 
                     ? Math.min(Math.round((totalHoursWorked / allocatedHours) * 100), 100) 
                     : 0;
@@ -331,14 +341,12 @@ const TimeTracking = () => {
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span>Progreso: {progress}%</span>
-                          <span>{totalHoursWorked} / {allocatedHours} horas</span>
+                          <span>
+                            {formatHoursToTimeFormat(totalHoursWorked)} / 
+                            {allocatedHours ? formatHoursToTimeFormat(allocatedHours) : '0:00'} horas
+                          </span>
                         </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary" 
-                            style={{ width: `${progress}%` }} 
-                          />
-                        </div>
+                        <Progress value={progress} className="h-2" />
                       </div>
                     </div>
                   );
