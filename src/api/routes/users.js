@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
+const bcrypt = require('bcrypt');
 
 // Get all users
 router.get('/', async (req, res) => {
@@ -54,20 +55,48 @@ router.get('/:id', async (req, res) => {
 // Create user
 router.post('/', async (req, res) => {
   try {
-    const { id, name, email, role, avatar, active } = req.body;
+    const { id, name, email, role, avatar, active, password } = req.body;
     
     // Ensure id is treated as an integer
     const numericId = parseInt(id, 10);
     
     console.log('Creating new user:', { id: numericId, name, email, role });
     
-    const result = await pool.query(
-      'INSERT INTO users (id, name, email, role, avatar, active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [numericId, name, email, role, avatar, active || true]
-    );
-    
-    console.log('User created successfully:', result.rows[0]);
-    res.status(201).json(result.rows[0]);
+    // Start a transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Insert the user
+      const userResult = await client.query(
+        'INSERT INTO users (id, name, email, role, avatar, active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        [numericId, name, email, role, avatar, active || true]
+      );
+      
+      // If password is provided, hash it and store it in user_passwords table
+      if (password) {
+        // Hash the password (10 rounds is recommended for bcrypt)
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        
+        // Insert the hashed password
+        await client.query(
+          'INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)',
+          [numericId, hashedPassword]
+        );
+        
+        console.log(`Password created for user: ${numericId}`);
+      }
+      
+      await client.query('COMMIT');
+      console.log('User created successfully:', userResult.rows[0]);
+      res.status(201).json(userResult.rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).json({ error: 'Internal server error' });

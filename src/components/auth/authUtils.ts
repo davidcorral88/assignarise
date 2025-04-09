@@ -28,6 +28,8 @@ export const createNewUser = async (email: string): Promise<User> => {
     };
     
     // Save the user to the database
+    // This will now also save the password in the user_passwords table
+    // due to our backend changes
     await addUser(newUser);
     
     toast({
