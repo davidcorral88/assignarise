@@ -12,7 +12,8 @@ import {
   getUserById, 
   getTimeEntriesByTaskIdForState,
   getTotalHoursByTask,
-  getTotalHoursAllocatedByTask
+  getTotalHoursAllocatedByTask,
+  getUsers
 } from '../utils/dataService';
 import { Task, TimeEntry, User } from '../utils/types';
 import { parseISO, format } from 'date-fns';
@@ -34,6 +35,22 @@ const TaskDetail = () => {
   const [totalHoursAllocated, setTotalHoursAllocated] = useState(0);
   const [creator, setCreator] = useState<User | null>(null);
   const [assignedUsers, setAssignedUsers] = useState<Record<string, User | null>>({});
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  
+  // Fetch all users first to have a complete user reference
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      try {
+        const users = await getUsers();
+        setAllUsers(users);
+        console.log("All users loaded:", users.length);
+      } catch (error) {
+        console.error("Error fetching all users:", error);
+      }
+    };
+    
+    fetchAllUsers();
+  }, []);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -78,8 +95,18 @@ const TaskDetail = () => {
             : task.createdBy;
             
           console.log(`Fetching creator with ID: ${createdById} (original: ${task.createdBy})`);
+          
+          // Try to find creator in allUsers first
+          const cachedUser = allUsers.find(user => user.id === createdById);
+          if (cachedUser) {
+            console.log('Creator found in cached users:', cachedUser);
+            setCreator(cachedUser);
+            return;
+          }
+          
+          // If not found, fetch from API
           const user = await getUserById(createdById);
-          console.log('Creator fetched:', user);
+          console.log('Creator fetched from API:', user);
           setCreator(user || null);
         } catch (error) {
           console.error('Error fetching creator:', error);
@@ -88,11 +115,11 @@ const TaskDetail = () => {
     };
     
     getCreator();
-  }, [task]);
+  }, [task, allUsers]);
   
   useEffect(() => {
     const fetchUsers = async () => {
-      if (task?.assignments) {
+      if (task?.assignments && task.assignments.length > 0) {
         const users: Record<string, User | null> = {};
         
         for (const assignment of task.assignments) {
@@ -101,25 +128,36 @@ const TaskDetail = () => {
               ? parseInt(assignment.user_id, 10) 
               : assignment.user_id;
               
-            console.log(`Fetching user with ID: ${userId} (original: ${assignment.user_id})`);
+            console.log(`Processing assignment with user ID: ${userId}`);
+            
+            // First check if user exists in the allUsers array (to avoid redundant API calls)
+            const cachedUser = allUsers.find(user => user.id === userId);
+            if (cachedUser) {
+              console.log('User found in cached users:', cachedUser);
+              users[userId.toString()] = cachedUser;
+              continue;
+            }
+            
+            // If not in cache, fetch from API
+            console.log(`Fetching user with ID: ${userId}`);
             const user = await getUserById(userId);
             console.log('User fetched for assignment:', user);
             
             if (user) {
               users[userId.toString()] = user;
-              users[userId] = user;
             }
           } catch (error) {
             console.error(`Error fetching user for assignment with userId ${assignment.user_id}:`, error);
           }
         }
         
+        console.log('Final assignedUsers map:', users);
         setAssignedUsers(users);
       }
     };
     
     fetchUsers();
-  }, [task]);
+  }, [task?.assignments, allUsers]);
   
   useEffect(() => {
     const fetchTimeEntryUsers = async () => {
@@ -130,19 +168,26 @@ const TaskDetail = () => {
         const users: Record<string, User | null> = { ...assignedUsers };
         
         for (const userId of uniqueUserIds) {
-          if (!users[userId] && !users[userId.toString()]) {
+          if (!users[userId.toString()]) {
             try {
               const userIdNum = typeof userId === 'string' 
                 ? parseInt(userId, 10) 
                 : userId;
                 
-              console.log(`Fetching time entry user with ID: ${userIdNum} (original: ${userId})`);
+              // First check in allUsers cache
+              const cachedUser = allUsers.find(user => user.id === userIdNum);
+              if (cachedUser) {
+                console.log('Time entry user found in cache:', cachedUser);
+                users[userIdNum.toString()] = cachedUser;
+                continue;
+              }
+                
+              console.log(`Fetching time entry user with ID: ${userIdNum}`);
               const user = await getUserById(userIdNum);
               console.log('User fetched for time entry:', user);
               
               if (user) {
                 users[userIdNum.toString()] = user;
-                users[userIdNum] = user;
               }
             } catch (error) {
               console.error(`Error fetching user for time entry with userId ${userId}:`, error);
@@ -155,7 +200,7 @@ const TaskDetail = () => {
     };
     
     fetchTimeEntryUsers();
-  }, [timeEntries, assignedUsers]);
+  }, [timeEntries, assignedUsers, allUsers]);
   
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return 'No disponible';

@@ -42,8 +42,14 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
           ? parseInt(assignment.user_id, 10) 
           : assignment.user_id;
         
+        // Log to help debugging
+        console.log(`Looking up user ID: ${userId}, Type: ${typeof userId}`);
+        console.log('Available users in assignedUsers:', Object.keys(assignedUsers));
+        
         // Try to find the user in assignedUsers using both numeric and string keys
         const user = assignedUsers[userId] || assignedUsers[userId.toString()] || null;
+        
+        console.log(`User found for ID ${userId}:`, user);
         
         // Calculate hours worked for this user on this task
         const hoursWorked = timeEntries

@@ -106,7 +106,24 @@ const TaskForm = () => {
             }
             
             setTags(taskData.tags || []);
-            setAssignments(taskData.assignments || []);
+            
+            if (taskData.assignments && taskData.assignments.length > 0) {
+              const normalizedAssignments = taskData.assignments.map(assignment => {
+                const userId = typeof assignment.user_id === 'string' 
+                  ? parseInt(assignment.user_id, 10) 
+                  : assignment.user_id;
+                  
+                return {
+                  user_id: userId,
+                  allocatedHours: assignment.allocatedHours || 0
+                };
+              });
+              setAssignments(normalizedAssignments);
+              console.log("Normalized assignments:", normalizedAssignments);
+            } else {
+              setAssignments([]);
+            }
+            
             setAttachments(taskData.attachments || []);
             
             if (taskData.createdBy) {
@@ -162,6 +179,19 @@ const TaskForm = () => {
     setSubmitting(true);
     
     try {
+      const normalizedAssignments = assignments.map(assignment => {
+        const userId = typeof assignment.user_id === 'string'
+          ? parseInt(assignment.user_id, 10)
+          : assignment.user_id;
+          
+        return {
+          user_id: userId,
+          allocatedHours: assignment.allocatedHours
+        };
+      });
+      
+      console.log("Normalized assignments for submission:", normalizedAssignments);
+      
       const taskData: Task = {
         ...(isEditMode && task ? { id: task.id } : {}),
         title: tarefa,
@@ -173,7 +203,7 @@ const TaskForm = () => {
         startDate: startDate ? format(startDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
         dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : undefined,
         tags: tags || [],
-        assignments: assignments || [],
+        assignments: normalizedAssignments,
         attachments: attachments || [],
       };
       
@@ -242,7 +272,10 @@ const TaskForm = () => {
   
   const handleAddAssignment = () => {
     if (selectedUserId && allocatedHours > 0) {
-      if (!assignments.some(a => a.user_id === selectedUserId)) {
+      if (!assignments.some(a => {
+        const aUserId = typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id;
+        return aUserId === selectedUserId;
+      })) {
         setAssignments([
           ...assignments,
           { 
@@ -270,7 +303,10 @@ const TaskForm = () => {
   };
   
   const handleRemoveAssignment = (userId: number) => {
-    setAssignments(assignments.filter(a => a.user_id !== userId));
+    setAssignments(assignments.filter(a => {
+      const assignmentUserId = typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id;
+      return assignmentUserId !== userId;
+    }));
   };
   
   const handleAttachmentAdded = (attachment: TaskAttachment) => {
@@ -549,9 +585,16 @@ const TaskForm = () => {
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
                     {assignments.map((assignment, index) => {
-                      const user = availableUsers.find(u => u.id === assignment.user_id);
+                      const userId = typeof assignment.user_id === 'string' 
+                        ? parseInt(assignment.user_id, 10) 
+                        : assignment.user_id;
+                        
+                      const user = availableUsers.find(u => u.id === userId);
+                      
+                      console.log(`Assignment ${index}: User ID ${userId}, Found user:`, user);
+                      
                       return (
-                        <div key={`assignment-${assignment.user_id}-${index}`} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                        <div key={`assignment-${userId}-${index}`} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                               {user?.avatar ? (
@@ -563,11 +606,11 @@ const TaskForm = () => {
                               )}
                             </div>
                             <div>
-                              <p className="font-medium">{user?.name || 'Usuario desconocido'}</p>
+                              <p className="font-medium">{user?.name || `Usuario ID: ${userId}`}</p>
                               <p className="text-sm text-muted-foreground">{assignment.allocatedHours} horas asignadas</p>
                             </div>
                           </div>
-                          <Button variant="ghost" size="icon" onClick={() => handleRemoveAssignment(assignment.user_id)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleRemoveAssignment(userId)}>
                             <Trash2 className="h-4 w-4 text-red-500" />
                             <span className="sr-only">Eliminar asignación</span>
                           </Button>

@@ -200,7 +200,7 @@ router.post('/', async (req, res) => {
       }
     }
     
-    // Insert assignments
+    // Insert assignments - make sure user_id is stored as a number
     if (assignments && assignments.length > 0) {
       for (const assignment of assignments) {
         // Extract user_id and ensure it's a number
@@ -246,7 +246,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update task - Modificado para permitir que cualquier usuario pueda editar cualquier tarea
+// Update task
 router.put('/:id', async (req, res) => {
   const client = await pool.connect();
   
@@ -271,6 +271,11 @@ router.put('/:id', async (req, res) => {
       tags: tags?.length, 
       assignments: assignments?.length
     });
+    
+    // Log assignments data for debugging
+    if (assignments && assignments.length > 0) {
+      console.log('Assignments to update:', JSON.stringify(assignments));
+    }
     
     // Convert camelCase to snake_case for database
     const start_date = startDate;
@@ -309,7 +314,7 @@ router.put('/:id', async (req, res) => {
     if (assignments && assignments.length > 0) {
       for (const assignment of assignments) {
         // Extract userId and ensure it's a number
-        const userIdInput = assignment.userId || assignment.user_id;
+        const userIdInput = assignment.user_id || assignment.userId;
         const userId = typeof userIdInput === 'string' ? parseInt(userIdInput, 10) : userIdInput;
         
         // Extract allocatedHours
@@ -319,6 +324,8 @@ router.put('/:id', async (req, res) => {
           console.error('Missing user ID in assignment:', assignment);
           continue;
         }
+        
+        console.log(`Updating assignment for task ${taskId}, user ${userId}, hours ${hours}`);
         
         await client.query(
           'INSERT INTO task_assignments (task_id, user_id, allocated_hours) VALUES ($1, $2, $3)',
