@@ -20,8 +20,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from '@/lib/utils';
 import { CheckSquare, ArrowLeft, Trash2, Plus, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
 import { FileUploader } from '@/components/files/FileUploader';
-import { TimePicker } from '@/components/ui/time-picker';
-import { formatHoursToTimeFormat, parseTimeFormatToHours } from '@/utils/timeUtils';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,7 +39,6 @@ const TaskForm = () => {
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [allocatedHours, setAllocatedHours] = useState<number>(0);
-  const [allocatedTimeString, setAllocatedTimeString] = useState<string>('0:00');
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   const [creatorUser, setCreatorUser] = useState<User | null>(null);
   
@@ -311,7 +308,6 @@ const TaskForm = () => {
         
         setSelectedUserId(null);
         setAllocatedHours(0);
-        setAllocatedTimeString('0:00');
       } else {
         toast({
           title: 'Usuario xa asignado',
@@ -631,9 +627,7 @@ const TaskForm = () => {
                             </div>
                             <div>
                               <p className="font-medium">{user?.name || `Usuario ID: ${userId}`}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {formatHoursToTimeFormat(assignment.allocatedHours)} horas asignadas
-                              </p>
+                              <p className="text-sm text-muted-foreground">{assignment.allocatedHours} horas asignadas</p>
                             </div>
                           </div>
                           <Button variant="ghost" size="icon" onClick={() => handleRemoveAssignment(userId)}>
@@ -675,15 +669,14 @@ const TaskForm = () => {
                       
                       <div className="space-y-2">
                         <Label htmlFor="hours">Horas asignadas</Label>
-                        <TimePicker
+                        <Input
                           id="hours"
-                          value={allocatedTimeString}
-                          onChange={setAllocatedHours}
-                          onChangeTimeString={setAllocatedTimeString}
+                          type="number"
+                          min="1"
+                          value={allocatedHours || ''}
+                          onChange={(e) => setAllocatedHours(Number(e.target.value))}
+                          placeholder="Horas"
                         />
-                        <p className="text-xs text-muted-foreground">
-                          Formato: HH:MM (exemplo: 1:30 para unha hora e media)
-                        </p>
                       </div>
                     </div>
                     

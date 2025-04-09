@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -22,8 +24,6 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { addTimeEntry } from '@/utils/dataService';
 import { Task, TimeEntry } from '@/utils/types';
-import { TimePicker } from '@/components/ui/time-picker';
-import { formatHoursToTimeFormat } from '@/utils/timeUtils';
 
 interface TimeTrackingFormProps {
   tasks: Task[];
@@ -40,30 +40,39 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
 }) => {
   const [selectedTask, setSelectedTask] = useState<string>('');
   const [hours, setHours] = useState<number>(1);
-  const [timeString, setTimeString] = useState<string>('1:00');
   const [date, setDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   
+  // Improve task assignment detection to properly filter assigned tasks
   const assignedTasks = tasks.filter(task => {
+    // Check if the task has assignments array
     if (!task.assignments || !Array.isArray(task.assignments) || task.assignments.length === 0) {
       return false;
     }
     
+    // Check if any assignment matches the current user ID
     return task.assignments.some(assignment => {
+      // Handle case where assignment might not have user_id
       if (!assignment || assignment.user_id === undefined) {
         return false;
       }
       
+      // Convert both to numbers for comparison
       const assignmentUserId = typeof assignment.user_id === 'string' 
         ? parseInt(assignment.user_id, 10) 
         : assignment.user_id;
         
+      // Make sure we're comparing numbers
       const userIdNumber = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      
+      console.log(`Comparing assignment user ID ${assignmentUserId} with current user ID ${userIdNumber}. Match: ${assignmentUserId === userIdNumber}`);
       
       return assignmentUserId === userIdNumber;
     });
   });
+  
+  console.log(`Total tasks: ${tasks.length}, Filtered assigned tasks: ${assignedTasks.length}, User ID: ${userId}`);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +80,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
     if (!selectedTask || hours <= 0 || !date) {
       toast({
         title: 'Campos incompletos',
-        description: 'Por favor complete todos os campos requiridos',
+        description: 'Por favor complete todos los campos requeridos',
         variant: 'destructive',
       });
       return;
@@ -80,25 +89,25 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
     setSubmitting(true);
     
     try {
+      // Ensure task_id is properly formatted - convert to string as required by TimeEntry type
       const taskId = parseInt(selectedTask, 10);
       
       if (isNaN(taskId)) {
-        throw new Error('ID de tarefa non válido');
+        throw new Error('ID de tarea inválido');
       }
       
       const timeEntry: Partial<TimeEntry> = {
-        task_id: taskId,
-        user_id: userId,
-        hours: hours,
-        date: format(date, 'yyyy-MM-dd'),
-        notes: notes || '',
+        task_id: taskId,           // Use NUMBER as TimeEntry expects number
+        user_id: userId,           // Use NUMBER as TimeEntry expects number
+        hours: hours,              // NUMBER
+        date: format(date, 'yyyy-MM-dd'), // STRING in YYYY-MM-DD format
+        notes: notes || '',        // STRING
       };
       
-      console.log('Enviando rexistro de tempo:', JSON.stringify(timeEntry));
-      console.log('Formato horario: ' + timeString + ' = ' + hours + ' horas');
+      console.log('Enviando registro de tiempo:', JSON.stringify(timeEntry));
       
       const savedEntry = await addTimeEntry(timeEntry);
-      console.log('Rexistro gardado con éxito:', savedEntry);
+      console.log('Registro guardado con éxito:', savedEntry);
       
       onEntryAdded(savedEntry);
       
@@ -165,16 +174,15 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="hours">Horas traballadas *</Label>
-              <TimePicker
+              <Input
                 id="hours"
-                value={timeString}
-                onChange={setHours}
-                onChangeTimeString={setTimeString}
+                type="number"
+                min="0.5"
+                step="0.5"
+                value={hours || ''}
+                onChange={(e) => setHours(Number(e.target.value))}
                 required
               />
-              <p className="text-xs text-muted-foreground">
-                Formato: HH:MM (exemplo: 1:30 para unha hora e media)
-              </p>
             </div>
             
             <div className="space-y-2">
@@ -227,8 +235,8 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
               </>
             ) : (
               <>
-                <Clock className="mr-2 h-4 w-4" />
-                Gardar rexistro ({formatHoursToTimeFormat(hours)})
+                <Calendar className="mr-2 h-4 w-4" />
+                Gardar rexistro
               </>
             )}
           </Button>
