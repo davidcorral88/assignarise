@@ -41,15 +41,3 @@ export const createNewUser = async (email: string): Promise<User> => {
     throw new Error('No se pudo crear el usuario automáticamente');
   }
 };
-
-// Admin user for direct authentication
-export const getAdminUser = (): User => {
-  return {
-    id: 0, // Admin has ID 0 (now as number, not string)
-    name: 'Administrador ATSXPTPG',
-    email: 'admin@ticmoveo.com',
-    password: '', // Empty password for security
-    role: 'admin', // Explicitly set as admin role
-    active: true
-  };
-};

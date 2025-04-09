@@ -4,7 +4,7 @@ import { AuthContextType, User } from '../../utils/types';
 import { toast } from '@/components/ui/use-toast';
 import { getUserByEmail, verifyUserPassword } from '@/utils/dataService';
 import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
-import { createNewUser, getAdminUser } from './authUtils';
+import { createNewUser } from './authUtils';
 
 // Create the auth context
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,19 +28,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Simulating authentication delay
       await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Check for admin credentials directly
-      if (email === 'admin@ticmoveo.com' && password === 'dc0rralIplan') {
-        const adminUser = getAdminUser();
-        setCurrentUser(adminUser);
-        sessionStorage.setItem('currentUser', JSON.stringify(adminUser));
-        toast({
-          title: 'Benvido/a!',
-          description: `Iniciaches sesión como ${adminUser.name}`,
-        });
-        setLoading(false);
-        return adminUser;
-      }
       
       // Get user from PostgreSQL
       let user: User | undefined;
@@ -74,22 +61,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(errorMessage);
       }
       
-      // Try to create a new user automatically if not found
+      // If user not found
       if (!user) {
         console.log('Usuario no encontrado:', email);
-        
-        // Try to create a new user if using the default password
-        if (password === DEFAULT_PASSWORD) {
-          try {
-            user = await createNewUser(email);
-            console.log('Usuario creado automáticamente:', user);
-          } catch (createError) {
-            console.error('Error al crear usuario automáticamente:', createError);
-            throw new Error('No se pudo crear el usuario automáticamente. Contacte con el administrador.');
-          }
-        } else {
-          throw new Error('Usuario non atopado');
-        }
+        throw new Error('Usuario non atopado');
       }
       
       // Check if user is active
@@ -100,8 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Verify password
       const isPasswordValid = await verifyUserPassword(user.id, password);
       
-      // Allow login with default password as a fallback
-      if (!isPasswordValid && password !== DEFAULT_PASSWORD) {
+      // Check password
+      if (!isPasswordValid) {
         console.log("Contraseña incorrecta para:", email);
         throw new Error('Contraseña incorrecta');
       }

@@ -273,7 +273,7 @@ const WorkdayScheduleTable: React.FC = () => {
   });
   
   const deleteWorkdayScheduleMutation = useMutation({
-    mutationFn: (id: string) => deleteWorkdaySchedule(id),
+    mutationFn: (id: string) => deleteWorkdaySchedule(parseInt(id, 10)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
       toast({
