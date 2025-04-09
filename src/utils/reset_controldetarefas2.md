@@ -66,19 +66,20 @@ Debería ver un único usuario administrador con el correo `admin@ticmoveo.com`.
 - Los nuevos usuarios deberán ser creados manualmente o a través de la aplicación.
 - Las contraseñas se almacenan en la tabla `user_passwords` separada de los datos de usuario.
 - No se crean registros de ejemplo adicionales en ninguna tabla.
+- Los IDs de usuarios se manejan como tipo INTEGER para mayor eficiencia y consistencia.
 
 ## Estructura de la Base de Datos
 
 La base de datos recién reiniciada contiene las siguientes tablas principales:
 
-- `users` - Información de usuarios
+- `users` - Información de usuarios (ID de tipo INTEGER)
 - `user_passwords` - Contraseñas de usuario (separadas por seguridad)
 - `tasks` - Tareas del sistema
 - `task_tags` - Etiquetas de tareas
-- `task_assignments` - Asignaciones de tareas a usuarios
-- `time_entries` - Registros de tiempo
+- `task_assignments` - Asignaciones de tareas a usuarios (user_id de tipo INTEGER)
+- `time_entries` - Registros de tiempo (user_id de tipo INTEGER)
 - `holidays` - Días festivos
-- `vacation_days` - Días de vacaciones
-- `workday_schedules` - Horarios de trabajo
+- `vacation_days` - Días de vacaciones (user_id de tipo INTEGER)
+- `workday_schedules` - Horarios de trabajo (user_id de tipo INTEGER)
 
 Todas las tablas usan IDs numéricos para mayor eficiencia y consistencia.

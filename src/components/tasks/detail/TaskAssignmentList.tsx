@@ -37,19 +37,18 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
   return (
     <div className="space-y-4">
       {assignments.map(assignment => {
-        // Ensure user_id is a number for consistent lookup
+        // Always ensure user_id is a number for consistent lookup
         const userId = typeof assignment.user_id === 'string' 
           ? parseInt(assignment.user_id, 10) 
           : assignment.user_id;
         
-        // Log to help debugging
-        console.log(`Looking up user ID: ${userId}, Type: ${typeof userId}`);
-        console.log('Available users in assignedUsers:', Object.keys(assignedUsers));
+        // First try to find the user with the numeric ID
+        let user = assignedUsers[userId];
         
-        // Try to find the user in assignedUsers using both numeric and string keys
-        const user = assignedUsers[userId] || assignedUsers[userId.toString()] || null;
-        
-        console.log(`User found for ID ${userId}:`, user);
+        // If not found with numeric ID, try with string ID as fallback
+        if (!user && assignedUsers[userId.toString()]) {
+          user = assignedUsers[userId.toString()];
+        }
         
         // Calculate hours worked for this user on this task
         const hoursWorked = timeEntries

@@ -19,7 +19,7 @@ router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     
-    // Asegurarse de que userId é un enteiro
+    // Ensure userId is an integer
     const userIdInt = parseInt(userId, 10);
     
     if (isNaN(userIdInt)) {
@@ -29,7 +29,7 @@ router.get('/user/:userId', async (req, res) => {
     
     console.log(`Fetching tasks for user ID: ${userIdInt}`);
     
-    // Query para obter tarefas asignadas ao usuario
+    // Query to get tasks assigned to the user
     const query = `
       SELECT t.*, 
         COALESCE(
@@ -51,7 +51,7 @@ router.get('/user/:userId', async (req, res) => {
     const result = await pool.query(query, [userIdInt]);
     console.log(`Found ${result.rows.length} tasks for user ID ${userIdInt}`);
     
-    // Se non se atopan tarefas, devolve un array baleiro en lugar de 404
+    // Return an empty array instead of 404 if no tasks are found
     res.json(result.rows);
   } catch (error) {
     console.error(`Error fetching tasks for user ${req.params.userId}:`, error);
@@ -123,14 +123,14 @@ router.get('/:id', async (req, res) => {
     const tagsResult = await pool.query('SELECT tag FROM task_tags WHERE task_id = $1', [taskId]);
     const tags = tagsResult.rows.map(row => row.tag);
     
-    // Get task assignments
-    const assignmentsResult = await pool.query(
-      'SELECT user_id, allocated_hours FROM task_assignments WHERE task_id = $1', 
-      [taskId]
-    );
+    // Get task assignments - ensure user_id is always returned as a number
+    const assignmentsQuery = `
+      SELECT user_id, allocated_hours FROM task_assignments WHERE task_id = $1
+    `;
+    const assignmentsResult = await pool.query(assignmentsQuery, [taskId]);
     
     const assignments = assignmentsResult.rows.map(row => ({
-      userId: parseInt(row.user_id, 10),
+      user_id: parseInt(row.user_id, 10),
       allocatedHours: parseFloat(row.allocated_hours)
     }));
     
@@ -138,7 +138,7 @@ router.get('/:id', async (req, res) => {
       ...result.rows[0],
       tags,
       assignments,
-      // Convert fields for frontend compatibility
+      // Convert createdBy field to integer for frontend compatibility
       createdBy: parseInt(result.rows[0].created_by, 10),
       createdAt: result.rows[0].created_at,
       startDate: result.rows[0].start_date,
@@ -169,8 +169,8 @@ router.post('/', async (req, res) => {
     const nextIdResult = await client.query('SELECT MAX(id) as max_id FROM tasks');
     const nextId = nextIdResult.rows[0].max_id ? parseInt(nextIdResult.rows[0].max_id) + 1 : 1;
     
-    console.log('Received task data:', {
-      title, status, createdBy, startDate, dueDate, 
+    console.log('Task data received:', {
+      title, status, createdBy, startDate, 
       tags: tags?.length, 
       assignments: assignments?.length
     });
@@ -200,7 +200,7 @@ router.post('/', async (req, res) => {
       }
     }
     
-    // Insert assignments - make sure user_id is stored as a number
+    // Insert assignments - ensure user_id is stored as a number
     if (assignments && assignments.length > 0) {
       for (const assignment of assignments) {
         // Extract user_id and ensure it's a number
@@ -228,7 +228,10 @@ router.post('/', async (req, res) => {
     
     // Return complete task with tags and assignments
     task.tags = tags || [];
-    task.assignments = assignments || [];
+    task.assignments = assignments ? assignments.map(a => ({
+      ...a,
+      user_id: typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id
+    })) : [];
     
     // Convert fields for frontend
     task.createdBy = parseInt(task.created_by, 10);
@@ -325,7 +328,7 @@ router.put('/:id', async (req, res) => {
           continue;
         }
         
-        console.log(`Updating assignment for task ${taskId}, user ${userId}, hours ${hours}`);
+        console.log(`Updating assignment for task ${taskId}, user ${userId} (type: ${typeof userId}), hours ${hours}`);
         
         await client.query(
           'INSERT INTO task_assignments (task_id, user_id, allocated_hours) VALUES ($1, $2, $3)',
@@ -338,7 +341,10 @@ router.put('/:id', async (req, res) => {
     
     // Return complete task with tags and assignments
     task.tags = tags || [];
-    task.assignments = assignments || [];
+    task.assignments = assignments ? assignments.map(a => ({
+      ...a,
+      user_id: typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id
+    })) : [];
     
     // Convert fields for frontend
     task.createdBy = parseInt(task.created_by, 10);
