@@ -12,6 +12,7 @@ import { RecentTasksList } from '../components/dashboard/RecentTasksList';
 import { AnalyticsChart } from '../components/dashboard/AnalyticsChart';
 import { ErrorDisplay } from '../components/dashboard/ErrorDisplay';
 import { useDashboardData } from '../utils/hooks/useDashboardData';
+import { formatHoursToTimeFormat } from '../utils/timeUtils';
 
 const Dashboard = () => {
   const { currentUser } = useAuth();
@@ -42,6 +43,10 @@ const Dashboard = () => {
       </Layout>
     );
   }
+  
+  // Calculate total hours registered
+  const totalHoursRegistered = userTimeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
+  const formattedTotalHours = formatHoursToTimeFormat(totalHoursRegistered);
   
   return (
     <Layout>
@@ -75,7 +80,7 @@ const Dashboard = () => {
           ) : (
             <StatCard 
               title="Horas rexistradas"
-              value={userTimeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0).toFixed(1)}
+              value={formattedTotalHours}
               icon={<Clock className="h-4 w-4 text-muted-foreground" />}
               description="Total de horas rexistradas"
             />
