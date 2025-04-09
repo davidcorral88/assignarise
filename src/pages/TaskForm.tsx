@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../components/auth/useAuth';
-import { getUserById, addTask, updateTask, getTaskById, deleteTask, getUsers } from '../utils/dataService';
+import { getUserById, addTask, updateTask, getTaskById, deleteTask, getUsers, getUsersByIds } from '../utils/dataService';
 import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -47,6 +47,7 @@ const TaskForm = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [assignedUserData, setAssignedUserData] = useState<Record<number, User | null>>({});
   
   useEffect(() => {
     const fetchUsers = async () => {
@@ -120,6 +121,13 @@ const TaskForm = () => {
               });
               setAssignments(normalizedAssignments);
               console.log("Normalized assignments:", normalizedAssignments);
+              
+              const userIds = normalizedAssignments.map(a => a.user_id);
+              if (userIds.length > 0) {
+                const usersData = await getUsersByIds(userIds);
+                setAssignedUserData(usersData);
+                console.log("Assigned users data:", usersData);
+              }
             } else {
               setAssignments([]);
             }
@@ -283,6 +291,16 @@ const TaskForm = () => {
             allocatedHours: allocatedHours 
           }
         ]);
+        
+        if (!assignedUserData[selectedUserId]) {
+          const selectedUser = availableUsers.find(u => u.id === selectedUserId);
+          if (selectedUser) {
+            setAssignedUserData(prev => ({
+              ...prev,
+              [selectedUserId]: selectedUser
+            }));
+          }
+        }
         
         setSelectedUserId(null);
         setAllocatedHours(0);
@@ -588,8 +606,8 @@ const TaskForm = () => {
                       const userId = typeof assignment.user_id === 'string' 
                         ? parseInt(assignment.user_id, 10) 
                         : assignment.user_id;
-                        
-                      const user = availableUsers.find(u => u.id === userId);
+                      
+                      const user = assignedUserData[userId] || availableUsers.find(u => u.id === userId);
                       
                       console.log(`Assignment ${index}: User ID ${userId}, Found user:`, user);
                       

@@ -46,7 +46,7 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
         let user = assignedUsers[userId];
         
         // If not found with numeric ID, try with string ID as fallback
-        if (!user && assignedUsers[userId.toString()]) {
+        if (!user && userId && assignedUsers[userId.toString()]) {
           user = assignedUsers[userId.toString()];
         }
         

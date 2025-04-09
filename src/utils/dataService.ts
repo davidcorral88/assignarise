@@ -109,6 +109,32 @@ export const getUserByIdForState = async (
   }
 };
 
+// New helper function to get multiple users by their IDs
+export const getUsersByIds = async (userIds: number[]): Promise<Record<number, User | null>> => {
+  try {
+    console.log(`Fetching users with IDs: ${userIds.join(', ')}`);
+    const userMap: Record<number, User | null> = {};
+    
+    // Process in batches to avoid too many parallel requests
+    const batchSize = 5;
+    for (let i = 0; i < userIds.length; i += batchSize) {
+      const batch = userIds.slice(i, i + batchSize);
+      const userPromises = batch.map(userId => apiService.getUserById(userId));
+      const users = await Promise.all(userPromises);
+      
+      batch.forEach((userId, index) => {
+        userMap[userId] = users[index];
+      });
+    }
+    
+    console.log(`Retrieved ${Object.keys(userMap).length} users`);
+    return userMap;
+  } catch (error) {
+    console.error('Error fetching multiple users:', error);
+    return {};
+  }
+};
+
 export const getTimeEntriesByTaskIdForState = async (
   taskId: string, 
   setState: React.Dispatch<React.SetStateAction<TimeEntry[]>>
