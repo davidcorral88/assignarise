@@ -66,12 +66,16 @@ CREATE TABLE task_assignments (
 
 -- Time Entries Table
 CREATE TABLE time_entries (
-  id SERIAL PRIMARY KEY,
+  id INTEGER PRIMARY KEY,
   task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   hours NUMERIC(5,2) NOT NULL,
-  description TEXT,
+  notes TEXT,
+  category VARCHAR(255),
+  project VARCHAR(255),
+  activity VARCHAR(255),
+  time_format VARCHAR(50),
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -87,6 +91,7 @@ CREATE TABLE vacation_days (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   date DATE NOT NULL,
+  type VARCHAR(50) DEFAULT 'vacation',
   UNIQUE (user_id, date)
 );
 
@@ -104,6 +109,14 @@ CREATE TABLE workday_schedules (
 CREATE SEQUENCE IF NOT EXISTS users_id_seq START WITH 1;
 ALTER TABLE users ALTER COLUMN id SET DEFAULT nextval('users_id_seq');
 
+-- Create sequence for task IDs
+CREATE SEQUENCE IF NOT EXISTS tasks_id_seq START WITH 1;
+ALTER TABLE tasks ALTER COLUMN id SET DEFAULT nextval('tasks_id_seq');
+
+-- Create sequence for time_entries IDs
+CREATE SEQUENCE IF NOT EXISTS time_entries_id_seq START WITH 1;
+ALTER TABLE time_entries ALTER COLUMN id SET DEFAULT nextval('time_entries_id_seq');
+
 -- Insert only the admin user
 INSERT INTO users (id, name, email, role, active) 
 VALUES (0, 'Administrador ATSXPTPG', 'admin@ticmoveo.com', 'admin', true);
@@ -118,5 +131,6 @@ CREATE INDEX idx_tasks_created_by ON tasks(created_by);
 CREATE INDEX idx_task_assignments_user_id ON task_assignments(user_id);
 CREATE INDEX idx_time_entries_user_id ON time_entries(user_id);
 CREATE INDEX idx_time_entries_task_id ON time_entries(task_id);
+CREATE INDEX idx_time_entries_date ON time_entries(date);
 CREATE INDEX idx_vacation_days_user_id ON vacation_days(user_id);
 CREATE INDEX idx_workday_schedules_user_id ON workday_schedules(user_id);

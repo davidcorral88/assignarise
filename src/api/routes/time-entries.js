@@ -135,8 +135,8 @@ router.put('/:id', async (req, res) => {
     
     // Ensure IDs are integers
     const entryIdInt = parseInt(id, 10);
-    const userIdInt = parseInt(user_id, 10);
-    const taskIdInt = parseInt(task_id, 10);
+    const userIdInt = typeof user_id === 'string' ? parseInt(user_id, 10) : user_id;
+    const taskIdInt = typeof task_id === 'string' ? parseInt(task_id, 10) : task_id;
     
     if (isNaN(entryIdInt) || isNaN(userIdInt) || isNaN(taskIdInt)) {
       return res.status(400).json({ error: 'Invalid ID values' });

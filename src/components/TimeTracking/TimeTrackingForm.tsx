@@ -70,22 +70,19 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
     setSubmitting(true);
     
     try {
-      // Ensure task_id is properly formatted as a number
+      // Ensure task_id is properly formatted - convert to string as required by TimeEntry type
       const taskId = parseInt(selectedTask, 10);
       
       if (isNaN(taskId)) {
         throw new Error('ID de tarea inválido');
       }
       
-      const timeEntry = {
-        // Use STRING for id since the TimeEntry type expects id as string
-        // The API will generate the actual numeric ID
+      const timeEntry: Partial<TimeEntry> = {
         task_id: String(taskId),   // Convert to STRING to match TimeEntry type
-        user_id: userId,           // NUMBER 
+        user_id: String(userId),   // Convert to STRING to match TimeEntry type
         hours: hours,              // NUMBER
         date: format(date, 'yyyy-MM-dd'), // STRING in YYYY-MM-DD format
         notes: notes || '',        // STRING
-        description: `Registro de ${hours} horas para la tarea`, // STRING
       };
       
       console.log('Enviando registro de tiempo:', JSON.stringify(timeEntry));
