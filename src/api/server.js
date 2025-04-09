@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -14,6 +15,7 @@ const holidayRoutes = require('./routes/holidays');
 const vacationDayRoutes = require('./routes/vacation-days');
 const migrationRoutes = require('./routes/migration');
 const passwordsRoutes = require('./routes/passwords');
+const emailRoutes = require('./routes/email');
 
 // Create Express application
 const app = express();
@@ -32,6 +34,7 @@ app.use('/api/holidays', holidayRoutes);
 app.use('/api/vacation_days', vacationDayRoutes);
 app.use('/api/migrate', migrationRoutes);
 app.use('/api/passwords', passwordsRoutes);
+app.use('/api/email', emailRoutes);
 
 // Start server - listen on all interfaces, not just localhost
 app.listen(port, '0.0.0.0', () => {

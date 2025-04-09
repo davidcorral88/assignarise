@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -152,6 +151,54 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Helper function to send email notifications for task assignments
+const sendAssignmentNotifications = async (taskId, assignments, isNewTask = false) => {
+  try {
+    // Skip if no assignments
+    if (!assignments || assignments.length === 0) {
+      console.log('No assignments to notify');
+      return;
+    }
+    
+    console.log(`Sending notifications for ${assignments.length} task assignments`);
+    
+    for (const assignment of assignments) {
+      // Extract user_id and ensure it's a number
+      const userId = typeof assignment.user_id === 'string' ? parseInt(assignment.user_id, 10) : assignment.user_id;
+      
+      // Extract allocatedHours
+      const hours = assignment.allocatedHours || assignment.allocated_hours;
+      
+      if (userId === undefined || userId === null) {
+        console.error('Missing user ID in assignment:', assignment);
+        continue;
+      }
+      
+      // Send notification email
+      try {
+        await fetch(`http://localhost:3000/api/email/send-task-assignment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            taskId,
+            userId,
+            allocatedHours: hours,
+            isNewTask
+          })
+        });
+        
+        console.log(`Notification sent for task ${taskId} to user ${userId}`);
+      } catch (error) {
+        console.error(`Failed to send notification for task ${taskId} to user ${userId}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error sending assignment notifications:', error);
+  }
+};
+
 // Create task
 router.post('/', async (req, res) => {
   const client = await pool.connect();
@@ -239,6 +286,11 @@ router.post('/', async (req, res) => {
     task.startDate = task.start_date;
     task.dueDate = task.due_date;
     
+    // Send email notifications for assignments after successful commit
+    if (task.assignments && task.assignments.length > 0) {
+      sendAssignmentNotifications(nextId, task.assignments, true);
+    }
+    
     res.status(201).json(task);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -280,6 +332,16 @@ router.put('/:id', async (req, res) => {
       console.log('Assignments to update:', JSON.stringify(assignments));
     }
     
+    // Get current assignments to determine changes
+    const currentAssignmentsResult = await client.query(
+      'SELECT user_id, allocated_hours FROM task_assignments WHERE task_id = $1',
+      [taskId]
+    );
+    const currentAssignments = currentAssignmentsResult.rows.map(row => ({
+      user_id: parseInt(row.user_id, 10),
+      allocatedHours: parseFloat(row.allocated_hours)
+    }));
+    
     // Convert camelCase to snake_case for database
     const start_date = startDate;
     const due_date = dueDate;
@@ -311,6 +373,9 @@ router.put('/:id', async (req, res) => {
       }
     }
     
+    // Find new assignments (not in current assignments)
+    const newAssignments = [];
+    
     // Update assignments (delete and insert)
     await client.query('DELETE FROM task_assignments WHERE task_id = $1', [taskId]);
     
@@ -334,6 +399,15 @@ router.put('/:id', async (req, res) => {
           'INSERT INTO task_assignments (task_id, user_id, allocated_hours) VALUES ($1, $2, $3)',
           [taskId, userId, hours]
         );
+        
+        // Check if this is a new assignment or modified hours
+        const existingAssignment = currentAssignments.find(a => a.user_id === userId);
+        if (!existingAssignment || existingAssignment.allocatedHours !== hours) {
+          newAssignments.push({
+            user_id: userId,
+            allocatedHours: hours
+          });
+        }
       }
     }
     
@@ -351,6 +425,11 @@ router.put('/:id', async (req, res) => {
     task.createdAt = task.created_at;
     task.startDate = task.start_date;
     task.dueDate = task.due_date;
+    
+    // Send email notifications for new assignments after successful commit
+    if (newAssignments.length > 0) {
+      sendAssignmentNotifications(taskId, newAssignments);
+    }
     
     console.log('Task updated successfully:', task);
     res.json(task);
