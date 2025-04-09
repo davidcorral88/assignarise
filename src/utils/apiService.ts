@@ -11,27 +11,45 @@ async function apiRequest<T>(endpoint: string, method: string = 'GET', body?: an
   console.log(`Realizando ${method} a: ${API_URL}${endpoint}`);
   
   try {
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+    
     const response = await fetch(`${API_URL}${endpoint}`, {
       method,
       headers: {
         'Content-Type': 'application/json'
       },
-      body: body ? JSON.stringify(body) : undefined
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal
     });
     
+    clearTimeout(timeoutId);
+    
     // For 404 errors in GET requests specific to user tasks, return empty array instead of throwing
-    if (response.status === 404 && method === 'GET' && endpoint.includes('/tasks/user/')) {
-      console.log(`No tasks found for the specified user`);
+    if (response.status === 404 && method === 'GET' && (endpoint.includes('/tasks/user/') || endpoint.includes('/time_entries'))) {
+      console.log(`No data found for the specified endpoint ${endpoint}`);
       return [] as unknown as T;
     }
     
     // Handle other HTTP errors
     if (!response.ok) {
-      throw new Error(`Error HTTP: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Error HTTP: ${response.status} - ${errorText || 'No error details'}`);
     }
     
-    return await response.json();
+    try {
+      return await response.json();
+    } catch (parseError) {
+      console.error('Error parsing JSON response:', parseError);
+      throw new Error(`Error al analizar la respuesta JSON: ${parseError}`);
+    }
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error(`Timeout en ${method} ${endpoint} - La solicitud tardó demasiado tiempo`);
+      throw new Error('La solicitud tardó demasiado tiempo. Por favor, inténtelo de nuevo.');
+    }
+    
     handleFetchError(error, `Error en ${method} ${endpoint}:`);
     throw error; // Re-throw for proper handling upstream
   }
@@ -53,17 +71,35 @@ async function apiFileRequest<T>(endpoint: string, method: string = 'POST', file
       }
     }
     
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout for file uploads
+    
     const response = await fetch(`${API_URL}${endpoint}`, {
       method,
-      body: data
+      body: data,
+      signal: controller.signal
     });
     
+    clearTimeout(timeoutId);
+    
     if (!response.ok) {
-      throw new Error(`Error HTTP: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Error HTTP: ${response.status} - ${errorText || 'No error details'}`);
     }
     
-    return await response.json();
+    try {
+      return await response.json();
+    } catch (parseError) {
+      console.error('Error parsing JSON response:', parseError);
+      throw new Error(`Error al analizar la respuesta JSON: ${parseError}`);
+    }
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error(`Timeout en ${method} ${endpoint} - La solicitud de archivo tardó demasiado tiempo`);
+      throw new Error('La subida de archivo tardó demasiado tiempo. Por favor, inténtelo de nuevo.');
+    }
+    
     handleFetchError(error, `Error en ${method} con archivo ${endpoint}:`);
     throw error;
   }

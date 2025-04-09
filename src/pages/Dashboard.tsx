@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -27,16 +28,25 @@ const Dashboard = () => {
   const [userTimeEntries, setUserTimeEntries] = useState<TimeEntry[]>([]);
   const [userCount, setUserCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchData = async () => {
       if (currentUser) {
+        setLoading(true);
+        setError(null);
+        
         try {
-          // Fetch users count
-          const users = await getUsers();
-          setUserCount(users.length);
+          // Fetch users count with better error handling
+          try {
+            const users = await getUsers();
+            setUserCount(users.length);
+          } catch (error) {
+            console.error("Error fetching users:", error);
+            setUserCount(0); // Fallback
+          }
           
-          // Fetch tasks
+          // Fetch tasks with robust error handling
           let tasksData: Task[] = [];
           
           if (currentUser.role === 'worker') {
@@ -60,8 +70,18 @@ const Dashboard = () => {
             }
           } else {
             // Directors and Admins see all tasks
-            tasksData = await getTasks();
-            console.log(`Retrieved ${tasksData.length} tasks for admin/director`);
+            try {
+              tasksData = await getTasks();
+              console.log(`Retrieved ${tasksData.length} tasks for admin/director`);
+            } catch (error) {
+              console.error("Error fetching all tasks:", error);
+              toast({
+                title: 'Erro',
+                description: 'Non se puideron cargar as tarefas',
+                variant: 'destructive',
+              });
+              tasksData = []; // Set empty array on error
+            }
           }
           
           // Ensure all tasks have an assignments array
@@ -72,7 +92,7 @@ const Dashboard = () => {
           
           setUserTasks(normalizedTasks);
           
-          // Fetch time entries for the user
+          // Fetch time entries for the user with better error handling
           if (currentUser.role === 'worker') {
             try {
               // Convert user ID to string for the time entries API call as well
@@ -91,6 +111,7 @@ const Dashboard = () => {
           }
         } catch (error) {
           console.error("Error fetching data:", error);
+          setError("Non se puideron cargar os datos. Por favor, inténteo de novo máis tarde.");
           toast({
             title: 'Erro',
             description: 'Non se puideron cargar os datos',
@@ -99,11 +120,23 @@ const Dashboard = () => {
         } finally {
           setLoading(false);
         }
+      } else {
+        // Reset states if no user
+        setUserTasks([]);
+        setUserTimeEntries([]);
+        setUserCount(0);
+        setLoading(false);
       }
     };
     
     fetchData();
   }, [currentUser]);
+  
+  // Safe task ID comparison helper function
+  const isSameTask = (taskId1: string | number, taskId2: string | number): boolean => {
+    // Convert both to string for comparison
+    return String(taskId1) === String(taskId2);
+  };
   
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -158,13 +191,8 @@ const Dashboard = () => {
       }
       
       userTimeEntries.forEach(entry => {
-        // Fix the type comparison by ensuring both are the same type
-        const task = userTasks.find(t => {
-          // Convert both IDs to the same type for comparison
-          const taskId = typeof t.id === 'string' ? parseInt(t.id, 10) : t.id;
-          const entryTaskId = typeof entry.task_id === 'string' ? parseInt(entry.task_id, 10) : entry.task_id;
-          return taskId === entryTaskId;
-        });
+        // Fix the type comparison by using the helper function
+        const task = userTasks.find(t => isSameTask(t.id, entry.task_id));
         
         if (task) {
           const taskName = task.title.substring(0, 20) + (task.title.length > 20 ? '...' : '');
@@ -175,6 +203,47 @@ const Dashboard = () => {
       return Object.entries(taskHours).map(([name, value]) => ({ name, value }));
     }
   };
+  
+  // If there's no user (not authenticated), show a loading state until redirect happens
+  if (!currentUser) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // Error state
+  if (error && !loading) {
+    return (
+      <Layout>
+        <div className="space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Panel</h1>
+              <p className="text-muted-foreground mt-1">
+                Benvido/a, {currentUser?.name}.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+            <h2 className="text-lg font-medium mb-2">Erro ao cargar datos</h2>
+            <p className="text-muted-foreground mb-6">{error}</p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="default"
+            >
+              Intentar de novo
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
   
   return (
     <Layout>
@@ -274,7 +343,7 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle>Tarefas recentes</CardTitle>
               <CardDescription>
-                {currentUser?.role === 'director' ? 'Todas as tarefas' : 'As túas tarefas asignadas'}
+                {currentUser?.role === 'worker' ? 'As túas tarefas asignadas' : 'Todas as tarefas'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -317,9 +386,9 @@ const Dashboard = () => {
                     <CheckSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
                     <h3 className="text-lg font-medium mb-1">Non hai tarefas</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      {currentUser?.role === 'director' 
-                        ? 'Non hai tarefas no sistema.' 
-                        : 'Non tes tarefas asignadas.'}
+                      {currentUser?.role === 'worker' 
+                        ? 'Non tes tarefas asignadas.' 
+                        : 'Non hai tarefas no sistema.'}
                     </p>
                     <Button onClick={() => navigate('/tasks/new')}>
                       <PlusCircle className="mr-2 h-4 w-4" />
@@ -347,7 +416,7 @@ const Dashboard = () => {
               <div>
                 <CardTitle>Análise</CardTitle>
                 <CardDescription>
-                  {currentUser?.role === 'director' 
+                  {currentUser?.role === 'director' || currentUser?.role === 'admin'
                     ? 'Estado das tarefas' 
                     : 'Horas traballadas por tarefa'}
                 </CardDescription>
@@ -358,28 +427,28 @@ const Dashboard = () => {
               <div className="h-[300px] mt-4">
                 {!loading ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={getChartData()}>
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="value" fill="hsl(var(--primary))" name={currentUser?.role === 'director' ? 'Tarefas' : 'Horas'} />
-                    </BarChart>
+                    {getChartData().length > 0 ? (
+                      <BarChart data={getChartData()}>
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="value" fill="hsl(var(--primary))" name={currentUser?.role === 'director' || currentUser?.role === 'admin' ? 'Tarefas' : 'Horas'} />
+                      </BarChart>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-center">
+                        <BarChart2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                        <p className="text-sm text-muted-foreground">
+                          {currentUser?.role === 'director' || currentUser?.role === 'admin'
+                            ? 'Non hai datos suficientes para mostrar a análise.' 
+                            : 'Non hai horas rexistradas para mostrar.'}
+                        </p>
+                      </div>
+                    )}
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex justify-center items-center h-full">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                )}
-                
-                {!loading && getChartData().length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <BarChart2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <p className="text-sm text-muted-foreground">
-                      {currentUser?.role === 'director' 
-                        ? 'Non hai datos suficientes para mostrar a análise.' 
-                        : 'Non hai horas rexistradas para mostrar.'}
-                    </p>
                   </div>
                 )}
               </div>
