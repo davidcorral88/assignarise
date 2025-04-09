@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { TaskAssignment, User, TimeEntry } from '@/utils/types';
 import { UserAvatar } from './UserAvatar';
+import { formatHoursToTimeFormat } from '@/utils/timeUtils';
 
 interface TaskAssignmentListProps {
   taskId: string;
@@ -78,7 +79,7 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
             <div className="flex flex-col min-w-[180px]">
               <div className="flex justify-between text-sm mb-1">
                 <span>Progreso: {progress}%</span>
-                <span>{hoursWorked} / {assignment.allocatedHours} horas</span>
+                <span>{formatHoursToTimeFormat(hoursWorked)} / {formatHoursToTimeFormat(assignment.allocatedHours)} horas</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div 
