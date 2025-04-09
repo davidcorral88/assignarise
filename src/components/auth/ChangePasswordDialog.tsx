@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { KeyRound, Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -49,9 +48,8 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const isAdminChangingUserPassword = currentUser?.role === 'admin' && targetUser;
+  const isAdminChangingUserPassword = !!(currentUser?.role === 'admin' && targetUser);
   
-  // Set the user ID based on whether admin is changing another user's password
   const userId = targetUser ? targetUser.id : currentUser?.id;
 
   const form = useForm<ChangePasswordFormValues>({
@@ -76,12 +74,11 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
     try {
       setIsSubmitting(true);
       
-      // If admin is changing another user's password, use the admin override
       const success = await changeUserPassword(
         userId, 
         data.currentPassword, 
         data.newPassword,
-        isAdminChangingUserPassword // Use admin override if admin is changing another user's password
+        isAdminChangingUserPassword
       );
       
       if (success) {
@@ -116,12 +113,12 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
           <DialogTitle className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />
             {isAdminChangingUserPassword 
-              ? `Cambiar contrasinal de ${targetUser.name}`
+              ? `Cambiar contrasinal de ${targetUser?.name}`
               : 'Cambiar contrasinal'}
           </DialogTitle>
           <DialogDescription>
             {isAdminChangingUserPassword 
-              ? `Introduce un novo contrasinal para ${targetUser.email}`
+              ? `Introduce un novo contrasinal para ${targetUser?.email}`
               : 'Introduce o teu contrasinal actual e un novo contrasinal'}
           </DialogDescription>
         </DialogHeader>
