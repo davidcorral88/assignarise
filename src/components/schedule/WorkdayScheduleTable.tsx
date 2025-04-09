@@ -251,7 +251,8 @@ const WorkdayScheduleTable: React.FC = () => {
       
       updatedSchedule.days_of_week = daysOfWeek;
       
-      return updateWorkdaySchedule(updatedSchedule.id, updatedSchedule);
+      const numericId = typeof data.id === 'string' ? parseInt(data.id, 10) : data.id;
+      return updateWorkdaySchedule(numericId, updatedSchedule);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
@@ -273,7 +274,10 @@ const WorkdayScheduleTable: React.FC = () => {
   });
   
   const deleteWorkdayScheduleMutation = useMutation({
-    mutationFn: (id: string) => deleteWorkdaySchedule(parseInt(id, 10)),
+    mutationFn: (schedule: WorkdaySchedule) => {
+      const scheduleId = typeof schedule.id === 'string' ? schedule.id : schedule.id.toString();
+      return deleteWorkdaySchedule(scheduleId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workdaySchedules'] });
       toast({

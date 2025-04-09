@@ -22,7 +22,7 @@ export const createNewUser = async (email: string): Promise<User> => {
       id: nextId,
       name: name,
       email: email,
-      password: DEFAULT_PASSWORD,
+      password: DEFAULT_PASSWORD, // Using the default password from dbConfig
       role: 'worker', // Default role is worker
       active: true
     };

@@ -1,17 +1,16 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
 
 // Default password - defined directly to avoid dependency issues
-const DEFAULT_PASSWORD = 'dxm2025';
+const DEFAULT_PASSWORD = 'dc0rralIplan';
 
 // Verify user password
 router.post('/verify', async (req, res) => {
   try {
     const { userId, password } = req.body;
     
-    if (!userId || !password) {
+    if (!userId && !password) {
       return res.status(400).json({ error: 'User ID and password are required' });
     }
 
