@@ -76,12 +76,21 @@ La base de datos recién reiniciada contiene las siguientes tablas principales:
 
 - `users` - Información de usuarios (ID de tipo INTEGER)
 - `user_passwords` - Contraseñas de usuario (separadas por seguridad)
-- `tasks` - Tareas del sistema
+- `tasks` - Tareas del sistema (ID de tipo INTEGER)
 - `task_tags` - Etiquetas de tareas
 - `task_assignments` - Asignaciones de tareas a usuarios (user_id de tipo INTEGER)
 - `time_entries` - Registros de tiempo (user_id y task_id de tipo INTEGER)
 - `holidays` - Días festivos
 - `vacation_days` - Días de vacaciones (user_id de tipo INTEGER)
 - `workday_schedules` - Horarios de trabajo (user_id de tipo INTEGER)
+
+## Importante para time_entries
+
+Al crear o actualizar registros de tiempo (time_entries), es crucial asegurarse de que:
+
+1. Tanto `task_id` como `user_id` se manejan siempre como valores INTEGER en la base de datos
+2. Las fechas se pasan en formato 'YYYY-MM-DD'
+3. Las horas se almacenan como valores numéricos (pueden ser decimales)
+4. Los IDs de los registros son siempre valores numéricos secuenciales
 
 Todas las tablas usan IDs numéricos para mayor eficiencia y consistencia.

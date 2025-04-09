@@ -55,25 +55,45 @@ router.post('/', async (req, res) => {
     
     console.log('Received time entry data:', req.body);
     
-    // Get next ID
-    const nextIdResult = await pool.query('SELECT MAX(id) as max_id FROM time_entries');
-    const nextId = nextIdResult.rows[0].max_id ? parseInt(nextIdResult.rows[0].max_id) + 1 : 1;
+    // Validate input data
+    if (!task_id || !user_id || !hours || !date) {
+      return res.status(400).json({ 
+        error: 'Missing required fields', 
+        received: { task_id, user_id, hours, date } 
+      });
+    }
     
-    // Ensure user_id and task_id are integers
+    // Convert IDs to integers
     const userIdInt = parseInt(user_id, 10);
     const taskIdInt = parseInt(task_id, 10);
     
     if (isNaN(userIdInt) || isNaN(taskIdInt)) {
       console.error('Invalid user_id or task_id:', { user_id, task_id });
-      return res.status(400).json({ error: 'Invalid user_id or task_id' });
+      return res.status(400).json({ 
+        error: 'Invalid user_id or task_id',
+        received: { user_id, task_id }
+      });
     }
     
+    // Get next ID
+    const nextIdResult = await pool.query('SELECT MAX(id) as max_id FROM time_entries');
+    const nextId = nextIdResult.rows[0].max_id ? parseInt(nextIdResult.rows[0].max_id) + 1 : 1;
+    
     console.log('Creating time entry:', { id: nextId, task_id: taskIdInt, user_id: userIdInt, hours, date });
+    
+    // Ensure hours is a number
+    const hoursNumber = parseFloat(hours);
+    if (isNaN(hoursNumber)) {
+      return res.status(400).json({ 
+        error: 'Invalid hours value',
+        received: { hours }
+      });
+    }
     
     const result = await pool.query(
       `INSERT INTO time_entries (id, task_id, user_id, hours, date, notes, category, project, activity, time_format) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [nextId, taskIdInt, userIdInt, hours, date, notes, category, project, activity, time_format]
+      [nextId, taskIdInt, userIdInt, hoursNumber, date, notes, category, project, activity, time_format]
     );
     
     console.log('Time entry created:', result.rows[0]);

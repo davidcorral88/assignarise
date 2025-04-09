@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/components/ui/use-toast';
 import { Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,9 +78,9 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
       }
       
       const timeEntry: TimeEntry = {
-        id: uuidv4(),
-        task_id: taskId, // Use the parsed number
-        user_id: userId,
+        id: String(Date.now()), // Use a timestamp string as ID instead of UUID
+        task_id: taskId, // This is now a number type
+        user_id: userId, // Already a number
         hours: hours,
         date: format(date, 'yyyy-MM-dd'),
         notes: notes,
