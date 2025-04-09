@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TimeEntry, User } from '@/utils/types';
 import { UserAvatar } from './UserAvatar';
+import { formatHoursToTimeFormat } from '@/utils/timeUtils';
 
 interface TimeEntryListProps {
   taskId: string;
@@ -57,7 +58,7 @@ export const TimeEntryList: React.FC<TimeEntryListProps> = ({
             </div>
             
             <div className="flex items-center gap-4">
-              <Badge variant="secondary">{entry.hours} horas</Badge>
+              <Badge variant="secondary">{formatHoursToTimeFormat(entry.hours)}</Badge>
               {entry.notes && (
                 <p className="text-sm text-muted-foreground">
                   "{entry.notes}"

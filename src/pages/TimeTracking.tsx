@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/use-toast';
 import TimeTrackingForm from '@/components/TimeTracking/TimeTrackingForm';
+import { formatHoursToTimeFormat } from '@/utils/timeUtils';
 
 const TimeTracking = () => {
   const navigate = useNavigate();
@@ -134,13 +135,6 @@ const TimeTracking = () => {
   );
   
   console.log(`Filtered user tasks: ${userTasks.length}`);
-  
-  // Helper function to format hours in HH:MM format
-  const formatHoursToTimeFormat = (hours: number): string => {
-    const wholeHours = Math.floor(hours);
-    const minutes = Math.round((hours - wholeHours) * 60);
-    return `${wholeHours}:${minutes.toString().padStart(2, '0')}`;
-  };
   
   return (
     <Layout>
@@ -295,7 +289,7 @@ const TimeTracking = () => {
                   const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
                   
                   // Find the assignment for the current user
-                  const taskAssignment = task.assignments.find(a => {
+                  const taskAssignment = task.assignments?.find(a => {
                     // Convert user_id to number if it's a string for comparison
                     const assignmentUserId = typeof a.user_id === 'string' 
                       ? parseInt(a.user_id, 10) 
