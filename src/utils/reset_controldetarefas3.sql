@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS workday_schedules CASCADE;
 DROP TABLE IF EXISTS work_schedule CASCADE;
 DROP TABLE IF EXISTS reduced_periods CASCADE;
 DROP TABLE IF EXISTS holidays CASCADE;
+DROP TABLE IF EXISTS user_passwords CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Crear tabla de usuarios
@@ -26,6 +27,12 @@ CREATE TABLE users (
   phone VARCHAR(50),
   email_notification VARCHAR(255),
   active BOOLEAN DEFAULT true
+);
+
+-- Crear tabla de contraseñas de usuario (para mantener coherencia con reset_controldetarefas2.sql)
+CREATE TABLE user_passwords (
+  user_id VARCHAR(50) PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  password VARCHAR(255) NOT NULL
 );
 
 -- Crear tabla de tareas
@@ -127,15 +134,22 @@ CREATE TABLE workday_schedules (
   friday_hours NUMERIC NOT NULL
 );
 
+-- Insertar el usuario administrador de reset_controldetarefas2.sql
+INSERT INTO users (id, name, email, role, active) 
+VALUES ('0', 'Administrador ATSXPTPG', 'admin@ticmoveo.com', 'admin', true);
+
+-- Insertar la contraseña del admin
+INSERT INTO user_passwords (user_id, password) 
+VALUES ('0', 'dc0rralIplan');
+
 -- Insertar usuarios iniciales para probar el sistema
 INSERT INTO users (id, name, email, role, avatar, active) 
 VALUES 
-('1', 'Admin', 'admin@example.com', 'manager', 'https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff', true),
-('2', 'Ana Pereira', 'ana.pereira@example.com', 'manager', 'https://ui-avatars.com/api/?name=Ana+Pereira&background=0D8ABC&color=fff', true),
+('1', 'Admin', 'admin@example.com', 'admin', 'https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff', true),
+('2', 'Ana Pereira', 'ana.pereira@example.com', 'director', 'https://ui-avatars.com/api/?name=Ana+Pereira&background=0D8ABC&color=fff', true),
 ('3', 'Carlos Silva', 'carlos.silva@example.com', 'worker', 'https://ui-avatars.com/api/?name=Carlos+Silva&background=0D8ABC&color=fff', true),
 ('4', 'Laura Méndez', 'laura.mendez@example.com', 'worker', 'https://ui-avatars.com/api/?name=Laura+Mendez&background=0D8ABC&color=fff', true),
-('5', 'Miguel González', 'miguel.gonzalez@example.com', 'worker', 'https://ui-avatars.com/api/?name=Miguel+Gonzalez&background=0D8ABC&color=fff', true),
-('6', 'María Antonia López', 'maria.lopez@example.com', 'manager', 'https://ui-avatars.com/api/?name=Maria+Lopez&background=0D8ABC&color=fff', true);
+('5', 'Miguel González', 'miguel.gonzalez@example.com', 'worker', 'https://ui-avatars.com/api/?name=Miguel+Gonzalez&background=0D8ABC&color=fff', true);
 
 -- Insertar configuración inicial del calendario
 INSERT INTO work_schedule 
@@ -187,26 +201,10 @@ VALUES
 ('2025-12-08', 'Inmaculada Concepción'),
 ('2025-12-25', 'Nadal');
 
--- Crear algunas tareas de ejemplo
-INSERT INTO tasks (id, title, description, status, created_by, created_at, start_date, due_date, priority, category, project)
-VALUES 
-('1', 'Desarrollar dashboard', 'Crear un dashboard con estadísticas de tareas', 'completed', '1', NOW(), '2023-10-01', '2023-10-15', 'high', 'Development', 'ControlTarefas'),
-('2', 'Diseñar logo', 'Diseñar un nuevo logo para la aplicación', 'in_progress', '2', NOW(), '2023-10-05', '2023-10-20', 'medium', 'Design', 'ControlTarefas'),
-('3', 'Implementar autenticación', 'Añadir sistema de login y registro', 'pending', '1', NOW(), '2023-10-10', '2023-10-25', 'high', 'Development', 'ControlTarefas');
-
--- Asignar tareas a usuarios
-INSERT INTO task_assignments (task_id, user_id, allocated_hours)
-VALUES 
-('1', '3', 20),
-('1', '4', 15),
-('2', '5', 10),
-('3', '3', 25);
-
--- Añadir registros de tiempo
-INSERT INTO time_entries (id, task_id, user_id, hours, date, notes)
-VALUES 
-('1', '1', '3', 4, '2023-10-02', 'Trabajando en el diseño inicial'),
-('2', '1', '3', 5, '2023-10-03', 'Implementando gráficas'),
-('3', '1', '4', 6, '2023-10-04', 'Mejorando la interfaz de usuario'),
-('4', '2', '5', 3, '2023-10-06', 'Bocetos iniciales del logo'),
-('5', '2', '5', 4, '2023-10-07', 'Refinando el diseño del logo');
+-- Crear índices para mejor rendimiento
+CREATE INDEX idx_tasks_created_by ON tasks(created_by);
+CREATE INDEX idx_task_assignments_user_id ON task_assignments(user_id);
+CREATE INDEX idx_time_entries_user_id ON time_entries(user_id);
+CREATE INDEX idx_time_entries_task_id ON time_entries(task_id);
+CREATE INDEX idx_time_entries_date ON time_entries(date);
+CREATE INDEX idx_vacation_days_user_id ON vacation_days(user_id);
