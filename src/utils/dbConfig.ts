@@ -16,7 +16,7 @@ export const DEFAULT_PASSWORD = 'dxm2025';
 export const dbConfig = {
   host: 'localhost',
   port: 5433,
-  database: 'task_management_v04', // Updated to new database name
+  database: 'controltarefasv2', // Nova base de datos
   user: 'task_control',
   password: 'dc0rralIplan'
 };
@@ -30,7 +30,7 @@ export const pgAdminConfig = {
 // Default users for initial setup
 export const defaultUsers = [
   {
-    id: 0, // Changed to number (was string '1')
+    id: 1, // Agora usamos números para IDs
     name: 'Admin',
     email: 'admin@example.com',
     password: DEFAULT_PASSWORD,

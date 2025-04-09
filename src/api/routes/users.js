@@ -6,7 +6,9 @@ const pool = require('../db/connection');
 // Get all users
 router.get('/', async (req, res) => {
   try {
+    console.log('Fetching all users');
     const result = await pool.query('SELECT * FROM users ORDER BY id');
+    console.log(`Found ${result.rows.length} users`);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -24,21 +26,26 @@ router.get('/:id', async (req, res) => {
     
     if (numericId !== null) {
       // If id can be parsed as a number, search by id
+      console.log(`Looking up user by numeric ID: ${numericId}`);
       const result = await pool.query('SELECT * FROM users WHERE id = $1', [numericId]);
       if (result.rows.length > 0) {
+        console.log(`User found by ID: ${numericId}`);
         return res.json(result.rows[0]);
       }
+      console.log(`No user found with ID: ${numericId}, trying email lookup`);
     }
     
     // If not found by numeric ID or id is not numeric, try to find by email
+    console.log(`Looking up user by email: ${id}`);
     const result2 = await pool.query('SELECT * FROM users WHERE email = $1', [id]);
     if (result2.rows.length === 0) {
+      console.log(`No user found with email: ${id}`);
       return res.status(404).json({ error: 'User not found' });
     }
     
+    console.log(`User found by email: ${id}`);
     res.json(result2.rows[0]);
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -52,11 +59,14 @@ router.post('/', async (req, res) => {
     // Ensure id is treated as an integer
     const numericId = parseInt(id, 10);
     
+    console.log('Creating new user:', { id: numericId, name, email, role });
+    
     const result = await pool.query(
       'INSERT INTO users (id, name, email, role, avatar, active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [numericId, name, email, role, avatar, active || true]
     );
     
+    console.log('User created successfully:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating user:', error);
@@ -73,6 +83,12 @@ router.put('/:id', async (req, res) => {
     // Ensure id is an integer
     const numericId = parseInt(id, 10);
     
+    if (isNaN(numericId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    
+    console.log('Updating user:', { id: numericId, name, email, role });
+    
     const result = await pool.query(
       'UPDATE users SET name = $1, email = $2, role = $3, avatar = $4, active = $5 WHERE id = $6 RETURNING *',
       [name, email, role, avatar, active, numericId]
@@ -82,6 +98,7 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
+    console.log('User updated successfully:', result.rows[0]);
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating user:', error);
@@ -97,12 +114,19 @@ router.delete('/:id', async (req, res) => {
     // Ensure id is an integer
     const numericId = parseInt(id, 10);
     
+    if (isNaN(numericId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    
+    console.log('Deleting user with ID:', numericId);
+    
     const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING *', [numericId]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
+    console.log('User deleted successfully');
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
