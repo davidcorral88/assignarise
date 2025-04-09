@@ -48,6 +48,7 @@ const TaskForm = () => {
   
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [assignedUserData, setAssignedUserData] = useState<Record<number, User | null>>({});
+  const [recentlyAddedUsers, setRecentlyAddedUsers] = useState<Record<number, User | null>>({});
   
   useEffect(() => {
     const fetchUsers = async () => {
@@ -292,14 +293,17 @@ const TaskForm = () => {
           }
         ]);
         
-        if (!assignedUserData[selectedUserId]) {
-          const selectedUser = availableUsers.find(u => u.id === selectedUserId);
-          if (selectedUser) {
-            setAssignedUserData(prev => ({
-              ...prev,
-              [selectedUserId]: selectedUser
-            }));
-          }
+        const selectedUser = availableUsers.find(u => u.id === selectedUserId);
+        if (selectedUser) {
+          setRecentlyAddedUsers(prev => ({
+            ...prev,
+            [selectedUserId]: selectedUser
+          }));
+          
+          setAssignedUserData(prev => ({
+            ...prev,
+            [selectedUserId]: selectedUser
+          }));
         }
         
         setSelectedUserId(null);
@@ -607,9 +611,7 @@ const TaskForm = () => {
                         ? parseInt(assignment.user_id, 10) 
                         : assignment.user_id;
                       
-                      const user = assignedUserData[userId] || availableUsers.find(u => u.id === userId);
-                      
-                      console.log(`Assignment ${index}: User ID ${userId}, Found user:`, user);
+                      const user = recentlyAddedUsers[userId] || assignedUserData[userId] || availableUsers.find(u => u.id === userId);
                       
                       return (
                         <div key={`assignment-${userId}-${index}`} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
