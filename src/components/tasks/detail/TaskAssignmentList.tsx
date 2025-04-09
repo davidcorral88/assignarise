@@ -77,8 +77,7 @@ export const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
             
             <div className="flex flex-col min-w-[180px]">
               <div className="flex justify-between text-sm mb-1">
-                <span>Progreso: {progress}%</span>
-                <span>{hoursWorked} / {assignment.allocatedHours} horas</span>
+                <span>Progreso: {hoursWorked}/{assignment.allocatedHours} horas ({progress}%)</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div 
