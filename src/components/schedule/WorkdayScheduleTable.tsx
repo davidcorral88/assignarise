@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, 
@@ -274,8 +275,7 @@ const WorkdayScheduleTable: React.FC = () => {
   });
   
   const deleteWorkdayScheduleMutation = useMutation({
-    mutationFn: (schedule: WorkdaySchedule) => {
-      const scheduleId = typeof schedule.id === 'string' ? schedule.id : schedule.id.toString();
+    mutationFn: (scheduleId: string) => {
       return deleteWorkdaySchedule(scheduleId);
     },
     onSuccess: () => {
@@ -306,7 +306,7 @@ const WorkdayScheduleTable: React.FC = () => {
   };
   
   const handleDelete = (schedule: WorkdaySchedule) => {
-    deleteWorkdayScheduleMutation.mutate(schedule.id);
+    deleteWorkdayScheduleMutation.mutate(schedule.id.toString());
   };
   
   return (
