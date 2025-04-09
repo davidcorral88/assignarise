@@ -4,15 +4,22 @@
  */
 
 /**
- * Format decimal hours to display with one decimal place
+ * Convert decimal hours to time format (HH:MM)
  * @param hours Decimal hours (e.g., 1.5 for 1 hour and 30 minutes)
- * @returns Hours with one decimal place (e.g., "1.5")
+ * @returns Time in HH:MM format
  */
 export const formatHoursToTimeFormat = (hours: number): string => {
-  if (isNaN(hours) || hours < 0) return "0.0";
+  if (isNaN(hours) || hours < 0) return "0:00";
   
-  // Format to one decimal place
-  return hours.toFixed(1);
+  const wholeHours = Math.floor(hours);
+  const minutes = Math.round((hours - wholeHours) * 60);
+  
+  // Handle case where rounding minutes results in 60
+  if (minutes === 60) {
+    return `${wholeHours + 1}:00`;
+  }
+  
+  return `${wholeHours}:${minutes.toString().padStart(2, '0')}`;
 };
 
 /**

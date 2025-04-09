@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User, Task, TimeEntry } from '@/utils/types';
 import { getTasksByUserId, getTasks, getTimeEntriesByUserId, getUsers } from '@/utils/apiService';
@@ -85,40 +86,21 @@ export const useDashboardData = ({ currentUser }: UseDashboardDataProps): Dashbo
           setUserTasks(normalizedTasks);
           
           // Fetch time entries for the user with better error handling
-          try {
-            let timeEntries: TimeEntry[] = [];
-            
-            if (currentUser.role === 'worker') {
+          if (currentUser.role === 'worker') {
+            try {
               // Convert user ID to string for the time entries API call as well
               const userIdStr = currentUser.id.toString();
-              console.log(`Fetching time entries for worker with ID: ${userIdStr}`);
-              timeEntries = await getTimeEntriesByUserId(userIdStr);
-              console.log(`Retrieved ${timeEntries.length} time entries for worker`);
-            } else {
-              // For directors and admins, fetch all time entries (this might require a new API)
-              // For now, we're keeping their entries empty as there's no API to fetch all time entries
-              // This could be enhanced with a new API endpoint
-              timeEntries = [];
+              const entries = await getTimeEntriesByUserId(userIdStr);
+              setUserTimeEntries(entries || []);
+            } catch (error) {
+              console.error("Error fetching time entries:", error);
+              toast({
+                title: 'Erro',
+                description: 'Non se puideron cargar os rexistros de tempo',
+                variant: 'destructive',
+              });
+              setUserTimeEntries([]);
             }
-            
-            console.log("Time entries raw data:", timeEntries);
-            
-            // Ensure hours are treated as numbers
-            const normalizedEntries = timeEntries.map(entry => ({
-              ...entry,
-              hours: typeof entry.hours === 'string' ? parseFloat(entry.hours) : entry.hours
-            }));
-            
-            console.log("Time entries after normalization:", normalizedEntries);
-            setUserTimeEntries(normalizedEntries);
-          } catch (error) {
-            console.error("Error fetching time entries:", error);
-            toast({
-              title: 'Erro',
-              description: 'Non se puideron cargar os rexistros de tempo',
-              variant: 'destructive',
-            });
-            setUserTimeEntries([]);
           }
         } catch (error) {
           console.error("Error fetching data:", error);

@@ -13,8 +13,8 @@ interface TimePickerProps extends Omit<React.InputHTMLAttributes<HTMLInputElemen
 }
 
 const TimePicker = React.forwardRef<HTMLInputElement, TimePickerProps>(
-  ({ className, onChange, onChangeTimeString, value, showAsDecimal = true, ...props }, ref) => {
-    // Convert initial value to decimal string if it's a number
+  ({ className, onChange, onChangeTimeString, value, showAsDecimal = false, ...props }, ref) => {
+    // Convert initial value to time string if it's a number
     const initialTimeString = typeof value === 'number' 
       ? formatHoursToTimeFormat(value)
       : typeof value === 'string' && !value.includes(':') && !isNaN(Number(value))
@@ -25,14 +25,16 @@ const TimePicker = React.forwardRef<HTMLInputElement, TimePickerProps>(
     
     // Update timeString when value changes from props
     React.useEffect(() => {
-      if (typeof value === 'number' && value !== parseFloat(timeString)) {
+      if (typeof value === 'number' && value !== parseTimeFormatToHours(timeString)) {
         setTimeString(formatHoursToTimeFormat(value));
       } else if (typeof value === 'string' && value !== timeString) {
-        if (!isNaN(Number(value))) {
+        if (value.includes(':')) {
+          setTimeString(value);
+        } else if (!isNaN(Number(value))) {
           setTimeString(formatHoursToTimeFormat(Number(value)));
         }
       }
-    }, [value, timeString]);
+    }, [value]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newTimeValue = e.target.value;
@@ -43,21 +45,21 @@ const TimePicker = React.forwardRef<HTMLInputElement, TimePickerProps>(
       }
       
       if (onChange) {
-        // Convert input to decimal hours
-        const hours = parseFloat(newTimeValue);
-        onChange(isNaN(hours) ? 0 : hours);
+        // Convert HH:MM to decimal hours
+        const hours = parseTimeFormatToHours(newTimeValue);
+        onChange(hours);
       }
     };
 
     return (
       <div className="relative">
         <Input
-          type="number"
+          type={showAsDecimal ? "number" : "time"}
           ref={ref}
           className={cn("pl-8", className)}
           onChange={handleChange}
           value={timeString}
-          step="0.1"
+          step={showAsDecimal ? "0.25" : "300"}
           min="0"
           {...props}
         />

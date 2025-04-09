@@ -4,7 +4,6 @@ import { BarChart2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Task, TimeEntry, User } from '@/utils/types';
-import { formatHoursToTimeFormat } from '@/utils/timeUtils';
 
 interface AnalyticsChartProps {
   currentUser: User;
@@ -12,11 +11,6 @@ interface AnalyticsChartProps {
   timeEntries: TimeEntry[];
   loading: boolean;
 }
-
-// Custom tooltip formatter for decimal format display
-const CustomTooltipFormatter = (value: number) => {
-  return formatHoursToTimeFormat(value);
-};
 
 export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({ 
   currentUser, 
@@ -50,7 +44,6 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
         return [];
       }
       
-      // Group time entries by task
       timeEntries.forEach(entry => {
         // Safe comparison by converting both IDs to strings
         const entryTaskId = String(entry.task_id);
@@ -62,30 +55,8 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
         }
       });
       
-      return Object.entries(taskHours).map(([name, value]) => ({ 
-        name, 
-        value,
-        formattedValue: formatHoursToTimeFormat(value) // Add formatted value for tooltip
-      }));
+      return Object.entries(taskHours).map(([name, value]) => ({ name, value }));
     }
-  };
-
-  // Custom tooltip component to display hours with one decimal place
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const value = currentUser?.role === 'director' || currentUser?.role === 'admin' 
-        ? data.value 
-        : formatHoursToTimeFormat(data.value);
-      
-      return (
-        <div className="bg-background border border-border p-2 rounded-md shadow-md">
-          <p className="font-medium">{`${label}`}</p>
-          <p>{`${currentUser?.role === 'director' || currentUser?.role === 'admin' ? 'Tarefas' : 'Horas'}: ${value}`}</p>
-        </div>
-      );
-    }
-    return null;
   };
 
   return (
@@ -108,14 +79,8 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
               {getChartData().length > 0 ? (
                 <BarChart data={getChartData()}>
                   <XAxis dataKey="name" />
-                  <YAxis 
-                    tickFormatter={
-                      currentUser?.role === 'worker' 
-                        ? (value) => formatHoursToTimeFormat(value)
-                        : undefined
-                    } 
-                  />
-                  <Tooltip content={<CustomTooltip />} />
+                  <YAxis />
+                  <Tooltip />
                   <Legend />
                   <Bar 
                     dataKey="value" 

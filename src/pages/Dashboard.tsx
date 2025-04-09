@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
@@ -12,7 +12,6 @@ import { RecentTasksList } from '../components/dashboard/RecentTasksList';
 import { AnalyticsChart } from '../components/dashboard/AnalyticsChart';
 import { ErrorDisplay } from '../components/dashboard/ErrorDisplay';
 import { useDashboardData } from '../utils/hooks/useDashboardData';
-import { formatHoursToTimeFormat } from '../utils/timeUtils';
 
 const Dashboard = () => {
   const { currentUser } = useAuth();
@@ -20,23 +19,6 @@ const Dashboard = () => {
   
   // Utilizamos el hook personalizado para obtener los datos
   const { userTasks, userTimeEntries, userCount, loading, error } = useDashboardData({ currentUser });
-  
-  // Add debug logging to track the data flow
-  useEffect(() => {
-    console.log('Dashboard data loaded:');
-    console.log('- User tasks:', userTasks.length);
-    console.log('- User time entries:', userTimeEntries.length);
-    console.log('- Time entries hours:', userTimeEntries.map(entry => ({ id: entry.id, hours: entry.hours })));
-    
-    // Calculate and log total hours
-    const totalHours = userTimeEntries.reduce((sum, entry) => {
-      const entryHours = typeof entry.hours === 'string' ? parseFloat(entry.hours) : entry.hours;
-      return sum + (isNaN(entryHours) ? 0 : entryHours);
-    }, 0);
-    
-    console.log('- Total calculated hours:', totalHours);
-    console.log('- Formatted hours:', formatHoursToTimeFormat(totalHours));
-  }, [userTasks, userTimeEntries]);
   
   // Si no hay usuario (no autenticado), mostrar estado de carga hasta que ocurra la redirección
   if (!currentUser) {
@@ -60,18 +42,6 @@ const Dashboard = () => {
       </Layout>
     );
   }
-  
-  // Calculate total hours registered with more robust handling
-  const totalHoursRegistered = userTimeEntries.reduce((sum, entry) => {
-    // Ensure entry.hours is treated as a number
-    const entryHours = typeof entry.hours === 'string' ? parseFloat(entry.hours) : entry.hours;
-    // Add only if it's a valid number
-    return sum + (isNaN(entryHours) ? 0 : entryHours);
-  }, 0);
-  
-  console.log('Total hours calculated in render:', totalHoursRegistered);
-  const formattedTotalHours = formatHoursToTimeFormat(totalHoursRegistered);
-  console.log('Formatted hours in render:', formattedTotalHours);
   
   return (
     <Layout>
@@ -105,7 +75,7 @@ const Dashboard = () => {
           ) : (
             <StatCard 
               title="Horas rexistradas"
-              value={formattedTotalHours}
+              value={userTimeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0).toFixed(1)}
               icon={<Clock className="h-4 w-4 text-muted-foreground" />}
               description="Total de horas rexistradas"
             />
