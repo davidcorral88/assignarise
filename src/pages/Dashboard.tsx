@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
@@ -20,6 +20,23 @@ const Dashboard = () => {
   
   // Utilizamos el hook personalizado para obtener los datos
   const { userTasks, userTimeEntries, userCount, loading, error } = useDashboardData({ currentUser });
+  
+  // Add debug logging to track the data flow
+  useEffect(() => {
+    console.log('Dashboard data loaded:');
+    console.log('- User tasks:', userTasks.length);
+    console.log('- User time entries:', userTimeEntries.length);
+    console.log('- Time entries hours:', userTimeEntries.map(entry => ({ id: entry.id, hours: entry.hours })));
+    
+    // Calculate and log total hours
+    const totalHours = userTimeEntries.reduce((sum, entry) => {
+      const entryHours = typeof entry.hours === 'string' ? parseFloat(entry.hours) : entry.hours;
+      return sum + (isNaN(entryHours) ? 0 : entryHours);
+    }, 0);
+    
+    console.log('- Total calculated hours:', totalHours);
+    console.log('- Formatted hours:', formatHoursToTimeFormat(totalHours));
+  }, [userTasks, userTimeEntries]);
   
   // Si no hay usuario (no autenticado), mostrar estado de carga hasta que ocurra la redirección
   if (!currentUser) {
@@ -44,9 +61,17 @@ const Dashboard = () => {
     );
   }
   
-  // Calculate total hours registered
-  const totalHoursRegistered = userTimeEntries.reduce((sum, entry) => sum + Number(entry.hours), 0);
+  // Calculate total hours registered with more robust handling
+  const totalHoursRegistered = userTimeEntries.reduce((sum, entry) => {
+    // Ensure entry.hours is treated as a number
+    const entryHours = typeof entry.hours === 'string' ? parseFloat(entry.hours) : entry.hours;
+    // Add only if it's a valid number
+    return sum + (isNaN(entryHours) ? 0 : entryHours);
+  }, 0);
+  
+  console.log('Total hours calculated in render:', totalHoursRegistered);
   const formattedTotalHours = formatHoursToTimeFormat(totalHoursRegistered);
+  console.log('Formatted hours in render:', formattedTotalHours);
   
   return (
     <Layout>
