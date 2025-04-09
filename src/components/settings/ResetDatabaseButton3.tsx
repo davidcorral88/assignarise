@@ -11,7 +11,7 @@ export const ResetDatabaseButton3 = () => {
     if (confirm('¿Estás seguro de que quieres restablecer la base de datos? Esta operación no se puede deshacer.')) {
       setIsLoading(true);
       try {
-        await resetDatabase('reset_controldetarefas3');
+        await resetDatabase();
         toast({
           title: 'Base de datos restablecida',
           description: 'La base de datos ha sido restablecida correctamente con la versión 3.',

@@ -1,3 +1,4 @@
+
 import * as apiService from './apiService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
@@ -147,7 +148,7 @@ export const resetDatabase = async (): Promise<void> => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        scriptName: 'reset_database_20250402.sql'
+        scriptName: 'reset_controldetarefas3.sql'
       }),
     });
     
