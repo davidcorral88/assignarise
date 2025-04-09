@@ -23,7 +23,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
       return [];
     }
     
-    if (currentUser?.role === 'director' || currentUser?.role === 'admin' || currentUser?.role === 'manager') {
+    if (currentUser?.role === 'director' || currentUser?.role === 'admin') {
       // For directors, admins, and managers: tasks by status
       const statusCounts = {
         completed: tasks.filter(t => t.status === 'completed').length,
@@ -65,7 +65,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
         <div>
           <CardTitle>Análise</CardTitle>
           <CardDescription>
-            {currentUser?.role === 'director' || currentUser?.role === 'admin' || currentUser?.role === 'manager'
+            {currentUser?.role === 'director' || currentUser?.role === 'admin'
               ? 'Estado das tarefas' 
               : 'Horas traballadas por tarefa'}
           </CardDescription>
@@ -85,14 +85,14 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                   <Bar 
                     dataKey="value" 
                     fill="hsl(var(--primary))" 
-                    name={currentUser?.role === 'director' || currentUser?.role === 'admin' || currentUser?.role === 'manager' ? 'Tarefas' : 'Horas'} 
+                    name={currentUser?.role === 'director' || currentUser?.role === 'admin' ? 'Tarefas' : 'Horas'} 
                   />
                 </BarChart>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <BarChart2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
                   <p className="text-sm text-muted-foreground">
-                    {currentUser?.role === 'director' || currentUser?.role === 'admin' || currentUser?.role === 'manager'
+                    {currentUser?.role === 'director' || currentUser?.role === 'admin'
                       ? 'Non hai datos suficientes para mostrar a análise.' 
                       : 'Non hai horas rexistradas para mostrar.'}
                   </p>

@@ -65,7 +65,7 @@ const Dashboard = () => {
             description="Tarefas actualmente en progreso"
           />
           
-          {(currentUser?.role === 'director' || currentUser?.role === 'admin' || currentUser?.role === 'manager') ? (
+          {(currentUser?.role === 'director' || currentUser?.role === 'admin') ? (
             <StatCard 
               title="Usuarios"
               value={userCount}
