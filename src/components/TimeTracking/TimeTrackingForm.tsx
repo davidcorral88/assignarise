@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -29,7 +30,7 @@ interface TimeTrackingFormProps {
   tasks: Task[];
   onEntryAdded: (entry: TimeEntry) => void;
   onCancel: () => void;
-  userId: number;
+  userId: number | string;
 }
 
 const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({ 
@@ -86,9 +87,11 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
         throw new Error('ID de tarefa non válido');
       }
       
+      const userIdInt = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      
       const timeEntry: Partial<TimeEntry> = {
         task_id: taskId,
-        user_id: userId,
+        user_id: userIdInt,
         hours: hours,
         date: format(date, 'yyyy-MM-dd'),
         notes: notes || '',
@@ -100,12 +103,18 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
       const savedEntry = await addTimeEntry(timeEntry);
       console.log('Rexistro gardado con éxito:', savedEntry);
       
-      onEntryAdded(savedEntry);
-      
       toast({
         title: 'Tempo rexistrado',
         description: 'O rexistro de horas gardouse correctamente',
       });
+      
+      // Call onEntryAdded after successful save
+      if (savedEntry && typeof savedEntry === 'object') {
+        onEntryAdded(savedEntry as TimeEntry);
+      } else {
+        console.error('Error: savedEntry is not an object', savedEntry);
+        throw new Error('Error saving time entry');
+      }
     } catch (error) {
       console.error('Error ao rexistrar tempo:', error);
       toast({
@@ -168,8 +177,14 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
               <TimePicker
                 id="hours"
                 value={timeString}
-                onChange={setHours}
-                onChangeTimeString={setTimeString}
+                onChange={(value) => {
+                  console.log('Hours changed to:', value);
+                  setHours(value);
+                }}
+                onChangeTimeString={(value) => {
+                  console.log('TimeString changed to:', value);
+                  setTimeString(value);
+                }}
                 required
               />
               <p className="text-xs text-muted-foreground">
@@ -196,7 +211,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
                   <CalendarComponent
                     mode="single"
                     selected={date}
-                    onSelect={(date) => date && setDate(date)}
+                    onSelect={(newDate) => newDate && setDate(newDate)}
                     initialFocus
                     className="bg-white pointer-events-auto"
                   />

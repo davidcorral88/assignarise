@@ -32,7 +32,7 @@ const TimePicker = React.forwardRef<HTMLInputElement, TimePickerProps>(
           setTimeString(formatHoursToTimeFormat(Number(value)));
         }
       }
-    }, [value]);
+    }, [value, timeString]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newTimeValue = e.target.value;
