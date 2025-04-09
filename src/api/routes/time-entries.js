@@ -64,8 +64,8 @@ router.post('/', async (req, res) => {
     }
     
     // Convert IDs to integers
-    const userIdInt = parseInt(user_id, 10);
-    const taskIdInt = parseInt(task_id, 10);
+    const userIdInt = typeof user_id === 'string' ? parseInt(user_id, 10) : user_id;
+    const taskIdInt = typeof task_id === 'string' ? parseInt(task_id, 10) : task_id;
     
     if (isNaN(userIdInt) || isNaN(taskIdInt)) {
       console.error('Invalid user_id or task_id:', { user_id, task_id });

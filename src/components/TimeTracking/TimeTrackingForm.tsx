@@ -80,7 +80,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
       const timeEntry = {
         // Use STRING for id since the TimeEntry type expects id as string
         // The API will generate the actual numeric ID
-        task_id: taskId,           // NUMBER
+        task_id: String(taskId),   // Convert to STRING to match TimeEntry type
         user_id: userId,           // NUMBER 
         hours: hours,              // NUMBER
         date: format(date, 'yyyy-MM-dd'), // STRING in YYYY-MM-DD format
