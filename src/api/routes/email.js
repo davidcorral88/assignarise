@@ -10,8 +10,8 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com', // Replace with actual email in production
-    pass: process.env.EMAIL_PASS || 'your-app-password', // Replace with actual password in production
+    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com', // Replace with actual email in production
+    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy', // Replace with actual password in production
   },
 });
 
