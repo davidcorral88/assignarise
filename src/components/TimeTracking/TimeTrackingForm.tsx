@@ -80,7 +80,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
     if (!selectedTask || hours <= 0 || !date) {
       toast({
         title: 'Campos incompletos',
-        description: 'Por favor complete todos los campos requeridos',
+        description: 'Por favor complete todos os campos requeridos',
         variant: 'destructive',
       });
       return;
@@ -104,10 +104,10 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
         notes: notes || '',        // STRING
       };
       
-      console.log('Enviando registro de tiempo:', JSON.stringify(timeEntry));
+      console.log('Enviando registro de tempo:', JSON.stringify(timeEntry));
       
       const savedEntry = await addTimeEntry(timeEntry);
-      console.log('Registro guardado con éxito:', savedEntry);
+      console.log('Rexistro gardado con éxito:', savedEntry);
       
       onEntryAdded(savedEntry);
       
@@ -177,8 +177,8 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
               <Input
                 id="hours"
                 type="number"
-                min="0.5"
-                step="0.5"
+                min="0.1"
+                step="0.1"
                 value={hours || ''}
                 onChange={(e) => setHours(Number(e.target.value))}
                 required
