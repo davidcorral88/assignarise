@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -42,12 +41,10 @@ const TimeTracking = () => {
         try {
           setLoading(true);
           
-          // Use getTasksAssignments instead of getTasks to get assignments
           const fetchedTasks = await getTasksAssignments();
           console.log('Fetched tasks with assignments:', fetchedTasks);
           console.log('Current user ID:', currentUser.id);
           
-          // Log each task with assignments to debug
           if (fetchedTasks && fetchedTasks.length > 0) {
             fetchedTasks.forEach(task => {
               if (task.assignments) {
@@ -62,13 +59,11 @@ const TimeTracking = () => {
           
           setTasks(fetchedTasks);
           
-          // Convert user ID to number for the API call if it's a string
           const userId = typeof currentUser.id === 'string' ? currentUser.id : String(currentUser.id);
           const fetchedEntries = await getTimeEntriesByUserId(userId);
           console.log('Fetched time entries:', fetchedEntries);
           setTimeEntries(fetchedEntries);
           
-          // Calculate progress for each task
           await calculateTasksProgress(fetchedTasks);
         } catch (error) {
           console.error('Error fetching data:', error);
@@ -86,7 +81,6 @@ const TimeTracking = () => {
     fetchData();
   }, [currentUser]);
   
-  // Calculate progress for all user tasks
   const calculateTasksProgress = async (fetchedTasks: Task[]) => {
     const userTaskIds = fetchedTasks
       .filter(task => task.assignments?.some(assignment => {
@@ -106,7 +100,6 @@ const TimeTracking = () => {
       
     const progressData: Record<string, {worked: number, allocated: number, percentage: number}> = {};
       
-    // Process each task to get hours worked and allocated
     for (const taskId of userTaskIds) {
       if (!taskId) continue;
         
@@ -114,7 +107,6 @@ const TimeTracking = () => {
         const totalHoursWorked = await getTotalHoursByTask(taskId);
         const totalHoursAllocated = await getTotalHoursAllocatedByTask(taskId);
           
-        // Calculate percentage, ensuring it's capped at 100%
         const progressPercentage = totalHoursAllocated > 0 
           ? Math.min(Math.round((totalHoursWorked / totalHoursAllocated) * 100), 100) 
           : 0;
@@ -137,7 +129,6 @@ const TimeTracking = () => {
     setTimeEntries(prevEntries => [entry, ...prevEntries]);
     setIsAddingEntry(false);
     
-    // Recalculate task progress for the affected task
     if (entry.task_id) {
       try {
         const taskId = typeof entry.task_id === 'string' ? entry.task_id : String(entry.task_id);
@@ -173,7 +164,6 @@ const TimeTracking = () => {
         description: 'O rexistro de horas eliminouse correctamente',
       });
       
-      // Update progress for the affected task
       if (entryToDelete && entryToDelete.task_id) {
         const taskId = typeof entryToDelete.task_id === 'string' ? 
           entryToDelete.task_id : String(entryToDelete.task_id);
@@ -220,18 +210,13 @@ const TimeTracking = () => {
     );
   }
   
-  // Filter tasks to get only those assigned to the current user
   const userTasks = tasks.filter(task => {
-    // Ensure task has an assignments array
     if (!task.assignments || !Array.isArray(task.assignments)) {
       console.log(`Task ${task.id} has no valid assignments array`);
       return false;
     }
     
-    // Check if current user is in assignments
     return task.assignments.some(assignment => {
-      // Handle both string and number user_id values
-      // Normalize both values to numbers for comparison
       const assignmentUserId = typeof assignment.user_id === 'string' 
         ? parseInt(assignment.user_id, 10) 
         : assignment.user_id;
@@ -242,7 +227,6 @@ const TimeTracking = () => {
       
       const isAssigned = assignmentUserId === userIdNumber;
       
-      // Debug logging to find issues
       if (isAssigned) {
         console.log(`User ${userIdNumber} is assigned to task ${task.id}`);
       }
@@ -253,7 +237,10 @@ const TimeTracking = () => {
   
   console.log(`Filtered user tasks: ${userTasks.length}`);
   
-  // Helper function to format hours in HH:MM format
+  const formatHoursToDecimal = (hours: number): string => {
+    return hours.toFixed(1);
+  };
+  
   const formatHoursToTimeFormat = (hours: number): string => {
     const wholeHours = Math.floor(hours);
     const minutes = Math.round((hours - wholeHours) * 60);
@@ -403,7 +390,6 @@ const TimeTracking = () => {
                 userTasks.map(task => {
                   const taskId = typeof task.id === 'string' ? task.id : String(task.id);
                   
-                  // Get progress data from the state
                   const progress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
                   
                   return (
@@ -431,8 +417,8 @@ const TimeTracking = () => {
                         <div className="flex justify-between text-sm">
                           <span>Progreso: {progress.percentage}%</span>
                           <span>
-                            {formatHoursToTimeFormat(progress.worked)} / 
-                            {formatHoursToTimeFormat(progress.allocated)} horas
+                            {formatHoursToDecimal(progress.worked)} / 
+                            {formatHoursToDecimal(progress.allocated)} horas
                           </span>
                         </div>
                         <Progress value={progress.percentage} className="h-2" />
@@ -455,4 +441,3 @@ const TimeTracking = () => {
 };
 
 export default TimeTracking;
-
