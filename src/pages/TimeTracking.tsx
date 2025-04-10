@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -50,7 +51,7 @@ const TimeTracking = () => {
             fetchedTasks.forEach(task => {
               if (task.assignments) {
                 console.log(`Task ${task.id} (${task.title}) has ${task.assignments.length} assignments:`, 
-                  task.assignments.map(a => `User ${a.user_id} (${typeof a.user_id}) with ${a.allocatedHours} hours`).join(', ')
+                  task.assignments.map(a => `User ${a.user_id} (${typeof a.user_id}) with ${a.allocatedHours || a.allocated_hours} hours`).join(', ')
                 );
               } else {
                 console.log(`Task ${task.id} (${task.title}) has no assignments`);
@@ -118,9 +119,17 @@ const TimeTracking = () => {
   }
   
   // Filter tasks to get only those assigned to the current user
-  const userTasks = tasks.filter(task => 
-    task.assignments && Array.isArray(task.assignments) && task.assignments.some(assignment => {
+  const userTasks = tasks.filter(task => {
+    // Ensure task has an assignments array
+    if (!task.assignments || !Array.isArray(task.assignments)) {
+      console.log(`Task ${task.id} has no valid assignments array`);
+      return false;
+    }
+    
+    // Check if current user is in assignments
+    return task.assignments.some(assignment => {
       // Handle both string and number user_id values
+      // Normalize both values to numbers for comparison
       const assignmentUserId = typeof assignment.user_id === 'string' 
         ? parseInt(assignment.user_id, 10) 
         : assignment.user_id;
@@ -128,10 +137,17 @@ const TimeTracking = () => {
       const userIdNumber = typeof currentUser?.id === 'string' 
         ? parseInt(currentUser.id, 10) 
         : currentUser?.id;
-        
-      return currentUser && assignmentUserId === userIdNumber;
-    })
-  );
+      
+      const isAssigned = assignmentUserId === userIdNumber;
+      
+      // Debug logging to find issues
+      if (isAssigned) {
+        console.log(`User ${userIdNumber} is assigned to task ${task.id}`);
+      }
+      
+      return isAssigned;
+    });
+  });
   
   console.log(`Filtered user tasks: ${userTasks.length}`);
   
@@ -292,10 +308,10 @@ const TimeTracking = () => {
                     return entryTaskId === taskId;
                   });
                   
-                  const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + entry.hours, 0);
+                  const totalHoursWorked = taskEntries.reduce((sum, entry) => sum + parseFloat(entry.hours.toString()), 0);
                   
                   // Find the assignment for the current user
-                  const taskAssignment = task.assignments.find(a => {
+                  const taskAssignment = task.assignments?.find(a => {
                     // Convert user_id to number if it's a string for comparison
                     const assignmentUserId = typeof a.user_id === 'string' 
                       ? parseInt(a.user_id, 10) 
@@ -308,7 +324,10 @@ const TimeTracking = () => {
                     return currentUser && assignmentUserId === userIdNumber;
                   });
                   
-                  const allocatedHours = taskAssignment?.allocatedHours || 0;
+                  // Get allocated hours from the assignment, handling different property names
+                  const allocatedHours = taskAssignment 
+                    ? (taskAssignment.allocatedHours || taskAssignment.allocated_hours || 0) 
+                    : 0;
                   
                   // Calculate progress percentage correctly
                   // If allocated hours is zero, progress is 0%
@@ -343,7 +362,7 @@ const TimeTracking = () => {
                           <span>Progreso: {progress}%</span>
                           <span>
                             {formatHoursToTimeFormat(totalHoursWorked)} / 
-                            {allocatedHours ? formatHoursToTimeFormat(allocatedHours) : '0:00'} horas
+                            {allocatedHours ? formatHoursToTimeFormat(parseFloat(allocatedHours.toString())) : '0:00'} horas
                           </span>
                         </div>
                         <Progress value={progress} className="h-2" />

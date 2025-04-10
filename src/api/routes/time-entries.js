@@ -41,9 +41,89 @@ router.get('/', async (req, res) => {
     console.log('Time entries query:', query, params);
     const result = await pool.query(query, params);
     console.log(`Retrieved ${result.rows.length} time entries`);
-    res.json(result.rows);
+    
+    // Normalize time entries to ensure consistent types
+    const normalizedEntries = result.rows.map(entry => ({
+      ...entry,
+      id: parseInt(entry.id, 10),
+      task_id: parseInt(entry.task_id, 10),
+      user_id: parseInt(entry.user_id, 10),
+      hours: parseFloat(entry.hours)
+    }));
+    
+    res.json(normalizedEntries);
   } catch (error) {
     console.error('Error fetching time entries:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get time entries by user ID
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Ensure userId is an integer
+    const userIdInt = parseInt(userId, 10);
+    
+    if (isNaN(userIdInt)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    
+    console.log('Fetching time entries for user ID:', userIdInt);
+    
+    const query = 'SELECT * FROM time_entries WHERE user_id = $1 ORDER BY date DESC';
+    const result = await pool.query(query, [userIdInt]);
+    
+    console.log(`Retrieved ${result.rows.length} time entries for user ID ${userIdInt}`);
+    
+    // Normalize time entries to ensure consistent types
+    const normalizedEntries = result.rows.map(entry => ({
+      ...entry,
+      id: parseInt(entry.id, 10),
+      task_id: parseInt(entry.task_id, 10),
+      user_id: parseInt(entry.user_id, 10),
+      hours: parseFloat(entry.hours)
+    }));
+    
+    res.json(normalizedEntries);
+  } catch (error) {
+    console.error(`Error fetching time entries for user ${req.params.userId}:`, error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get time entries by task ID
+router.get('/task/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    // Ensure taskId is an integer
+    const taskIdInt = parseInt(taskId, 10);
+    
+    if (isNaN(taskIdInt)) {
+      return res.status(400).json({ error: 'Invalid task ID' });
+    }
+    
+    console.log('Fetching time entries for task ID:', taskIdInt);
+    
+    const query = 'SELECT * FROM time_entries WHERE task_id = $1 ORDER BY date DESC';
+    const result = await pool.query(query, [taskIdInt]);
+    
+    console.log(`Retrieved ${result.rows.length} time entries for task ID ${taskIdInt}`);
+    
+    // Normalize time entries to ensure consistent types
+    const normalizedEntries = result.rows.map(entry => ({
+      ...entry,
+      id: parseInt(entry.id, 10),
+      task_id: parseInt(entry.task_id, 10),
+      user_id: parseInt(entry.user_id, 10),
+      hours: parseFloat(entry.hours)
+    }));
+    
+    res.json(normalizedEntries);
+  } catch (error) {
+    console.error(`Error fetching time entries for task ${req.params.taskId}:`, error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -106,8 +186,17 @@ router.post('/', async (req, res) => {
         [nextId, taskIdInt, userIdInt, hoursNumber, date, notes || null, category || null, project || null, activity || null, time_format || null]
       );
       
-      console.log('Time entry created:', result.rows[0]);
-      res.status(201).json(result.rows[0]);
+      // Normalize response data types
+      const entry = {
+        ...result.rows[0],
+        id: parseInt(result.rows[0].id, 10),
+        task_id: parseInt(result.rows[0].task_id, 10),
+        user_id: parseInt(result.rows[0].user_id, 10),
+        hours: parseFloat(result.rows[0].hours)
+      };
+      
+      console.log('Time entry created:', entry);
+      res.status(201).json(entry);
     } catch (dbError) {
       console.error('Database error creating time entry:', dbError);
       
@@ -156,8 +245,17 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Time entry not found' });
     }
     
-    console.log('Time entry updated:', result.rows[0]);
-    res.json(result.rows[0]);
+    // Normalize response data types
+    const entry = {
+      ...result.rows[0],
+      id: parseInt(result.rows[0].id, 10),
+      task_id: parseInt(result.rows[0].task_id, 10),
+      user_id: parseInt(result.rows[0].user_id, 10),
+      hours: parseFloat(result.rows[0].hours)
+    };
+    
+    console.log('Time entry updated:', entry);
+    res.json(entry);
   } catch (error) {
     console.error('Error updating time entry:', error);
     res.status(500).json({ error: 'Internal server error' });
