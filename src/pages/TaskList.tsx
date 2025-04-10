@@ -15,6 +15,7 @@ import {
   Hash,
   Calendar,
   User as UserIcon,
+  Users,
   Trash2
 } from 'lucide-react';
 import { 
@@ -80,6 +81,7 @@ const TaskList = () => {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [creatorFilter, setCreatorFilter] = useState<number | null>(null);
+  const [assignedToFilter, setAssignedToFilter] = useState<number | null>(null);
   const [startDateFilter, setStartDateFilter] = useState<Date | undefined>(undefined);
   const [endDateFilter, setEndDateFilter] = useState<Date | undefined>(undefined);
   const [dueDateStartFilter, setDueDateStartFilter] = useState<Date | undefined>(undefined);
@@ -173,6 +175,19 @@ const TaskList = () => {
         return createdByNum === creatorFilter;
       });
     }
+    
+    if (assignedToFilter) {
+      result = result.filter(task => {
+        if (!task.assignments || task.assignments.length === 0) return false;
+        
+        return task.assignments.some(assignment => {
+          const assignedUserId = typeof assignment.user_id === 'string' 
+            ? parseInt(assignment.user_id, 10) 
+            : assignment.user_id;
+          return assignedUserId === assignedToFilter;
+        });
+      });
+    }
 
     if (startDateFilter || endDateFilter) {
       result = result.filter(task => {
@@ -219,7 +234,7 @@ const TaskList = () => {
     }
     
     setFilteredTasks(result);
-  }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
+  }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, assignedToFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
   
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -264,6 +279,7 @@ const TaskList = () => {
     setStatusFilter(null);
     setPriorityFilter(null);
     setCreatorFilter(null);
+    setAssignedToFilter(null);
     setStartDateFilter(undefined);
     setEndDateFilter(undefined);
     setDueDateStartFilter(undefined);
@@ -275,6 +291,7 @@ const TaskList = () => {
     if (statusFilter) count++;
     if (priorityFilter) count++;
     if (creatorFilter) count++;
+    if (assignedToFilter) count++;
     if (startDateFilter || endDateFilter) count++;
     if (dueDateStartFilter || dueDateEndFilter) count++;
     return count;
@@ -483,6 +500,43 @@ const TaskList = () => {
                     </DropdownMenuItem>
                     {allUsers.map(user => (
                       <DropdownMenuItem key={user.id} onClick={() => setCreatorFilter(user.id)}>
+                        <div className="flex items-center">
+                          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
+                            {user.avatar ? (
+                              <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
+                            ) : (
+                              <span className="text-xs font-medium text-primary-foreground">
+                                {user.name.substring(0, 2)}
+                              </span>
+                            )}
+                          </div>
+                          {user.name}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuGroup>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>Asignados</span>
+                    {assignedToFilter && (
+                      <Badge variant="outline" className="ml-auto">
+                        {getUserName(assignedToFilter)}
+                      </Badge>
+                    )}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setAssignedToFilter(null)}>
+                      Todos os usuarios
+                    </DropdownMenuItem>
+                    {allUsers.map(user => (
+                      <DropdownMenuItem key={user.id} onClick={() => setAssignedToFilter(user.id)}>
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
                             {user.avatar ? (
