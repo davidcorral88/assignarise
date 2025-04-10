@@ -344,6 +344,19 @@ const TaskList = () => {
     );
   };
 
+  const formatTaskDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return '—';
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '—';
+      return format(date, 'dd/MM/yyyy');
+    } catch (error) {
+      console.error('Error al formatear fecha:', error);
+      return '—';
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -766,10 +779,7 @@ const TaskList = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {task.dueDate 
-                          ? format(new Date(task.dueDate), 'dd/MM/yyyy')
-                          : '—'
-                        }
+                        {formatTaskDate(task.dueDate)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-1">
