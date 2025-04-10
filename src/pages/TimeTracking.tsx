@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/use-toast';
 import TimeTrackingForm from '@/components/TimeTracking/TimeTrackingForm';
+import WeeklyHours from '@/components/TimeTracking/WeeklyHours';
 
 const TimeTracking = () => {
   const navigate = useNavigate();
@@ -272,6 +274,16 @@ const TimeTracking = () => {
             onEntryAdded={handleTimeEntryAdded}
             onCancel={() => setIsAddingEntry(false)}
             userId={currentUser.id}
+          />
+        )}
+        
+        {/* Add Weekly Hours component here */}
+        {currentUser && (
+          <WeeklyHours 
+            tasks={tasks}
+            timeEntries={timeEntries}
+            userId={currentUser.id}
+            onEntryAdded={handleTimeEntryAdded}
           />
         )}
         
