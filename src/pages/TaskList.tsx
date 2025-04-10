@@ -191,22 +191,32 @@ const TaskList = () => {
 
     if (startDateFilter || endDateFilter) {
       result = result.filter(task => {
-        const taskDate = parseISO(task.createdAt);
-        let matches = true;
+        if (!task.createdAt) return false;
+        
+        try {
+          const taskDate = parseISO(task.createdAt);
+          
+          if (isNaN(taskDate.getTime())) return false;
+          
+          if (startDateFilter) {
+            const startOfDay = new Date(startDateFilter);
+            startOfDay.setHours(0, 0, 0, 0);
+            
+            if (isBefore(taskDate, startOfDay)) return false;
+          }
 
-        if (startDateFilter) {
-          const startOfDay = new Date(startDateFilter);
-          startOfDay.setHours(0, 0, 0, 0);
-          matches = matches && isAfter(taskDate, startOfDay);
+          if (endDateFilter) {
+            const endOfDay = new Date(endDateFilter);
+            endOfDay.setHours(23, 59, 59, 999);
+            
+            if (isAfter(taskDate, endOfDay)) return false;
+          }
+
+          return true;
+        } catch (error) {
+          console.error('Error filtering by creation date:', error);
+          return false;
         }
-
-        if (endDateFilter) {
-          const endOfDay = new Date(endDateFilter);
-          endOfDay.setHours(23, 59, 59, 999);
-          matches = matches && isBefore(taskDate, endOfDay);
-        }
-
-        return matches;
       });
     }
 
@@ -214,22 +224,30 @@ const TaskList = () => {
       result = result.filter(task => {
         if (!task.dueDate) return false;
         
-        const taskDueDate = parseISO(task.dueDate);
-        let matches = true;
+        try {
+          const taskDueDate = parseISO(task.dueDate);
+          
+          if (isNaN(taskDueDate.getTime())) return false;
+          
+          if (dueDateStartFilter) {
+            const startOfDay = new Date(dueDateStartFilter);
+            startOfDay.setHours(0, 0, 0, 0);
+            
+            if (isBefore(taskDueDate, startOfDay)) return false;
+          }
 
-        if (dueDateStartFilter) {
-          const startOfDay = new Date(dueDateStartFilter);
-          startOfDay.setHours(0, 0, 0, 0);
-          matches = matches && isAfter(taskDueDate, startOfDay);
+          if (dueDateEndFilter) {
+            const endOfDay = new Date(dueDateEndFilter);
+            endOfDay.setHours(23, 59, 59, 999);
+            
+            if (isAfter(taskDueDate, endOfDay)) return false;
+          }
+
+          return true;
+        } catch (error) {
+          console.error('Error filtering by due date:', error);
+          return false;
         }
-
-        if (dueDateEndFilter) {
-          const endOfDay = new Date(dueDateEndFilter);
-          endOfDay.setHours(23, 59, 59, 999);
-          matches = matches && isBefore(taskDueDate, endOfDay);
-        }
-
-        return matches;
       });
     }
     
@@ -284,6 +302,7 @@ const TaskList = () => {
     setEndDateFilter(undefined);
     setDueDateStartFilter(undefined);
     setDueDateEndFilter(undefined);
+    setSearchQuery('');
   };
 
   const getActiveFiltersCount = () => {
@@ -365,11 +384,11 @@ const TaskList = () => {
     if (!dateString) return '—';
     
     try {
-      const date = new Date(dateString);
+      const date = parseISO(dateString);
       if (isNaN(date.getTime())) return '—';
       return format(date, 'dd/MM/yyyy');
     } catch (error) {
-      console.error('Error al formatear fecha:', error);
+      console.error('Error formateando fecha:', error);
       return '—';
     }
   };
@@ -570,8 +589,8 @@ const TaskList = () => {
                       </Badge>
                     )}
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="p-0">
-                    <div className="p-2">
+                  <DropdownMenuSubContent className="p-0" sideOffset={-5}>
+                    <div className="p-2 bg-popover border rounded-md shadow-md">
                       <div className="mb-2">
                         <div className="mb-1 text-sm font-medium">Desde</div>
                         <Popover>
@@ -587,12 +606,13 @@ const TaskList = () => {
                               {startDateFilter ? format(startDateFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
+                          <PopoverContent className="w-auto p-0" align="start">
                             <CalendarComponent
                               mode="single"
                               selected={startDateFilter}
                               onSelect={setStartDateFilter}
-                              className="rounded-md border"
+                              initialFocus
+                              className="rounded-md border bg-popover"
                             />
                           </PopoverContent>
                         </Popover>
@@ -612,12 +632,13 @@ const TaskList = () => {
                               {endDateFilter ? format(endDateFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
+                          <PopoverContent className="w-auto p-0" align="start">
                             <CalendarComponent
                               mode="single"
                               selected={endDateFilter}
                               onSelect={setEndDateFilter}
-                              className="rounded-md border"
+                              initialFocus
+                              className="rounded-md border bg-popover"
                             />
                           </PopoverContent>
                         </Popover>
@@ -648,8 +669,8 @@ const TaskList = () => {
                       </Badge>
                     )}
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="p-0">
-                    <div className="p-2">
+                  <DropdownMenuSubContent className="p-0" sideOffset={-5}>
+                    <div className="p-2 bg-popover border rounded-md shadow-md">
                       <div className="mb-2">
                         <div className="mb-1 text-sm font-medium">Desde</div>
                         <Popover>
@@ -665,12 +686,13 @@ const TaskList = () => {
                               {dueDateStartFilter ? format(dueDateStartFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
+                          <PopoverContent className="w-auto p-0" align="start">
                             <CalendarComponent
                               mode="single"
                               selected={dueDateStartFilter}
                               onSelect={setDueDateStartFilter}
-                              className="rounded-md border"
+                              initialFocus
+                              className="rounded-md border bg-popover"
                             />
                           </PopoverContent>
                         </Popover>
@@ -690,12 +712,13 @@ const TaskList = () => {
                               {dueDateEndFilter ? format(dueDateEndFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
+                          <PopoverContent className="w-auto p-0" align="start">
                             <CalendarComponent
                               mode="single"
                               selected={dueDateEndFilter}
                               onSelect={setDueDateEndFilter}
-                              className="rounded-md border"
+                              initialFocus
+                              className="rounded-md border bg-popover"
                             />
                           </PopoverContent>
                         </Popover>
