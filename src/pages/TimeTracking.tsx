@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -51,7 +50,7 @@ const TimeTracking = () => {
             fetchedTasks.forEach(task => {
               if (task.assignments) {
                 console.log(`Task ${task.id} (${task.title}) has ${task.assignments.length} assignments:`, 
-                  task.assignments.map(a => `User ${a.user_id} (${typeof a.user_id}) with ${a.allocatedHours || a.allocated_hours} hours`).join(', ')
+                  task.assignments.map(a => `User ${a.user_id} (${typeof a.user_id}) with ${a.allocatedHours} hours`).join(', ')
                 );
               } else {
                 console.log(`Task ${task.id} (${task.title}) has no assignments`);
@@ -324,9 +323,9 @@ const TimeTracking = () => {
                     return currentUser && assignmentUserId === userIdNumber;
                   });
                   
-                  // Get allocated hours from the assignment, handling different property names
+                  // Get allocated hours from the assignment
                   const allocatedHours = taskAssignment 
-                    ? (taskAssignment.allocatedHours || taskAssignment.allocated_hours || 0) 
+                    ? (taskAssignment.allocatedHours || 0) 
                     : 0;
                   
                   // Calculate progress percentage correctly
