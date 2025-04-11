@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, parseISO, getDay, addWeeks, subWeeks } from 'date-fns';
 import { es, gl } from 'date-fns/locale';
@@ -153,9 +152,11 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
         return;
       }
 
+      const userIdAsNumber = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+      
       const entry = await addTimeEntry({
         task_id: parseInt(taskId, 10),
-        user_id: userId,
+        user_id: userIdAsNumber,
         hours,
         date: dayDate,
         notes: `Rexistro semanal - ${format(parseISO(dayDate), 'EEEE', { locale: gl })}`
@@ -166,7 +167,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
         description: 'As horas foron rexistradas correctamente',
       });
 
-      // Update week time entries
       setWeekTimeEntries(prev => ({
         ...prev,
         [taskId]: {
@@ -175,7 +175,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
         }
       }));
 
-      // Call the parent callback
       onEntryAdded(entry);
     } catch (error) {
       console.error('Error saving hours:', error);
@@ -203,22 +202,17 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
       const weekStartDate = format(currentWeek, 'yyyy-MM-dd');
       const weekEndDate = format(addDays(currentWeek, 6), 'yyyy-MM-dd');
       
-      // Only process entries from the current week
       if (entryDate >= weekStartDate && entryDate <= weekEndDate) {
-        // Initialize task entries if not exists
         if (!entriesByTaskAndDay[taskId]) {
           entriesByTaskAndDay[taskId] = {};
           
-          // Also add to selected tasks if not already there
           if (!selectedTasks.includes(taskId)) {
             setSelectedTasks(prev => [...prev, taskId]);
           }
         }
         
-        // Store entry by day
         entriesByTaskAndDay[taskId][entryDate] = entry;
         
-        // Initialize hours data if needed
         if (!hoursData[taskId]) {
           hoursData[taskId] = {};
           
@@ -228,14 +222,12 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
           }
         }
         
-        // Set hours from entry
         hoursData[taskId][entryDate] = String(entry.hours);
       }
     });
     
     setWeekTimeEntries(entriesByTaskAndDay);
     
-    // Initialize task hours for selected tasks that don't have entries
     selectedTasks.forEach(taskId => {
       if (!hoursData[taskId]) {
         hoursData[taskId] = {};
