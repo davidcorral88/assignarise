@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import { Calendar } from 'lucide-react';
@@ -43,36 +43,38 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
   const [date, setDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+  const [assignedTasks, setAssignedTasks] = useState<Task[]>([]);
   
-  // Improve task assignment detection to properly filter assigned tasks
-  const assignedTasks = tasks.filter(task => {
-    // Check if the task has assignments array
-    if (!task.assignments || !Array.isArray(task.assignments) || task.assignments.length === 0) {
-      return false;
-    }
-    
-    // Check if any assignment matches the current user ID
-    return task.assignments.some(assignment => {
-      // Handle case where assignment might not have user_id
-      if (!assignment || assignment.user_id === undefined) {
+  useEffect(() => {
+    // Filter tasks assigned to the current user
+    const userTasks = tasks.filter(task => {
+      // Check if the task has assignments array
+      if (!task.assignments || !Array.isArray(task.assignments) || task.assignments.length === 0) {
         return false;
       }
       
-      // Convert both to numbers for comparison
-      const assignmentUserId = typeof assignment.user_id === 'string' 
-        ? parseInt(assignment.user_id, 10) 
-        : assignment.user_id;
+      // Check if any assignment matches the current user ID
+      return task.assignments.some(assignment => {
+        // Handle case where assignment might not have user_id
+        if (!assignment || assignment.user_id === undefined) {
+          return false;
+        }
         
-      // Make sure we're comparing numbers
-      const userIdNumber = typeof userId === 'string' ? parseInt(userId, 10) : userId;
-      
-      console.log(`Comparing assignment user ID ${assignmentUserId} with current user ID ${userIdNumber}. Match: ${assignmentUserId === userIdNumber}`);
-      
-      return assignmentUserId === userIdNumber;
+        // Convert both to numbers for comparison
+        const assignmentUserId = typeof assignment.user_id === 'string' 
+          ? parseInt(assignment.user_id, 10) 
+          : assignment.user_id;
+          
+        // Make sure we're comparing numbers
+        const userIdNumber = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+        
+        return assignmentUserId === userIdNumber;
+      });
     });
-  });
-  
-  console.log(`Total tasks: ${tasks.length}, Filtered assigned tasks: ${assignedTasks.length}, User ID: ${userId}`);
+    
+    setAssignedTasks(userTasks);
+    console.log(`Total tasks: ${tasks.length}, Filtered assigned tasks: ${userTasks.length}, User ID: ${userId}`);
+  }, [tasks, userId]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,7 +202,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
                     {date ? format(date, "dd/MM/yyyy") : <span>Seleccionar data</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0 bg-white">
                   <CalendarComponent
                     mode="single"
                     selected={date}
