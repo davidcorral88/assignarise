@@ -83,6 +83,13 @@ export const getTaskByIdForState = async (id: string, setState: React.Dispatch<R
     console.log(`Fetching task with ID: ${id}`);
     const task = await apiService.getTaskById(id);
     console.log(`Task retrieved:`, task);
+    
+    // Ensure date fields are properly set
+    if (task) {
+      task.createdAt = task.createdAt || task.created_at;
+      task.dueDate = task.dueDate || task.due_date;
+    }
+    
     setState(task || null);
     return task;
   } catch (error) {

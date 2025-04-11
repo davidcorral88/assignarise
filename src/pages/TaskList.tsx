@@ -102,6 +102,8 @@ const TaskList = () => {
       tasksData = await getTasks();
       tasksDataAssignments = await getTasksAssignments();
 
+      console.log("Raw tasks data:", tasksData);
+      
       const normalizedTasks = tasksData.map(task => ({
         ...task,
         assignments: task.assignments || []
@@ -109,9 +111,13 @@ const TaskList = () => {
 
       const normalizedTasks2 = tasksDataAssignments.map(task => ({
         ...task,
-        assignments: task.assignments || []
+        assignments: task.assignments || [],
+        createdAt: task.createdAt || task.created_at,
+        dueDate: task.dueDate || task.due_date
       }));
 
+      console.log("Normalized tasks with date fields:", normalizedTasks2);
+      
       setTasks(normalizedTasks2);
       setFilteredTasks(normalizedTasks2);
       
@@ -393,14 +399,19 @@ const TaskList = () => {
     if (!dateString) return '—';
     
     try {
-      const date = parseISO(dateString);
-      
-      if (isNaN(date.getTime())) {
-        console.log(`Invalid date format for: ${dateString}`);
+      if (typeof dateString === 'string') {
+        const date = parseISO(dateString);
+        
+        if (isNaN(date.getTime())) {
+          console.log(`Invalid date format for: ${dateString}`);
+          return '—';
+        }
+        
+        return format(date, 'dd/MM/yyyy');
+      } else {
+        console.log(`Non-string date value: ${dateString}`);
         return '—';
       }
-      
-      return format(date, 'dd/MM/yyyy');
     } catch (error) {
       console.error('Error formatting date:', error, 'Date string:', dateString);
       return '—';
@@ -794,6 +805,9 @@ const TaskList = () => {
                   const createdById = task.createdBy || task.created_by;
                   const taskCreator = createdById ? users[createdById] : null;
                   
+                  console.log(`Task ${task.id} - createdAt:`, task.createdAt || task.created_at, 
+                              'dueDate:', task.dueDate || task.due_date);
+                  
                   return (
                     <TableRow key={task.id}>
                       <TableCell className="font-mono text-xs">
@@ -876,10 +890,10 @@ const TaskList = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {task.createdAt ? formatTaskDate(task.createdAt) : '—'}
+                        {formatTaskDate(task.createdAt || task.created_at)}
                       </TableCell>
                       <TableCell>
-                        {task.dueDate ? formatTaskDate(task.dueDate) : '—'}
+                        {formatTaskDate(task.dueDate || task.due_date)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-1">
