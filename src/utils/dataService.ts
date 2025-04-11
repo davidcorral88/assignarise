@@ -86,8 +86,8 @@ export const getTaskByIdForState = async (id: string, setState: React.Dispatch<R
     
     // Ensure date fields are properly set
     if (task) {
-      task.createdAt = task.createdAt || task.created_at;
-      task.dueDate = task.dueDate || task.due_date;
+      task.createdAt = task.createdAt || (task.created_at as string);
+      task.dueDate = task.dueDate || (task.due_date as string);
     }
     
     setState(task || null);

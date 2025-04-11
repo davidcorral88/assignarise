@@ -41,10 +41,13 @@ export interface Task {
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   createdBy: number;
-  created_by?: number; // Añadir campo alternativo para mantener compatibilidad
+  created_by?: number; // Alternative field for compatibility
   createdAt: string;
+  created_at?: string; // Alternative field for compatibility
   startDate?: string;
+  start_date?: string; // Alternative field for compatibility
   dueDate?: string;
+  due_date?: string; // Alternative field for compatibility
   tags: string[];
   assignments: TaskAssignment[];
   attachments?: TaskAttachment[];

@@ -805,8 +805,8 @@ const TaskList = () => {
                   const createdById = task.createdBy || task.created_by;
                   const taskCreator = createdById ? users[createdById] : null;
                   
-                  console.log(`Task ${task.id} - createdAt:`, task.createdAt || task.created_at, 
-                              'dueDate:', task.dueDate || task.due_date);
+                  console.log(`Task ${task.id} - createdAt:`, task.createdAt || (task.created_at as string | undefined), 
+                              'dueDate:', task.dueDate || (task.due_date as string | undefined));
                   
                   return (
                     <TableRow key={task.id}>
@@ -890,10 +890,10 @@ const TaskList = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {formatTaskDate(task.createdAt || task.created_at)}
+                        {formatTaskDate(task.createdAt || (task.created_at as string | undefined))}
                       </TableCell>
                       <TableCell>
-                        {formatTaskDate(task.dueDate || task.due_date)}
+                        {formatTaskDate(task.dueDate || (task.due_date as string | undefined))}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-1">
