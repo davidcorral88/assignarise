@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -21,7 +20,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from '@/lib/utils';
 import { CheckSquare, ArrowLeft, Trash2, Plus, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
 import { FileUploader } from '@/components/files/FileUploader';
-import { CategoryProjectSelect } from '@/components/tasks/CategoryProjectSelect';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,10 +41,6 @@ const TaskForm = () => {
   const [allocatedHours, setAllocatedHours] = useState<number>(0);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   const [creatorUser, setCreatorUser] = useState<User | null>(null);
-  
-  // New fields for category and project
-  const [category, setCategory] = useState<string>('');
-  const [project, setProject] = useState<string>('');
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -90,10 +84,6 @@ const TaskForm = () => {
             setDescription(taskData.description || '');
             setStatus(taskData.status || 'pending');
             setPriority(taskData.priority || 'medium');
-            
-            // Set category and project if available
-            setCategory(taskData.category || '');
-            setProject(taskData.project || '');
             
             if (taskData.startDate) {
               try {
@@ -224,9 +214,6 @@ const TaskForm = () => {
         tags: tags || [],
         assignments: normalizedAssignments,
         attachments: attachments || [],
-        // Add category and project fields
-        category: category || undefined,
-        project: project || undefined,
       };
       
       console.log("Saving task data:", taskData);
@@ -452,14 +439,6 @@ const TaskForm = () => {
                       </span>
                     </div>
                   </div>
-                  
-                  {/* Category and Project selection */}
-                  <CategoryProjectSelect 
-                    category={category}
-                    project={project}
-                    onCategoryChange={setCategory}
-                    onProjectChange={setProject}
-                  />
                   
                   <div className="space-y-2">
                     <Label htmlFor="startDate">Data Inicio</Label>

@@ -35,9 +35,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
     setIsLoading(true);
     
     try {
-      // Convert user.id to number if it's a string
-      const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
-      const result = await resetUserPassword(userId);
+      const result = await resetUserPassword(user.id);
       
       if (result.success) {
         setIsSuccess(true);

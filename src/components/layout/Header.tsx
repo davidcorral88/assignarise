@@ -34,7 +34,7 @@ export const Header: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -195,7 +195,7 @@ export const Header: React.FC = () => {
                 <span>Perfil</span>
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => setChangePasswordOpen(true)}
+                onClick={() => setChangePasswordDialogOpen(true)}
                 className="cursor-pointer"
               >
                 <KeyRound className="mr-2 h-4 w-4" />
@@ -235,12 +235,9 @@ export const Header: React.FC = () => {
       )}
 
       <ChangePasswordDialog 
-        open={changePasswordOpen} 
-        onOpenChange={setChangePasswordOpen} 
-        user={currentUser}
+        open={changePasswordDialogOpen} 
+        onOpenChange={setChangePasswordDialogOpen} 
       />
     </header>
   );
 };
-
-export default Header;

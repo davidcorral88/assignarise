@@ -1,5 +1,6 @@
+
 import * as apiService from './apiService';
-import { User, Task, TimeEntry, Holiday, VacationDay } from './types';
+import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
 import { API_URL } from './dbConfig';
 

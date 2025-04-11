@@ -124,15 +124,11 @@ export function FileUploader({
       
       const newAttachment: TaskAttachment = {
         id: uuidv4(),
-        name: file.name,
-        path: URL.createObjectURL(file),
-        size: file.size,
-        type: file.type,
-        uploadedBy: 1,
-        uploadDate: new Date().toISOString(),
-        isResolution: isResolution,
         filename: file.name,
         fileSize: file.size,
+        uploadDate: new Date().toISOString(),
+        uploadedBy: 1,
+        isResolution: isResolution,
         fileUrl: URL.createObjectURL(file),
         fileType: file.type,
         taskId: taskId
@@ -309,9 +305,9 @@ export function FileUploader({
             <div className="flex items-center space-x-3">
               <File className="h-5 w-5 text-blue-500" />
               <div>
-                <p className="font-medium text-sm">{attachment.name || attachment.filename}</p>
+                <p className="font-medium text-sm">{attachment.filename}</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatFileSize(attachment.size || attachment.fileSize || 0)} • {formatDate(attachment.uploadDate || '')}
+                  {formatFileSize(attachment.fileSize)} • {formatDate(attachment.uploadDate)}
                 </p>
               </div>
             </div>
