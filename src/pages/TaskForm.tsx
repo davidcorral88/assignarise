@@ -148,12 +148,20 @@ const TaskForm = () => {
             
             setTags(taskData.tags || []);
             
+            const userIdsToFetch = new Set<number>();
+            
+            if (taskData.createdBy) {
+              userIdsToFetch.add(Number(taskData.createdBy));
+            }
+            
             if (taskData.assignments && taskData.assignments.length > 0) {
               const normalizedAssignments = taskData.assignments.map(assignment => {
                 const userId = typeof assignment.user_id === 'string' 
                   ? parseInt(assignment.user_id, 10) 
                   : assignment.user_id;
                   
+                userIdsToFetch.add(userId);
+                
                 return {
                   user_id: userId,
                   allocatedHours: assignment.allocatedHours || 0
@@ -161,25 +169,20 @@ const TaskForm = () => {
               });
               setAssignments(normalizedAssignments);
               console.log("Normalized assignments:", normalizedAssignments);
-              
-              const userIds = normalizedAssignments.map(a => a.user_id);
-              if (userIds.length > 0) {
-                const usersData = await getUsersByIds(userIds);
-                setAssignedUserData(usersData);
-                console.log("Assigned users data:", usersData);
-              }
             } else {
               setAssignments([]);
             }
             
             setAttachments(taskData.attachments || []);
             
-            if (taskData.createdBy) {
-              try {
-                const creator = await getUserById(Number(taskData.createdBy));
-                setCreatorUser(creator || null);
-              } catch (error) {
-                console.error('Error fetching creator user:', error);
+            if (userIdsToFetch.size > 0) {
+              const userIds = Array.from(userIdsToFetch);
+              console.log(`Fetching data for ${userIds.length} users in batch`);
+              const usersData = await getUsersByIds(userIds);
+              setAssignedUserData(usersData);
+              
+              if (taskData.createdBy && usersData[Number(taskData.createdBy)]) {
+                setCreatorUser(usersData[Number(taskData.createdBy)]);
               }
             }
           } else {
