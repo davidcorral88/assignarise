@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -148,12 +149,12 @@ const TaskList = () => {
     let result = [...tasks];
     
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.toLowerCase().trim();
       result = result.filter(
         task => 
-          task.title.toLowerCase().includes(query) || 
-          task.description.toLowerCase().includes(query) ||
-          task.id.includes(query)
+          (task.title && task.title.toLowerCase().includes(query)) || 
+          (task.description && task.description.toLowerCase().includes(query)) ||
+          (task.id && task.id.toLowerCase().includes(query))
       );
     }
     
