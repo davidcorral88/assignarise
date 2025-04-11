@@ -78,6 +78,20 @@ const TaskForm = () => {
   }, [currentUser]);
   
   useEffect(() => {
+    if (category) {
+      const projects = getProjectsForCategory(category);
+      setAvailableProjects(projects);
+      
+      if (projects.length > 0 && project && !projects.includes(project)) {
+        setProject('');
+      }
+    } else {
+      setAvailableProjects([]);
+      setProject('');
+    }
+  }, [category, project]);
+  
+  useEffect(() => {
     const fetchData = async () => {
       try {
         if (isEditMode && id) {
@@ -92,8 +106,15 @@ const TaskForm = () => {
             setStatus(taskData.status || 'pending');
             setPriority(taskData.priority || 'medium');
             
-            setCategory(taskData.category || '');
-            setProject(taskData.project || '');
+            if (taskData.category) {
+              setCategory(taskData.category);
+              const projectsForCategory = getProjectsForCategory(taskData.category);
+              setAvailableProjects(projectsForCategory);
+            }
+            
+            if (taskData.project) {
+              setProject(taskData.project);
+            }
             
             if (taskData.startDate) {
               try {

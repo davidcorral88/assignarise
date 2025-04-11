@@ -11,7 +11,7 @@ router.post('/verify', async (req, res) => {
   try {
     const { userId, password } = req.body;
     
-    if (!userId && !password) {
+    if (!userId || !password) {
       return res.status(400).json({ error: 'User ID and password are required' });
     }
 
