@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, parseISO, getDay, addWeeks, subWeeks } from 'date-fns';
 import { es, gl } from 'date-fns/locale';
@@ -42,17 +41,14 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
   const [taskHours, setTaskHours] = useState<Record<string, Record<string, string>>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  // Navigate to previous week
   const goToPreviousWeek = () => {
     setCurrentWeek(prev => subWeeks(prev, 1));
   };
 
-  // Navigate to next week
   const goToNextWeek = () => {
     setCurrentWeek(prev => addWeeks(prev, 1));
   };
 
-  // Add a task to track hours for
   const addTaskToWeek = (taskId: string) => {
     if (selectedTasks.includes(taskId)) {
       toast({
@@ -64,7 +60,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     
     setSelectedTasks(prev => [...prev, taskId]);
     
-    // Initialize hours for the task
     setTaskHours(prev => {
       const newHours: Record<string, string> = {};
       for (let i = 0; i < 7; i++) {
@@ -75,7 +70,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     });
   };
 
-  // Update hours for a task on a specific day
   const updateHours = (taskId: string, dayDate: string, hours: string) => {
     if (isNaN(parseFloat(hours)) && hours !== '') return;
     
@@ -88,7 +82,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     }));
   };
 
-  // Calculate total hours for a task across the week
   const calculateTaskTotal = (taskId: string): string => {
     if (!taskHours[taskId]) return '0:00';
     
@@ -101,7 +94,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     return formatHoursToTimeFormat(total);
   };
 
-  // Calculate total hours for a day across all tasks
   const calculateDayTotal = (dayIndex: number): string => {
     const dayDate = format(addDays(currentWeek, dayIndex), 'yyyy-MM-dd');
     
@@ -115,7 +107,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     return formatHoursToTimeFormat(total);
   };
 
-  // Calculate week total hours
   const calculateWeekTotal = (): string => {
     let total = 0;
     
@@ -136,7 +127,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     return `${wholeHours}:${minutes.toString().padStart(2, '0')}`;
   };
 
-  // Find existing entry for a task and day
   const findExistingEntry = (taskId: string, dayDate: string): TimeEntry | undefined => {
     return timeEntries.find(entry => {
       const entryTaskId = typeof entry.task_id === 'string' 
@@ -149,7 +139,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     });
   };
 
-  // Save or update hours for a task on a specific day
   const saveHours = async (taskId: string, dayDate: string) => {
     if (!taskHours[taskId][dayDate] || taskHours[taskId][dayDate] === '0') return;
 
@@ -168,15 +157,12 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
 
       const userIdAsNumber = typeof userId === 'string' ? parseInt(userId, 10) : userId;
       
-      // Check if there's an existing entry for this task and date
       const existingEntry = findExistingEntry(taskId, dayDate);
       
       let entry;
       
       if (existingEntry) {
-        // Update existing entry
-        entry = await updateTimeEntry({
-          id: existingEntry.id,
+        entry = await updateTimeEntry(existingEntry.id, {
           task_id: parseInt(taskId, 10),
           user_id: userIdAsNumber,
           hours,
@@ -186,14 +172,13 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
           project: existingEntry.project,
           activity: existingEntry.activity,
           timeFormat: existingEntry.timeFormat
-        }, existingEntry.id);
+        });
         
         toast({
           title: 'Rexistro actualizado',
           description: 'As horas foron actualizadas correctamente',
         });
       } else {
-        // Create new entry
         entry = await addTimeEntry({
           task_id: parseInt(taskId, 10),
           user_id: userIdAsNumber,
@@ -229,7 +214,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     }
   };
 
-  // Group time entries by task and day
   useEffect(() => {
     const entriesByTaskAndDay: Record<string, Record<string, TimeEntry>> = {};
     const hoursData: Record<string, Record<string, string>> = {};
@@ -348,7 +332,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                 </th>
               </tr>
               
-              {/* Header row with day totals */}
               <tr className="border-b bg-muted/30 text-sm">
                 <td className="p-2 text-right text-muted-foreground">Horas diarias</td>
                 {Array.from({ length: 7 }, (_, i) => (
@@ -407,7 +390,6 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                 );
               })}
               
-              {/* Add task row */}
               <tr>
                 <td colSpan={9} className="p-2">
                   <div className="flex">
