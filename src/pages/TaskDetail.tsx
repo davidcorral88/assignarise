@@ -101,7 +101,6 @@ const TaskDetail = () => {
     const loadTask = async () => {
       setLoading(true);
       try {
-        // Convert taskId to a numeric value for database operations
         const numericTaskId = toNumericId(taskId);
         
         if (numericTaskId === undefined) {
@@ -111,15 +110,12 @@ const TaskDetail = () => {
         const taskData = await getTaskById(numericTaskId);
         setTask(taskData);
         
-        // Load time entries for this task
         const timeEntriesData = await getTimeEntriesByTaskId(numericTaskId);
         setTimeEntries(timeEntriesData);
         
-        // Calculate total hours spent on this task
         const totalHours = timeEntriesData.reduce((sum, entry) => sum + Number(entry.hours), 0);
         setTotalHours(totalHours);
         
-        // Calculate total hours allocated to this task
         if (taskData.assignments) {
           const totalAllocated = taskData.assignments.reduce(
             (sum, assignment) => sum + Number(assignment.allocatedHours || 0), 
@@ -128,8 +124,7 @@ const TaskDetail = () => {
           setTotalAllocatedHours(totalAllocated);
         }
         
-        // Load attachments for this task
-        const attachmentsData = await getTaskAttachments(toStringId(taskId) || '');
+        const attachmentsData = await getTaskAttachments(taskId || '');
         setAttachments(attachmentsData);
         
         setLoading(false);
@@ -142,11 +137,9 @@ const TaskDetail = () => {
     
     loadTask();
     
-    // Clean-up function
     return () => {
-      // Any cleanup code if needed
     };
-  }, [taskId]); // Only re-run if taskId changes
+  }, [taskId]);
 
   useEffect(() => {
     if (task) {
@@ -182,29 +175,25 @@ const TaskDetail = () => {
 
     setLoading(true);
     try {
-      // Ensure taskId is correctly converted to a number
       const numericTaskId = toNumericId(taskId);
       
       if (numericTaskId === undefined) {
         throw new Error("Invalid task ID");
       }
       
-      // Prepare the updated task data
-      const updatedTask = {
+      const updatedTask: Partial<Task> = {
         ...task,
         title,
         description,
-        status,
-        priority,
-        createdAt: createdAt ? createdAt.toISOString() : null,
-        startDate: startDate ? startDate.toISOString() : null,
-        dueDate: dueDate ? dueDate.toISOString() : null,
+        status: status as 'pending' | 'in_progress' | 'completed',
+        priority: priority as 'low' | 'medium' | 'high',
+        createdAt: createdAt ? createdAt.toISOString() : undefined,
+        startDate: startDate ? startDate.toISOString() : undefined,
+        dueDate: dueDate ? dueDate.toISOString() : undefined,
       };
       
-      // Call the updateTask function with the numeric task ID
       await updateTask(numericTaskId, updatedTask);
       
-      // After successful update, refresh the task data
       const updatedTaskData = await getTaskById(numericTaskId);
       setTask(updatedTaskData);
       
@@ -235,14 +224,12 @@ const TaskDetail = () => {
 
     setLoading(true);
     try {
-      // Ensure taskId is correctly converted to a number
       const numericTaskId = toNumericId(taskId);
       
       if (numericTaskId === undefined) {
         throw new Error("Invalid task ID");
       }
       
-      // Call the deleteTask function with the numeric task ID
       await deleteTask(numericTaskId);
       
       toast({
@@ -554,7 +541,7 @@ const TaskDetail = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <TaskAssignmentList taskId={taskId || ''} assignments={task.assignments || []} />
+            <TaskAssignmentList taskId={taskId || ''} assignments={task?.assignments || []} />
             <TaskAssignmentForm taskId={taskId || ''} onTaskUpdated={setTask} />
           </CardContent>
         </Card>
@@ -570,7 +557,10 @@ const TaskDetail = () => {
             <TimeEntryList taskId={taskId || ''} timeEntries={timeEntries} setTimeEntries={setTimeEntries} />
             <TimeEntryForm taskId={taskId || ''} onTimeEntryCreated={() => {
               if (taskId) {
-                getTimeEntriesByTaskId(taskId).then(setTimeEntries);
+                const numericTaskId = toNumericId(taskId);
+                if (numericTaskId !== undefined) {
+                  getTimeEntriesByTaskId(numericTaskId).then(setTimeEntries);
+                }
               }
             }} />
           </CardContent>

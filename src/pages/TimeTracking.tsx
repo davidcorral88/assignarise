@@ -120,13 +120,13 @@ const TimeTracking = () => {
   const filterTimeEntries = () => {
     let filtered = timeEntries.filter(entry => {
       if (selectedTask && selectedTask !== '0') {
-        if (entry.taskId?.toString() !== selectedTask) {
+        if (entry.task_id?.toString() !== selectedTask) {
           return false;
         }
       }
 
       if (selectedUser && selectedUser !== '0') {
-        if (entry.userId?.toString() !== selectedUser) {
+        if (entry.user_id?.toString() !== selectedUser) {
           return false;
         }
       }
@@ -145,8 +145,8 @@ const TimeTracking = () => {
 
       if (searchQuery.trim()) {
         const searchLower = searchQuery.toLowerCase();
-        const taskMatch = availableTasks.find(task => task.id?.toString() === entry.taskId?.toString())?.title?.toLowerCase().includes(searchLower);
-        const userMatch = availableUsers.find(user => user.id?.toString() === entry.userId?.toString())?.name?.toLowerCase().includes(searchLower);
+        const taskMatch = availableTasks.find(task => task.id?.toString() === entry.task_id?.toString())?.title?.toLowerCase().includes(searchLower);
+        const userMatch = availableUsers.find(user => user.id?.toString() === entry.user_id?.toString())?.name?.toLowerCase().includes(searchLower);
         const descriptionMatch = entry.description?.toLowerCase().includes(searchLower);
 
         if (!(taskMatch || userMatch || descriptionMatch)) {
@@ -216,16 +216,16 @@ const TimeTracking = () => {
     }
   };
 
-  const canCreateTimeEntries = currentUser?.role === 'admin' || currentUser?.role === 'director' || currentUser?.role === 'employee';
+  const canCreateTimeEntries = currentUser?.role === 'admin' || currentUser?.role === 'director' || currentUser?.role === 'worker';
 
   // Fix the type conversion in the component
   const processTimeEntry = (entry: any) => {
     // Convert userId to number if it's a string
-    const userId = toNumericId(entry.userId);
+    const userId = toNumericId(entry.user_id);
 
     return {
       ...entry,
-      userId: userId !== undefined ? userId : entry.userId,
+      user_id: userId !== undefined ? userId : entry.user_id,
     };
   };
 
@@ -372,8 +372,8 @@ const TimeTracking = () => {
             <TableBody>
               {filteredTimeEntries.map(entry => {
                 const processedEntry = processTimeEntry(entry);
-                const task = availableTasks.find(task => task.id?.toString() === processedEntry.taskId?.toString());
-                const user = availableUsers.find(user => user.id?.toString() === processedEntry.userId?.toString());
+                const task = availableTasks.find(task => task.id?.toString() === processedEntry.task_id?.toString());
+                const user = availableUsers.find(user => user.id?.toString() === processedEntry.user_id?.toString());
 
                 return (
                   <TableRow key={processedEntry.id}>

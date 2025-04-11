@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -28,7 +29,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import ChangePasswordDialog from '../auth/ChangePasswordDialog';
 
 export const Header: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();

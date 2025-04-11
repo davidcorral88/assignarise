@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { getUserById, addUser, updateUser, getNextUserId } from '../utils/dataService';
-import { User } from '../utils/types';
+import { User, UserRole } from '../utils/types';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,7 @@ const UserForm = () => {
     id: 0,
     name: '',
     email: '',
-    role: 'user',
+    role: 'worker' as UserRole,
     active: true
   });
   const [loading, setLoading] = useState<boolean>(false);
@@ -79,7 +79,7 @@ const UserForm = () => {
     setUser(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleRoleChange = (value: string) => {
+  const handleRoleChange = (value: UserRole) => {
     setUser(prev => ({ ...prev, role: value }));
   };
 
@@ -99,11 +99,14 @@ const UserForm = () => {
           description: `El usuario ${user.name} ha sido creado correctamente.`,
         });
       } else {
-        await updateUser(user.id, user);
-        toast({
-          title: "Usuario actualizado",
-          description: `El usuario ${user.name} ha sido actualizado correctamente.`,
-        });
+        const userId = toNumericId(user.id);
+        if (userId !== undefined) {
+          await updateUser(userId, user);
+          toast({
+            title: "Usuario actualizado",
+            description: `El usuario ${user.name} ha sido actualizado correctamente.`,
+          });
+        }
       }
       navigate('/users');
     } catch (error) {
@@ -191,6 +194,7 @@ const UserForm = () => {
                   <SelectContent>
                     <SelectItem value="admin">Administrador</SelectItem>
                     <SelectItem value="director">Director</SelectItem>
+                    <SelectItem value="worker">Trabajador</SelectItem>
                     <SelectItem value="user">Usuario</SelectItem>
                   </SelectContent>
                 </Select>
