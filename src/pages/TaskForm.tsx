@@ -42,6 +42,9 @@ const TaskForm = () => {
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   const [creatorUser, setCreatorUser] = useState<User | null>(null);
   
+  const [category, setCategory] = useState<string>('');
+  const [project, setProject] = useState<string>('');
+  
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -84,6 +87,9 @@ const TaskForm = () => {
             setDescription(taskData.description || '');
             setStatus(taskData.status || 'pending');
             setPriority(taskData.priority || 'medium');
+            
+            setCategory(taskData.category || '');
+            setProject(taskData.project || '');
             
             if (taskData.startDate) {
               try {
@@ -214,6 +220,8 @@ const TaskForm = () => {
         tags: tags || [],
         assignments: normalizedAssignments,
         attachments: attachments || [],
+        category: category || undefined,
+        project: project || undefined,
       };
       
       console.log("Saving task data:", taskData);
@@ -487,6 +495,28 @@ const TaskForm = () => {
                       placeholder="Describe a tarefa en detalle"
                       className="min-h-[150px]"
                     />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Categoría</Label>
+                      <Input
+                        id="category"
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        placeholder="Categoría da tarefa"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="project">Proxecto</Label>
+                      <Input
+                        id="project"
+                        value={project}
+                        onChange={(e) => setProject(e.target.value)}
+                        placeholder="Proxecto relacionado"
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
