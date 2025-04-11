@@ -18,9 +18,9 @@ import { User } from '@/utils/types';
 import { toNumericId } from '@/utils/typeUtils';
 
 interface ChangePasswordDialogProps {
-  user: User;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: React.Dispatch<React.SetStateAction<boolean>>;
+  user: User | null;
 }
 
 const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
@@ -49,10 +49,8 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
   };
   
   const handleChangePassword = async () => {
-    // Reset error
     setError('');
     
-    // Validate inputs
     if (!currentPassword.trim()) {
       setError('Debes ingresar tu contraseña actual');
       return;
@@ -76,8 +74,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
     setIsLoading(true);
     
     try {
-      // Use our utility function to safely convert user.id to number
-      const userId = toNumericId(user.id);
+      const userId = toNumericId(user?.id);
       
       if (userId === undefined) {
         throw new Error('ID de usuario inválido');
@@ -97,7 +94,6 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
           description: "Tu contraseña ha sido actualizada correctamente.",
         });
         
-        // Close dialog after success
         setTimeout(() => {
           handleCloseDialog();
         }, 2000);

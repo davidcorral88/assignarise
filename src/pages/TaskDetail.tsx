@@ -1,193 +1,283 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getTaskById, updateTask, deleteTask, getTimeEntriesByTaskId, getTaskAttachments } from '../utils/dataService';
+import { Task, TimeEntry, TaskAttachment } from '../utils/types';
 import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
-import { AlertCircle, CheckSquare, Folder, ListTodo } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { 
-  getTaskByIdForState,
-  getUserById, 
-  getTimeEntriesByTaskIdForState,
-  getTotalHoursByTask,
-  getTotalHoursAllocatedByTask,
-  getUsers
-} from '../utils/dataService';
-import { Task, TimeEntry, User } from '../utils/types';
-import { parseISO, format } from 'date-fns';
-
-import { TaskDetailHeader } from '@/components/tasks/detail/TaskDetailHeader';
-import { TaskDescription } from '@/components/tasks/detail/TaskDescription';
-import { TaskDetailTabs } from '@/components/tasks/detail/TaskDetailTabs';
-import { TaskDetailSidebar } from '@/components/tasks/detail/TaskDetailSidebar';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { MoreHorizontal, Plus, CheckSquare, ArrowLeft, Trash2, Edit, Filter, ChevronsUpDown } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Separator } from "@/components/ui/separator"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
+import { Link } from 'react-router-dom';
+import TimeEntryForm from '@/components/forms/TimeEntryForm';
+import TimeEntryList from '@/components/lists/TimeEntryList';
+import TaskAssignmentList from '@/components/lists/TaskAssignmentList';
+import TaskAssignmentForm from '@/components/forms/TaskAssignmentForm';
+import FileUpload from '@/components/forms/FileUpload';
+import FileList from '@/components/lists/FileList';
+import { formatFileSize, isImageFile } from '@/utils/fileService';
+import { toNumericId, toStringId } from '@/utils/typeUtils';
 
 const TaskDetail = () => {
-  const { id } = useParams<{ id: string }>();
-  const { currentUser } = useAuth();
+  const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [task, setTask] = useState<Task | null>(null);
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalHoursWorked, setTotalHoursWorked] = useState(0);
-  const [totalHoursAllocated, setTotalHoursAllocated] = useState(0);
-  const [creator, setCreator] = useState<User | null>(null);
-  const [assignedUsers, setAssignedUsers] = useState<Record<string, User | null>>({});
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState('');
+  const [priority, setPriority] = useState('');
+  const [createdAt, setCreatedAt] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [totalHours, setTotalHours] = useState(0);
+  const [totalAllocatedHours, setTotalAllocatedHours] = useState(0);
+  const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
+
   useEffect(() => {
-    const fetchAllUsers = async () => {
+    const loadTask = async () => {
+      setLoading(true);
       try {
-        const users = await getUsers();
-        setAllUsers(users);
+        // Convert taskId to a numeric value for database operations
+        const numericTaskId = toNumericId(taskId);
+        
+        if (numericTaskId === undefined) {
+          throw new Error("Invalid task ID");
+        }
+        
+        const taskData = await getTaskById(numericTaskId);
+        setTask(taskData);
+        
+        // Load time entries for this task
+        const timeEntriesData = await getTimeEntriesByTaskId(numericTaskId);
+        setTimeEntries(timeEntriesData);
+        
+        // Calculate total hours spent on this task
+        const totalHours = timeEntriesData.reduce((sum, entry) => sum + Number(entry.hours), 0);
+        setTotalHours(totalHours);
+        
+        // Calculate total hours allocated to this task
+        if (taskData.assignments) {
+          const totalAllocated = taskData.assignments.reduce(
+            (sum, assignment) => sum + Number(assignment.allocatedHours || 0), 
+            0
+          );
+          setTotalAllocatedHours(totalAllocated);
+        }
+        
+        // Load attachments for this task
+        const attachmentsData = await getTaskAttachments(toStringId(taskId) || '');
+        setAttachments(attachmentsData);
+        
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching all users:", error);
+        console.error('Error loading task data:', error);
+        setError('Failed to load task data');
+        setLoading(false);
       }
     };
     
-    fetchAllUsers();
-  }, []);
-  
+    loadTask();
+    
+    // Clean-up function
+    return () => {
+      // Any cleanup code if needed
+    };
+  }, [taskId]); // Only re-run if taskId changes
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (id) {
-        try {
-          setLoading(true);
-          setError(null);
-          
-          const taskResult = await getTaskByIdForState(id, setTask);
-          if (!taskResult) {
-            setError('No se pudo cargar la tarea');
-            setLoading(false);
-            return;
-          }
-          
-          await getTimeEntriesByTaskIdForState(id, setTimeEntries);
-          
-          const hoursWorked = await getTotalHoursByTask(id);
-          setTotalHoursWorked(hoursWorked);
-          
-          const hoursAllocated = await getTotalHoursAllocatedByTask(id);
-          setTotalHoursAllocated(hoursAllocated);
-          
-          setLoading(false);
-        } catch (err) {
-          console.error('Error al cargar los detalles de la tarea:', err);
-          setError('Error al cargar los detalles de la tarea');
-          setLoading(false);
-        }
-      }
-    };
-    
-    fetchData();
-  }, [id]);
-  
-  useEffect(() => {
-    const processUsers = async () => {
-      if (!task) return;
-      
-      if (task.createdBy) {
-        // Convert createdBy to number for API call
-        const createdById = typeof task.createdBy === 'string' 
-          ? parseInt(task.createdBy, 10) 
-          : task.createdBy;
-          
-        const cachedUser = allUsers.find(user => {
-          const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
-          return userId === createdById;
-        });
-        
-        if (cachedUser) {
-          setCreator(cachedUser);
-        } else {
-          try {
-            const user = await getUserById(createdById);
-            setCreator(user || null);
-          } catch (error) {
-            console.error('Error fetching creator:', error);
-          }
-        }
-      }
-      
-      if (task.assignments && task.assignments.length > 0) {
-        const users: Record<string, User | null> = {};
-        
-        for (const assignment of task.assignments) {
-          const userId = typeof assignment.user_id === 'string' 
-            ? parseInt(assignment.user_id, 10) 
-            : assignment.user_id;
-          
-          const cachedUser = allUsers.find(user => {
-            const userIdNum = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
-            return userIdNum === userId;
-          });
-          
-          if (cachedUser) {
-            users[userId.toString()] = cachedUser;
-          } else {
-            try {
-              const user = await getUserById(userId);
-              if (user) {
-                users[userId.toString()] = user;
-              }
-            } catch (error) {
-              console.error(`Error fetching user for assignment with userId ${userId}:`, error);
-            }
-          }
-        }
-        
-        setAssignedUsers(users);
-      }
-      
-      if (timeEntries.length > 0) {
-        const updatedUsers = { ...assignedUsers };
-        
-        for (const entry of timeEntries) {
-          const entryUserId = typeof entry.user_id === 'string' 
-            ? parseInt(entry.user_id, 10) 
-            : entry.user_id;
-          
-          if (updatedUsers[entryUserId.toString()]) continue;
-          
-          const cachedUser = allUsers.find(user => {
-            const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
-            return userId === entryUserId;
-          });
-          
-          if (cachedUser) {
-            updatedUsers[entryUserId.toString()] = cachedUser;
-          } else {
-            try {
-              const user = await getUserById(entryUserId);
-              if (user) {
-                updatedUsers[entryUserId.toString()] = user;
-              }
-            } catch (error) {
-              console.error(`Error fetching user for time entry with userId ${entryUserId}:`, error);
-            }
-          }
-        }
-        
-        if (Object.keys(updatedUsers).length > Object.keys(assignedUsers).length) {
-          setAssignedUsers(updatedUsers);
-        }
-      }
-    };
-    
-    processUsers();
-  }, [task, timeEntries, allUsers]);
-  
-  const formatDate = (dateString?: string | null) => {
-    if (!dateString) return 'No disponible';
-    try {
-      return format(parseISO(dateString), 'dd/MM/yyyy');
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Fecha inválida';
+    if (task) {
+      setTitle(task.title);
+      setDescription(task.description || '');
+      setStatus(task.status);
+      setPriority(task.priority);
+      setCreatedAt(task.createdAt ? new Date(task.createdAt) : null);
+      setStartDate(task.startDate ? new Date(task.startDate) : null);
+      setDueDate(task.dueDate ? new Date(task.dueDate) : null);
+    }
+  }, [task]);
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    if (task) {
+      setTitle(task.title);
+      setDescription(task.description || '');
+      setStatus(task.status);
+      setPriority(task.priority);
+      setCreatedAt(task.createdAt ? new Date(task.createdAt) : null);
+      setStartDate(task.startDate ? new Date(task.startDate) : null);
+      setDueDate(task.dueDate ? new Date(task.dueDate) : null);
     }
   };
-  
+
+  const handleSaveClick = async () => {
+    if (!task) return;
+
+    setLoading(true);
+    try {
+      // Ensure taskId is correctly converted to a number
+      const numericTaskId = toNumericId(taskId);
+      
+      if (numericTaskId === undefined) {
+        throw new Error("Invalid task ID");
+      }
+      
+      // Prepare the updated task data
+      const updatedTask = {
+        ...task,
+        title,
+        description,
+        status,
+        priority,
+        createdAt: createdAt ? createdAt.toISOString() : null,
+        startDate: startDate ? startDate.toISOString() : null,
+        dueDate: dueDate ? dueDate.toISOString() : null,
+      };
+      
+      // Call the updateTask function with the numeric task ID
+      await updateTask(numericTaskId, updatedTask);
+      
+      // After successful update, refresh the task data
+      const updatedTaskData = await getTaskById(numericTaskId);
+      setTask(updatedTaskData);
+      
+      toast({
+        title: "Tarea actualizada",
+        description: "La tarea ha sido actualizada correctamente.",
+      });
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error al actualizar tarea",
+        description: "No se pudo actualizar la tarea. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!task) return;
+
+    setLoading(true);
+    try {
+      // Ensure taskId is correctly converted to a number
+      const numericTaskId = toNumericId(taskId);
+      
+      if (numericTaskId === undefined) {
+        throw new Error("Invalid task ID");
+      }
+      
+      // Call the deleteTask function with the numeric task ID
+      await deleteTask(numericTaskId);
+      
+      toast({
+        title: "Tarea eliminada",
+        description: "La tarea ha sido eliminada correctamente.",
+      });
+      
+      navigate('/tasks');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Error al eliminar tarea",
+        description: "No se pudo eliminar la tarea. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return 'No date';
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -199,86 +289,328 @@ const TaskDetail = () => {
       </Layout>
     );
   }
-  
-  if (error || !task) {
+
+  if (error) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center h-96">
-          <CheckSquare className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Tarea no encontrada</h2>
-          <p className="text-muted-foreground mb-6">{error || 'No se pudo encontrar esta tarea'}</p>
-          <Button onClick={() => navigate('/tasks')}>
-            Volver a tareas
-          </Button>
+        <div className="flex justify-center items-center h-96">
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Error</h2>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
         </div>
       </Layout>
     );
   }
-  
-  const currentUserId = currentUser?.id;
-  
-  const hasCategory = task.category && task.category.trim() !== '';
-  const hasProject = task.project && task.project.trim() !== '';
-  
-  return (
-    <Layout>
-      <div className="space-y-6 animate-fade-in">
-        <TaskDetailHeader 
-          task={task} 
-          currentUserId={currentUserId} 
-          canEdit={true}
-        />
-        
-        {(hasCategory || hasProject) && (
-          <div className="flex flex-wrap gap-3 mb-4">
-            {hasCategory && (
-              <div className="flex items-center bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm">
-                <Folder className="h-4 w-4 mr-1.5" />
-                <span className="font-medium">{task.category}</span>
-              </div>
-            )}
-            {hasProject && (
-              <div className="flex items-center bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm">
-                <ListTodo className="h-4 w-4 mr-1.5" />
-                <span className="font-medium">{task.project}</span>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {timeEntries.length === 0 && (
-          <Alert variant="warning" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Información</AlertTitle>
-            <AlertDescription>
-              No hay registros de tiempo para esta tarea. Los datos de progreso y horas trabajadas no estarán disponibles.
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <TaskDescription task={task} />
-            
-            <TaskDetailTabs
-              taskId={task.id}
-              assignments={task.assignments}
-              timeEntries={timeEntries}
-              assignedUsers={assignedUsers}
-              currentUserId={currentUserId}
-            />
-          </div>
-          
-          <div className="space-y-6">
-            <TaskDetailSidebar
-              task={task}
-              creator={creator}
-              totalHoursWorked={totalHoursWorked}
-              totalHoursAllocated={totalHoursAllocated}
-              formatDate={formatDate}
-            />
+
+  if (!task) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-96">
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Tarea no encontrada</h2>
+            <p className="text-muted-foreground">La tarea solicitada no existe.</p>
           </div>
         </div>
+      </Layout>
+    );
+  }
+
+  const canEditTasks = currentUser?.role === 'admin' || currentUser?.role === 'director';
+
+  return (
+    <Layout>
+      <div className="container mx-auto py-10">
+        <div className="mb-4">
+          <Link to="/tasks" className="flex items-center text-sm font-semibold">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a la lista de tareas
+          </Link>
+        </div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="space-y-0.5">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Detalles de la Tarea
+            </h2>
+            <p className="text-muted-foreground">
+              Aquí tes información detallada sobre a tarefa.
+            </p>
+          </div>
+          {canEditTasks && !isEditing && (
+            <div>
+              <Button variant="secondary" onClick={handleEditClick} className="mr-2">
+                <Edit className="mr-2 h-4 w-4" />
+                Editar Tarea
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteClick}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar Tarea
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Información de la Tarea</CardTitle>
+            <CardDescription>
+              Detalles completos de la tarea.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            {isEditing ? (
+              <>
+                <div>
+                  <Label htmlFor="title">Título</Label>
+                  <Input
+                    id="title"
+                    placeholder="Título de la tarea"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Descripción</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Descripción de la tarea"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label htmlFor="status">Estado</Label>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pendiente</SelectItem>
+                        <SelectItem value="in_progress">En progreso</SelectItem>
+                        <SelectItem value="completed">Completada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="priority">Prioridad</Label>
+                    <Select value={priority} onValueChange={setPriority}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona una prioridad" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="high">Alta</SelectItem>
+                        <SelectItem value="medium">Media</SelectItem>
+                        <SelectItem value="low">Baja</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <Label>Fecha de Creación</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-[240px] justify-start text-left font-normal",
+                            !createdAt && "text-muted-foreground"
+                          )}
+                        >
+                          {createdAt ? (
+                            format(createdAt, "dd/MM/yyyy", { locale: ptBR })
+                          ) : (
+                            <span>Selecciona una fecha</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                        <Calendar
+                          mode="single"
+                          selected={createdAt}
+                          onSelect={setCreatedAt}
+                          disabled={(date) =>
+                            date > new Date()
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label>Fecha de Inicio</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-[240px] justify-start text-left font-normal",
+                            !startDate && "text-muted-foreground"
+                          )}
+                        >
+                          {startDate ? (
+                            format(startDate, "dd/MM/yyyy", { locale: ptBR })
+                          ) : (
+                            <span>Selecciona una fecha</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                        <Calendar
+                          mode="single"
+                          selected={startDate}
+                          onSelect={setStartDate}
+                          disabled={(date) =>
+                            date > new Date()
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label>Fecha de Vencimiento</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-[240px] justify-start text-left font-normal",
+                            !dueDate && "text-muted-foreground"
+                          )}
+                        >
+                          {dueDate ? (
+                            format(dueDate, "dd/MM/yyyy", { locale: ptBR })
+                          ) : (
+                            <span>Selecciona una fecha</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="center" side="bottom">
+                        <Calendar
+                          mode="single"
+                          selected={dueDate}
+                          onSelect={setDueDate}
+                          disabled={(date) =>
+                            date > new Date()
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button variant="ghost" onClick={handleCancelEdit} className="mr-2">
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleSaveClick}>Guardar</Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label>Título</Label>
+                  <p className="text-muted-foreground">{task.title}</p>
+                </div>
+                <div>
+                  <Label>Descripción</Label>
+                  <p className="text-muted-foreground">{task.description}</p>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label>Estado</Label>
+                    <Badge variant="secondary">{task.status}</Badge>
+                  </div>
+                  <div>
+                    <Label>Prioridad</Label>
+                    <Badge variant="secondary">{task.priority}</Badge>
+                  </div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <Label>Fecha de Creación</Label>
+                    <p className="text-muted-foreground">{formatDate(task.createdAt)}</p>
+                  </div>
+                  <div>
+                    <Label>Fecha de Inicio</Label>
+                    <p className="text-muted-foreground">{formatDate(task.startDate)}</p>
+                  </div>
+                  <div>
+                    <Label>Fecha de Vencimiento</Label>
+                    <p className="text-muted-foreground">{formatDate(task.dueDate)}</p>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Asignaciones</CardTitle>
+            <CardDescription>
+              Lista de usuarios asignados a esta tarea.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TaskAssignmentList taskId={taskId || ''} assignments={task.assignments || []} />
+            <TaskAssignmentForm taskId={taskId || ''} onTaskUpdated={setTask} />
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Registro de Horas</CardTitle>
+            <CardDescription>
+              Registre el tiempo dedicado a esta tarea.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TimeEntryList taskId={taskId || ''} timeEntries={timeEntries} setTimeEntries={setTimeEntries} />
+            <TimeEntryForm taskId={taskId || ''} onTimeEntryCreated={() => {
+              if (taskId) {
+                getTimeEntriesByTaskId(taskId).then(setTimeEntries);
+              }
+            }} />
+          </CardContent>
+        </Card>
+        
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Archivos Adjuntos</CardTitle>
+            <CardDescription>
+              Subir y gestionar archivos relacionados con esta tarea.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FileList taskId={taskId || ''} attachments={attachments} setAttachments={setAttachments} />
+            <FileUpload taskId={taskId || ''} onFileUpload={() => {
+              if (taskId) {
+                getTaskAttachments(taskId).then(setAttachments);
+              }
+            }} />
+          </CardContent>
+        </Card>
+
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                ¿Está seguro de que desea eliminar esta tarea? Esta acción no se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelDelete}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDelete}>
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );

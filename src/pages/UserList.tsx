@@ -1,34 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getUsers, deleteUser, resetUserPassword } from '../utils/dataService';
+import { User } from '../utils/types';
 import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
-import { 
-  Users, 
-  PlusCircle, 
-  Search, 
-  MoreHorizontal,
-  Shield,
-  User as UserIcon,
-  Pencil,
-  Trash2,
-  AlertCircle,
-  Phone,
-  Check,
-  X,
-  KeyRound,
-} from 'lucide-react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { DotsHorizontalIcon, Plus, CheckSquare, ArrowLeft, Trash2, Edit, Filter, ChevronsUpDown } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,8 +43,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+} from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,358 +53,366 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { toast } from '@/components/ui/use-toast';
-import { getUsers, getUserById, updateUser, deleteUser } from '../utils/dataService';
-import { User } from '../utils/types';
-import ImportUsersButton from '../components/users/ImportUsersButton';
-import ResetPasswordDialog from '../components/users/ResetPasswordDialog';
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Separator } from "@/components/ui/separator"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
+import { toNumericId } from '@/utils/typeUtils';
 
 const UserList = () => {
-  const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const isAdmin = currentUser?.role === 'admin';
-  const canDeleteUsers = isAdmin;
-  const canResetPassword = isAdmin;
-  
-  const loadUsers = async () => {
-    try {
-      setIsLoading(true);
-      const loadedUsers = await getUsers();
-      setUsers(loadedUsers);
-      setFilteredUsers(loadedUsers);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los usuarios desde PostgreSQL',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
+  const [selectedRole, setSelectedRole] = useState('');
+  const [sortField, setSortField] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+
   useEffect(() => {
-    loadUsers();
-  }, []);
-  
-  useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredUsers(users);
-    } else {
-      const query = searchQuery.toLowerCase();
-      setFilteredUsers(
-        users.filter(
-          user => 
-            user.name.toLowerCase().includes(query) || 
-            user.email.toLowerCase().includes(query)
-        )
-      );
-    }
-  }, [users, searchQuery]);
-  
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase();
-  };
-  
-  const handleDeleteUser = (user: User) => {
-    setSelectedUser(user);
-    setShowDeleteDialog(true);
-  };
-  
-  const confirmDelete = async () => {
-    if (!selectedUser) return;
-    
-    try {
-      await deleteUser(selectedUser.id);
-      toast({
-        title: "Usuario eliminado",
-        description: `${selectedUser.name} foi eliminado correctamente.`,
-      });
-      
-      loadUsers();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el usuario",
-        variant: "destructive"
-      });
-    }
-    
-    setShowDeleteDialog(false);
-    setSelectedUser(null);
-  };
-  
-  const handleToggleActive = async (userId: number, currentActive?: boolean) => {
-    try {
-      const user = await getUserById(userId);
-      if (user) {
-        const updatedUser = {
-          ...user,
-          active: currentActive === undefined ? true : !currentActive
-        };
-        await updateUser(userId, updatedUser);
-        
-        loadUsers();
-        
-        toast({
-          title: updatedUser.active ? "Usuario activado" : "Usuario desactivado",
-          description: `${user.name} foi ${updatedUser.active ? 'activado' : 'desactivado'} correctamente.`,
-        });
+    const fetchUsersData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const usersData = await getUsers();
+        setUsers(usersData);
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError('Failed to load users');
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error toggling user active state:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo cambiar el estado del usuario",
-        variant: "destructive"
+    };
+
+    fetchUsersData();
+  }, []);
+
+  const filterUsers = () => {
+    let filtered = users.filter(user => {
+      if (searchQuery.trim()) {
+        const searchLower = searchQuery.toLowerCase();
+        const nameMatch = user.name.toLowerCase().includes(searchLower);
+        const emailMatch = user.email.toLowerCase().includes(searchLower);
+
+        if (!(nameMatch || emailMatch)) {
+          return false;
+        }
+      }
+
+      if (selectedRole && selectedRole !== '') {
+        if (user.role !== selectedRole) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    if (sortField) {
+      filtered.sort((a, b) => {
+        const aValue = a[sortField as keyof User];
+        const bValue = b[sortField as keyof User];
+
+        if (aValue === undefined || bValue === undefined) {
+          return 0;
+        }
+
+        const aStr = typeof aValue === 'string' ? aValue.toLowerCase() : String(aValue);
+        const bStr = typeof bValue === 'string' ? bValue.toLowerCase() : String(bValue);
+
+        if (aStr < bStr) {
+          return sortOrder === 'asc' ? -1 : 1;
+        }
+        if (aStr > bStr) {
+          return sortOrder === 'asc' ? 1 : -1;
+        }
+        return 0;
       });
     }
+
+    return filtered;
   };
-  
-  const handleResetPassword = (user: User) => {
-    setSelectedUser(user);
-    setShowResetPasswordDialog(true);
+
+  const filteredUsers = filterUsers();
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
   };
-  
+
+  const getSortIndicator = (field: string) => {
+    if (sortField === field) {
+      return sortOrder === 'asc' ? "↑" : "↓";
+    }
+    return null;
+  };
+
+  const handleRoleChange = (value: string) => {
+    setSelectedRole(value);
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleDeleteUser = async (userId: string | number) => {
+    const numericUserId = toNumericId(userId);
+    if (numericUserId !== undefined) {
+      try {
+        await deleteUser(numericUserId);
+        setUsers(prevUsers => prevUsers.filter(user => user.id !== numericUserId));
+        toast({
+          title: 'Usuario eliminado',
+          description: 'El usuario ha sido eliminado correctamente.',
+        });
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        toast({
+          title: 'Error al eliminar usuario',
+          description: 'No se pudo eliminar el usuario. Inténtalo de nuevo.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setSelectedUserId(null);
+      }
+    }
+  };
+
+  const confirmDeleteUser = (userId: string | number) => {
+    const numericUserId = toNumericId(userId);
+    if (numericUserId !== undefined) {
+      setSelectedUserId(numericUserId);
+      setIsDeleteDialogOpen(true);
+    }
+  };
+
+  const handleResetPassword = async (userId: string | number) => {
+    const numericUserId = toNumericId(userId);
+    if (numericUserId !== undefined) {
+      setSelectedUserId(numericUserId);
+      setIsResetPasswordDialogOpen(true);
+    }
+  };
+
+  const resetPassword = async () => {
+    if (selectedUserId !== null) {
+      try {
+        const result = await resetUserPassword(selectedUserId);
+        if (result.success) {
+          toast({
+            title: 'Contraseña restablecida',
+            description: `La contraseña del usuario ha sido restablecida. Nueva contraseña: ${result.password}`,
+          });
+        } else {
+          toast({
+            title: 'Error al restablecer la contraseña',
+            description: 'No se pudo restablecer la contraseña. Inténtalo de nuevo.',
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error('Error resetting password:', error);
+        toast({
+          title: 'Error al restablecer la contraseña',
+          description: 'No se pudo restablecer la contraseña. Inténtalo de nuevo.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsResetPasswordDialogOpen(false);
+        setSelectedUserId(null);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-96">
+          <div className="animate-spin">
+            <CheckSquare className="h-8 w-8 text-primary" />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-96">
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Error</h2>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const canCreateUsers = currentUser?.role === 'admin';
+
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Usuarios</h1>
-            <p className="text-muted-foreground mt-1">
-              Xestiona os usuarios do sistema
+      <div className="container mx-auto py-10">
+        <div className="flex items-center justify-between mb-6">
+          <div className="space-y-0.5">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Lista de Usuarios
+            </h2>
+            <p className="text-muted-foreground">
+              Aquí tes unha lista de todos os usuarios.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
-            <ImportUsersButton onImportComplete={loadUsers} />
-            <Button 
-              onClick={() => navigate('/users/new')}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Novo usuario
+          {canCreateUsers && (
+            <Button onClick={() => navigate('/users/new')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Crear Usuario
             </Button>
-          </div>
+          )}
         </div>
-        
-        <div className="flex space-x-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar usuarios..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-        
-        <div className="rounded-md border animate-scale-in overflow-x-auto">
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Filtros e Busca</CardTitle>
+            <CardDescription>
+              Utiliza os filtros para refinar a lista de usuarios.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-3">
+            <div>
+              <Label htmlFor="search">Buscar</Label>
+              <Input
+                id="search"
+                placeholder="Buscar por nome, correo electrónico..."
+                value={searchQuery}
+                onChange={handleSearch}
+              />
+            </div>
+            <div>
+              <Label htmlFor="role">Rol</Label>
+              <Select value={selectedRole} onValueChange={handleRoleChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os roles</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="director">Director</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="employee">Employee</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Email ATSXPTPG</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Activo</TableHead>
-                <TableHead className="text-right">Accións</TableHead>
+                <TableHead onClick={() => handleSort('id')} className="cursor-pointer">
+                  ID {getSortIndicator('id')}
+                </TableHead>
+                <TableHead onClick={() => handleSort('name')} className="cursor-pointer">
+                  Nome {getSortIndicator('name')}
+                </TableHead>
+                <TableHead onClick={() => handleSort('email')} className="cursor-pointer">
+                  Correo electrónico {getSortIndicator('email')}
+                </TableHead>
+                <TableHead onClick={() => handleSort('role')} className="cursor-pointer">
+                  Rol {getSortIndicator('role')}
+                </TableHead>
+                <TableHead>Accións</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    <div className="flex flex-col items-center justify-center py-8">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                      <p className="mt-2 text-sm text-muted-foreground">Cargando usuarios...</p>
-                    </div>
+              {filteredUsers.map(user => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.id}</TableCell>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Abrir menú</span>
+                          <DotsHorizontalIcon className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Accións</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => navigate(`/users/${user.id}`)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleResetPassword(user.id)}>
+                          <Filter className="h-4 w-4 mr-2" />
+                          Restablecer contrasinal
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => confirmDeleteUser(user.id)}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ) : filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{user.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {user.phone ? (
-                        <div className="flex items-center">
-                          <Phone className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                          {user.phone}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">Non dispoñible</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      {user.emailATSXPTPG || (
-                        <span className="text-muted-foreground text-sm">Non dispoñible</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {user.role === 'admin' ? (
-                        <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-                          <Shield className="mr-1 h-3 w-3" />
-                          Administrador
-                        </Badge>
-                      ) : user.role === 'director' ? (
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                          <Shield className="mr-1 h-3 w-3" />
-                          Director
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-muted text-muted-foreground">
-                          <UserIcon className="mr-1 h-3 w-3" />
-                          Traballador
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Checkbox 
-                          checked={user.active !== false}
-                          onCheckedChange={() => handleToggleActive(user.id, user.active)}
-                          aria-label={user.active !== false ? "Usuario activo" : "Usuario inactivo"}
-                        />
-                        {user.active !== false ? (
-                          <span className="ml-2 text-xs text-green-600">Activo</span>
-                        ) : (
-                          <span className="ml-2 text-xs text-red-600">Inactivo</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Accións</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Accións</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => navigate(`/users/${user.id}/edit`)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          
-                          {canResetPassword && (
-                            <DropdownMenuItem 
-                              onClick={() => handleResetPassword(user)}
-                            >
-                              <KeyRound className="mr-2 h-4 w-4" />
-                              Resetear contrasinal
-                            </DropdownMenuItem>
-                          )}
-                          
-                          <DropdownMenuSeparator />
-                          
-                          {isAdmin && (
-                            <DropdownMenuItem 
-                              onClick={() => handleToggleActive(user.id, user.active)}
-                            >
-                              {user.active !== false ? (
-                                <>
-                                  <X className="mr-2 h-4 w-4 text-red-500" />
-                                  <span className="text-red-500">Desactivar</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Check className="mr-2 h-4 w-4 text-green-500" />
-                                  <span className="text-green-500">Activar</span>
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                          )}
-                          
-                          {canDeleteUsers && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="text-red-500"
-                                onClick={() => handleDeleteUser(user)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    <div className="flex flex-col items-center justify-center py-8">
-                      <Users className="h-10 w-10 text-muted-foreground/50 mb-4" />
-                      <p className="text-sm text-muted-foreground">Non se atoparon usuarios</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
+              ))}
             </TableBody>
           </Table>
         </div>
       </div>
-      
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-destructive mr-2" />
-              Confirmar eliminación
-            </AlertDialogTitle>
+            <AlertDialogTitle>Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Estás seguro de que deseas eliminar a <strong>{selectedUser?.name}</strong>?
-              Esta acción no se puede deshacer.
+              Esta acción eliminará o usuario permanentemente. Estás seguro de que queres continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Eliminar
-            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => setSelectedUserId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleDeleteUser(selectedUserId!)}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      {selectedUser && (
-        <ResetPasswordDialog 
-          open={showResetPasswordDialog} 
-          onOpenChange={setShowResetPasswordDialog}
-          user={selectedUser}
-        />
-      )}
+
+      <AlertDialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restablecer contrasinal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás seguro de que queres restablecer o contrasinal deste usuario? Enviarase un novo contrasinal ao seu correo electrónico.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedUserId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={resetPassword}>Restablecer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

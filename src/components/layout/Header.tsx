@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -29,12 +28,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import ChangePasswordDialog from '../auth/ChangePasswordDialog';
 
 export const Header: React.FC = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -195,7 +194,7 @@ export const Header: React.FC = () => {
                 <span>Perfil</span>
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => setChangePasswordDialogOpen(true)}
+                onClick={() => setChangePasswordOpen(true)}
                 className="cursor-pointer"
               >
                 <KeyRound className="mr-2 h-4 w-4" />
@@ -235,9 +234,12 @@ export const Header: React.FC = () => {
       )}
 
       <ChangePasswordDialog 
-        open={changePasswordDialogOpen} 
-        onOpenChange={setChangePasswordDialogOpen} 
+        open={changePasswordOpen} 
+        onOpenChange={setChangePasswordOpen} 
+        user={currentUser}
       />
     </header>
   );
 };
+
+export default Header;

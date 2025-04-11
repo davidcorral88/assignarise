@@ -1,7 +1,3 @@
-// Fix for line 156 - Property 'includes' does not exist on type 'string | number'
-// Fix for line 397 - Cannot find name 'setSearchTerm'
-// Fix for line 563,87 & 600,90 - Type string is not assignable to type SetStateAction<number>
-// Fix for line 937,84 - Type number is not assignable to type string
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -39,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { DotsHorizontalIcon, Plus, CheckSquare, ArrowLeft, Trash2, Edit, Filter, ChevronsUpDown } from 'lucide-react';
+import { MoreHorizontal, Plus, CheckSquare, ArrowLeft, Trash2, Edit, Filter, ChevronsUpDown } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import {
   DropdownMenu,
@@ -70,6 +66,7 @@ import {
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
+import { toNumericId, toStringId, isSameId } from '@/utils/typeUtils';
 
 const TaskList = () => {
   const navigate = useNavigate();
@@ -145,7 +142,7 @@ const TaskList = () => {
         const titleMatch = task.title.toLowerCase().includes(searchLower);
         
         // Convert task.id to string safely before using includes
-        const idMatch = task.id?.toString().includes(searchLower) || false;
+        const idMatch = task.id !== undefined ? task.id.toString().includes(searchLower) : false;
         
         const descriptionMatch = task.description?.toLowerCase().includes(searchLower) || false;
         const creatorMatch = creatorNames[task.createdBy?.toString() || '']?.toLowerCase().includes(searchLower) || false;
@@ -257,7 +254,7 @@ const TaskList = () => {
   
   // Fix for the numeric ID conversion in task links
   const getTaskLink = (taskId: string | number) => {
-    return `/tasks/${taskId.toString()}`;
+    return `/tasks/${toStringId(taskId)}`;
   };
 
   if (loading) {
