@@ -152,7 +152,6 @@ const TaskList = () => {
         const query = searchQuery.toLowerCase().trim();
         result = result.filter(
           task => {
-            // Safe access to properties with null/undefined checks
             const titleMatch = task.title ? task.title.toLowerCase().includes(query) : false;
             const descriptionMatch = task.description ? task.description.toLowerCase().includes(query) : false;
             const idMatch = task.id ? task.id.toLowerCase().includes(query) : false;
@@ -260,7 +259,6 @@ const TaskList = () => {
       setFilteredTasks(result);
     } catch (error) {
       console.error('Error filtering tasks:', error);
-      // Fallback to showing all tasks if filtering fails
       setFilteredTasks(tasks);
     }
   }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, assignedToFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
@@ -396,10 +394,15 @@ const TaskList = () => {
     
     try {
       const date = parseISO(dateString);
-      if (isNaN(date.getTime())) return '—';
+      
+      if (isNaN(date.getTime())) {
+        console.log(`Invalid date format for: ${dateString}`);
+        return '—';
+      }
+      
       return format(date, 'dd/MM/yyyy');
     } catch (error) {
-      console.error('Error formateando fecha:', error);
+      console.error('Error formatting date:', error, 'Date string:', dateString);
       return '—';
     }
   };
@@ -872,7 +875,7 @@ const TaskList = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {formatTaskDate(task.dueDate)}
+                        {task.dueDate ? formatTaskDate(task.dueDate) : '—'}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-1">
