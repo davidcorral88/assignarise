@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
-import { AlertCircle, CheckSquare } from 'lucide-react';
+import { AlertCircle, CheckSquare, Folder, ListTodo } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { 
@@ -230,6 +230,10 @@ const TaskDetail = () => {
   
   const currentUserId = currentUser?.id;
   
+  // Display category and project information if available
+  const hasCategory = task.category && task.category.trim() !== '';
+  const hasProject = task.project && task.project.trim() !== '';
+  
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -238,6 +242,24 @@ const TaskDetail = () => {
           currentUserId={currentUserId} 
           canEdit={true} // Modificado para permitir editar a cualquier usuario
         />
+        
+        {/* Category and Project display */}
+        {(hasCategory || hasProject) && (
+          <div className="flex flex-wrap gap-3 mb-4">
+            {hasCategory && (
+              <div className="flex items-center bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm">
+                <Folder className="h-4 w-4 mr-1.5" />
+                <span className="font-medium">{task.category}</span>
+              </div>
+            )}
+            {hasProject && (
+              <div className="flex items-center bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm">
+                <ListTodo className="h-4 w-4 mr-1.5" />
+                <span className="font-medium">{task.project}</span>
+              </div>
+            )}
+          </div>
+        )}
         
         {timeEntries.length === 0 && (
           <Alert variant="warning" className="mb-4">

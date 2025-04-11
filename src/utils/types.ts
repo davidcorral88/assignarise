@@ -1,151 +1,107 @@
+
+import { ReactElement, ReactNode } from 'react';
+
 export interface User {
-  id: number;
+  id: number | string;
   name: string;
   email: string;
-  role: 'admin' | 'director' | 'worker';
-  active?: boolean;
   password?: string;
-  avatar?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  lastLogin?: string;
-  passwordResetToken?: string;
-  passwordResetExpires?: Date;
-  phone?: string;
-  emailATSXPTPG?: string;
-  organism?: string;
+  role: 'director' | 'worker';
+  active?: boolean;
+  avatar?: string;
+  created_at?: string;
+  updated_at?: string;
 }
-
-export type UserRole = 'admin' | 'director' | 'worker';
 
 export interface Task {
-  id?: string; // Make ID optional for new tasks
+  id?: number | string;
   title: string;
-  description: string;
+  description?: string;
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
-  createdBy: number;
-  created_by?: number; // Añadir campo alternativo para mantener compatibilidad
-  createdAt: string;
+  createdBy: string | number;
+  createdAt?: string;
   startDate?: string;
   dueDate?: string;
-  tags: string[];
-  assignments: TaskAssignment[];
+  modifiedAt?: string;
+  tags?: string[];
+  assignedTo?: string[];
   attachments?: TaskAttachment[];
+  assignments?: TaskAssignment[];
   category?: string;
   project?: string;
-}
-
-export interface TaskAssignment {
-  task_id?: string;
-  user_id: number;
-  allocatedHours: number;
 }
 
 export interface TaskAttachment {
   id: string;
-  filename: string;
-  fileSize: number;
-  uploadDate: string;
-  uploadedBy: number;
-  isResolution: boolean;
-  fileUrl?: string;
-  fileType?: string;
-  taskId?: string;
-  url?: string;
+  name: string;
+  path: string;
+  size: number;
+  type: string;
+  uploadedBy?: string | number;
+  uploadDate?: string;
+  isResolution?: boolean;
+}
+
+export interface TaskAssignment {
+  user_id: string | number;
+  allocatedHours?: number;
 }
 
 export interface TimeEntry {
   id: string;
-  task_id: number; // Changed from string to number to match the DB schema
-  user_id: number; // Already a number
+  task_id: string | number;
+  user_id: string | number;
   date: string;
   hours: number;
-  description?: string;
+  minutes?: number;
   notes?: string;
-  category?: string;
   project?: string;
+  category?: string;
   activity?: string;
+  billable?: boolean;
   timeFormat?: string;
+  createdAt?: string;
+}
+
+export interface CalendarEntry {
+  id: string;
+  user_id: string | number;
+  date: string;
+  type?: string;
+  notes?: string;
+  hours?: number;
+  entries?: TimeEntry[];
 }
 
 export interface Holiday {
-  id: number;
+  id: string | number;
   date: string;
   name: string;
   description?: string;
+  type?: string;
+  isWorkDay?: boolean;
 }
-
-export type VacationType = 'vacation' | 'personal' | 'sick' | 'sick_leave';
 
 export interface VacationDay {
-  id?: number;
-  userId: number;
+  id: string | number;
+  user_id: string | number;
   date: string;
-  reason?: string;
+  type?: 'vacation' | 'sick' | 'personal' | 'other';
   status?: 'pending' | 'approved' | 'rejected';
-  type?: VacationType;
+  notes?: string;
 }
 
-export interface WorkdaySchedule {
-  id: string;
-  name: string;
-  start_time: string;
-  end_time: string;
-  days_of_week: number[];
-  monday?: boolean;
-  tuesday?: boolean;
-  wednesday?: boolean;
-  thursday?: boolean;
-  friday?: boolean;
-  saturday?: boolean;
-  sunday?: boolean;
-  startTime?: string;
-  endTime?: string;
-  breakStart?: string;
-  breakEnd?: string;
-  type?: string;
-  startDate?: string;
-  endDate?: string;
-  mondayHours?: number;
-  tuesdayHours?: number;
-  wednesdayHours?: number;
-  thursdayHours?: number;
-  fridayHours?: number;
-}
-
-export interface WorkSchedule {
+export interface WorkScheduleConfig {
+  id?: number;
   user_id: number;
-  workday_schedule_id: number;
-  start_date: string;
-  end_date: string | null;
-  defaultWorkdayScheduleId?: string;
-  useDefaultForAll?: boolean;
-  userSchedules?: {
-    userId: number;
-    workdayScheduleId: string;
-  }[];
-  regularHours?: {
-    mondayToThursday: number;
-    friday: number;
-  };
-  reducedHours?: number;
-  reducedPeriods?: {
-    startDate: string;
-    endDate: string;
-  }[];
-}
-
-export interface AuthContextType {
-  currentUser: User | null;
-  login: (email: string, password: string) => Promise<User | boolean>;
-  logout: () => void;
-  isAuthenticated: boolean;
-  updateCurrentUser: (user: User) => void;
-  loading?: boolean;
-}
-
-// Import button props type
-export interface ImportUsersButtonProps {
-  onImportComplete: () => void;
+  day_of_week: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  start_time?: string;
+  end_time?: string;
+  lunch_start?: string;
+  lunch_end?: string;
+  is_workday: boolean;
+  expected_hours?: number;
+  created_at?: string;
+  updated_at?: string;
 }
