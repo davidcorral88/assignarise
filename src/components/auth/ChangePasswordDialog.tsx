@@ -1,258 +1,196 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { KeyRound, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { LockKeyhole, AlertTriangle, Check } from 'lucide-react';
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { changeUserPassword } from '@/utils/dataService';
-import { useAuth } from './useAuth';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/components/ui/use-toast';
+import { changeUserPassword } from '@/utils/apiService';
 import { User } from '@/utils/types';
-
-type ChangePasswordFormValues = {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-};
+import { toNumericId } from '@/utils/typeUtils';
 
 interface ChangePasswordDialogProps {
+  user: User;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  targetUser?: User; // Optional: if provided, admin is changing another user's password
 }
 
 const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
+  user,
   open,
   onOpenChange,
-  targetUser,
 }) => {
-  const { currentUser } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const isAdminChangingUserPassword = !!(currentUser?.role === 'admin' && targetUser);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   
-  const userId = targetUser ? targetUser.id : currentUser?.id;
-
-  const form = useForm<ChangePasswordFormValues>({
-    defaultValues: {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    },
-  });
-
-  const onSubmit = async (data: ChangePasswordFormValues) => {
-    if (!userId) return;
+  const handleReset = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setError('');
+    setIsSuccess(false);
+  };
+  
+  const handleCloseDialog = () => {
+    handleReset();
+    onOpenChange(false);
+  };
+  
+  const handleChangePassword = async () => {
+    // Reset error
+    setError('');
     
-    if (data.newPassword !== data.confirmPassword) {
-      form.setError('confirmPassword', {
-        type: 'manual',
-        message: 'As contrasinais non coinciden',
-      });
+    // Validate inputs
+    if (!currentPassword.trim()) {
+      setError('Debes ingresar tu contraseña actual');
       return;
     }
-
+    
+    if (!newPassword.trim() || !confirmPassword.trim()) {
+      setError('Debes ingresar y confirmar la nueva contraseña');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setError('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    
+    setIsLoading(true);
+    
     try {
-      setIsSubmitting(true);
+      // Use our utility function to safely convert user.id to number
+      const userId = toNumericId(user.id);
+      
+      if (userId === undefined) {
+        throw new Error('ID de usuario inválido');
+      }
       
       const success = await changeUserPassword(
-        userId, 
-        data.currentPassword, 
-        data.newPassword,
-        isAdminChangingUserPassword
+        userId,
+        currentPassword,
+        newPassword,
+        false
       );
       
       if (success) {
+        setIsSuccess(true);
         toast({
-          title: 'Contrasinal actualizado',
-          description: isAdminChangingUserPassword
-            ? `O contrasinal de ${targetUser?.name} foi actualizado correctamente`
-            : 'O seu contrasinal foi actualizado correctamente',
+          title: "Contraseña cambiada",
+          description: "Tu contraseña ha sido actualizada correctamente.",
         });
         
-        onOpenChange(false);
-        form.reset();
+        // Close dialog after success
+        setTimeout(() => {
+          handleCloseDialog();
+        }, 2000);
       } else {
-        throw new Error('Failed to change password');
+        setError('La contraseña actual es incorrecta o ha ocurrido un error');
       }
     } catch (error) {
-      console.error('Error changing password:', error);
-      toast({
-        title: 'Erro',
-        description: 'Non se puido cambiar o contrasinal. Comprobe que o contrasinal actual é correcto.',
-        variant: 'destructive',
-      });
+      console.error('Error cambiando la contraseña:', error);
+      setError('Error al cambiar la contraseña. Inténtalo de nuevo.');
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-primary" />
-            {isAdminChangingUserPassword 
-              ? `Cambiar contrasinal de ${targetUser?.name}`
-              : 'Cambiar contrasinal'}
+          <DialogTitle className="flex items-center">
+            <LockKeyhole className="h-5 w-5 mr-2 text-primary" />
+            Cambiar contraseña
           </DialogTitle>
           <DialogDescription>
-            {isAdminChangingUserPassword 
-              ? `Introduce un novo contrasinal para ${targetUser?.email}`
-              : 'Introduce o teu contrasinal actual e un novo contrasinal'}
+            Cambia la contraseña de tu cuenta.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
-            {!isAdminChangingUserPassword && (
-              <FormField
-                control={form.control}
-                name="currentPassword"
-                rules={{ required: 'O contrasinal actual é obrigatorio' }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contrasinal actual</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showCurrentPassword ? 'text' : 'password'}
-                          {...field}
-                          autoComplete="current-password"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full"
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        >
-                          {showCurrentPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                          <span className="sr-only">
-                            {showCurrentPassword ? 'Ocultar' : 'Amosar'} contrasinal
-                          </span>
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        
+        <div className="grid gap-4 py-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {isSuccess && (
+            <Alert className="bg-green-50 border-green-200">
+              <Check className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                Contraseña cambiada correctamente.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="grid gap-2">
+            <Label htmlFor="current">Contraseña actual</Label>
+            <Input
+              id="current"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              disabled={isLoading || isSuccess}
+            />
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="new">Nueva contraseña</Label>
+            <Input
+              id="new"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              disabled={isLoading || isSuccess}
+            />
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="confirm">Confirmar contraseña</Label>
+            <Input
+              id="confirm"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={isLoading || isSuccess}
+            />
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={handleCloseDialog} disabled={isLoading || isSuccess}>
+            Cancelar
+          </Button>
+          <Button type="button" onClick={handleChangePassword} disabled={isLoading || isSuccess} className="ml-2">
+            {isLoading ? (
+              <>
+                <span className="mr-2">Cambiando...</span>
+                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+              </>
+            ) : (
+              "Cambiar contraseña"
             )}
-            <FormField
-              control={form.control}
-              name="newPassword"
-              rules={{ required: 'O novo contrasinal é obrigatorio' }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Novo contrasinal</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showNewPassword ? 'text' : 'password'}
-                        {...field}
-                        autoComplete="new-password"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                      >
-                        {showNewPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                        <span className="sr-only">
-                          {showNewPassword ? 'Ocultar' : 'Amosar'} contrasinal
-                        </span>
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              rules={{ required: 'Debe confirmar o novo contrasinal' }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirma o novo contrasinal</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        {...field}
-                        autoComplete="new-password"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                        <span className="sr-only">
-                          {showConfirmPassword ? 'Ocultar' : 'Amosar'} contrasinal
-                        </span>
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter className="pt-4">
-              <DialogClose asChild>
-                <Button variant="outline" type="button">
-                  Cancelar
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Gardando...
-                  </>
-                ) : (
-                  'Cambiar contrasinal'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

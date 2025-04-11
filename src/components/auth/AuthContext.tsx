@@ -35,111 +35,109 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       try {
         user = await getUserByEmail(email);
+        console.log("Usuario encontrado:", user);
         
-        // Update any 'manager' roles to 'director'
-        if (user && user.role === 'director') {
-          user.role = 'director';
+        if (!user || !user.active) {
+          console.log("Usuario no encontrado o inactivo");
+          setLoading(false);
+          toast({
+            title: "Error de autenticación",
+            description: "El usuario no existe o está inactivo.",
+            variant: "destructive",
+          });
+          return false;
         }
-      } catch (error) {
-        console.error("Error getting user from PostgreSQL", error);
         
-        // More descriptive error message based on error type
-        let errorMessage = 'Error de conexión a la base de datos';
-        if (error instanceof Error) {
-          if (error.message.includes('Respuesta no válida')) {
-            errorMessage = 'El servidor no está respondiendo correctamente. Por favor, contacte con el administrador.';
-          } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-            errorMessage = 'No se pudo conectar al servidor. Compruebe su conexión a Internet o contacte con el administrador.';
-          }
+        // Convert user.id to number for verification if it's a string
+        const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
+        const isValid = await verifyUserPassword(userId, password);
+        
+        if (!isValid) {
+          console.log("Contraseña incorrecta");
+          setLoading(false);
+          toast({
+            title: "Error de autenticación",
+            description: "Contraseña incorrecta.",
+            variant: "destructive",
+          });
+          return false;
         }
+        
+        // Store user in sessionStorage
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
+        setCurrentUser(user);
         
         toast({
-          title: 'Error de conexión',
-          description: errorMessage,
-          variant: 'destructive'
+          title: "¡Bienvenido!",
+          description: `Has iniciado sesión como ${user.name}`,
         });
-        throw new Error(errorMessage);
-      }
-      
-      // If user not found
-      if (!user) {
-        console.log('Usuario no encontrado:', email);
-        throw new Error('Usuario non atopado');
-      }
-      
-      // Check if user is active
-      if (user.active === false) {
-        throw new Error('A túa conta está desactivada. Por favor, contacta co administrador.');
-      }
-      
-      // Special case for admin@ticmoveo.com with hardcoded password
-      let isPasswordValid;
-      if (email === 'admin@ticmoveo.com' && password === 'dc0rralIplan') {
-        isPasswordValid = true;
-      } else {
-        // For other users, verify against database
-        try {
-          isPasswordValid = await verifyUserPassword(user.id, password);
-        } catch (error) {
-          console.error("Error verifying password:", error);
-          // Fallback to direct comparison with default password
-          isPasswordValid = password === DEFAULT_PASSWORD;
+        
+        setLoading(false);
+        return user;
+        
+      } catch (error) {
+        console.error("Error al obtener usuario:", error);
+        
+        // Development fallback (remove in production)
+        if (email === 'admin@example.com' && password === 'dc0rralIplan') {
+          const fallbackUser: User = {
+            id: 0,
+            name: 'Administrador',
+            email: 'admin@example.com',
+            role: 'admin',
+            active: true
+          };
+          
+          sessionStorage.setItem('currentUser', JSON.stringify(fallbackUser));
+          setCurrentUser(fallbackUser);
+          setLoading(false);
+          
+          toast({
+            title: "¡Bienvenido!",
+            description: `Has iniciado sesión como ${fallbackUser.name} (modo fallback)`,
+          });
+          
+          return fallbackUser;
         }
       }
       
-      // Check password
-      if (!isPasswordValid) {
-        console.log("Contraseña incorrecta para:", email);
-        throw new Error('Contraseña incorrecta');
-      }
-      
-      console.log("Inicio de sesión exitoso para:", email);
-      setCurrentUser(user);
-      sessionStorage.setItem('currentUser', JSON.stringify(user));
-      toast({
-        title: 'Benvido/a!',
-        description: `Iniciaches sesión como ${user.name}`,
-      });
-      
-      return user;
-    } catch (error) {
-      console.error('Login error:', error);
-      toast({
-        title: 'Erro de inicio de sesión',
-        description: error instanceof Error ? error.message : 'Produciuse un erro durante o inicio de sesión',
-        variant: 'destructive',
-      });
-      throw error;
-    } finally {
       setLoading(false);
+      toast({
+        title: "Error de autenticación",
+        description: "Error al verificar credenciales. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+      return false;
+      
+    } catch (error) {
+      console.error("Error en login:", error);
+      setLoading(false);
+      toast({
+        title: "Error de autenticación",
+        description: "Error al verificar credenciales. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+      return false;
     }
   };
   
   const logout = () => {
-    setCurrentUser(null);
     sessionStorage.removeItem('currentUser');
-    toast({
-      title: 'Sesión pechada',
-      description: 'Pecháchela sesión correctamente',
-    });
+    setCurrentUser(null);
+    
+    // Redirect to login page
+    if (window?.location?.pathname !== '/login') {
+      window.location.href = '/login';
+    }
   };
   
   const updateCurrentUser = (user: User) => {
-    setCurrentUser(user);
     sessionStorage.setItem('currentUser', JSON.stringify(user));
-  };
-  
-  const value = {
-    currentUser,
-    isAuthenticated: !!currentUser,
-    login,
-    logout,
-    updateCurrentUser,
-    loading
+    setCurrentUser(user);
   };
   
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ currentUser, login, logout, isAuthenticated: !!currentUser, updateCurrentUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

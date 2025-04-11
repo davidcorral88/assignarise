@@ -35,12 +35,18 @@ export const uploadTaskAttachment = async (
     // Como fallback, crear un attachment local pero indicar que falló
     const attachment: TaskAttachment = {
       id: uuidv4(),
+      name: file.name,
+      path: URL.createObjectURL(file),
+      size: file.size,
+      type: file.type,
+      uploadedBy: userId,
+      uploadDate: new Date().toISOString(),
+      isResolution,
+      // Include backwards compatibility fields
       filename: file.name,
       fileSize: file.size,
-      uploadDate: new Date().toISOString(),
-      uploadedBy: userId,
-      isResolution,
       fileUrl: URL.createObjectURL(file),
+      fileType: file.type,
       taskId: taskId
     };
     

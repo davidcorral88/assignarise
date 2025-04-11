@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -87,6 +88,7 @@ const TaskDetail = () => {
       if (!task) return;
       
       if (task.createdBy) {
+        // Convert createdBy to number for API call
         const createdById = typeof task.createdBy === 'string' 
           ? parseInt(task.createdBy, 10) 
           : task.createdBy;
