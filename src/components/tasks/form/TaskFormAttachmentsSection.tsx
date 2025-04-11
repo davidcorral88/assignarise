@@ -48,7 +48,7 @@ const TaskFormAttachmentsSection: React.FC<TaskFormAttachmentsSectionProps> = ({
           
           <TabsContent value="task-files" className="mt-4">
             <FileUploader
-              taskId={taskId}
+              taskId={taskId || '0'}
               attachments={attachments}
               isResolution={false}
               onAttachmentAdded={onAttachmentAdded}
@@ -59,7 +59,7 @@ const TaskFormAttachmentsSection: React.FC<TaskFormAttachmentsSectionProps> = ({
           
           <TabsContent value="resolution-files" className="mt-4">
             <FileUploader
-              taskId={taskId}
+              taskId={taskId || '0'}
               attachments={attachments}
               isResolution={true}
               onAttachmentAdded={onAttachmentAdded}

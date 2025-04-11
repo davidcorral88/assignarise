@@ -21,7 +21,6 @@ export const useTaskForm = (
   const [priority, setPriority] = useState<string>('medium');
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [tag, setTag] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -215,8 +214,6 @@ export const useTaskForm = (
     setStartDate,
     dueDate,
     setDueDate,
-    tag,
-    setTag,
     tags,
     setTags,
     assignments,
@@ -246,7 +243,6 @@ export const useTaskForm = (
     assignedUserData,
     setAssignedUserData,
     recentlyAddedUsers,
-    setRecentlyAddedUsers,
     handleAddAssignment,
     handleRemoveAssignment,
     handleAttachmentAdded,

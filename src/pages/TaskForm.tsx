@@ -61,8 +61,8 @@ const TaskForm = () => {
     loading,
     setLoading,
     submitting,
-    showDeleteDialog,
     setShowDeleteDialog,
+    showDeleteDialog,
     availableUsers,
     setAvailableUsers,
     assignedUserData,
@@ -92,13 +92,19 @@ const TaskForm = () => {
       setAvailableProjects([]);
       setProject('');
     }
-  }, [category]);
+  }, [category, project, setProject, setAvailableProjects]);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const users = await getUsers();
+        if (!users || !Array.isArray(users)) {
+          console.error('Invalid users data:', users);
+          return;
+        }
+        
         const filteredUsers = users.filter(user => {
+          if (!user) return false;
           if (currentUser?.role === 'director') {
             return user.active !== false;
           } else {
@@ -211,6 +217,7 @@ const TaskForm = () => {
             return;
           }
         } else {
+          // For new task creation
           if (currentUser) {
             setCreatorUser(currentUser);
           }
@@ -223,7 +230,7 @@ const TaskForm = () => {
     };
     
     fetchData();
-  }, [id, isEditMode, currentUser, navigate, setAssignments, setAssignedUserData, setAttachments, setCategory, setCreatorUser, setDescription, setDueDate, setPriority, setProject, setStartDate, setStatus, setTask, setTags, setTarefa]);
+  }, [id, isEditMode, currentUser, navigate]);
 
   if (loading) {
     return (
@@ -238,12 +245,6 @@ const TaskForm = () => {
   }
   
   const canEdit = true;
-  
-  const isUserAssignedToTask = currentUser && assignments.some(a => {
-    const assignmentUserId = typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id;
-    return assignmentUserId === currentUser.id;
-  });
-  
   const canAddResolutionAttachments = true;
   
   return (
@@ -315,7 +316,7 @@ const TaskForm = () => {
               />
 
               <TaskFormAttachmentsSection
-                taskId={String(task?.id)}
+                taskId={task?.id ? String(task.id) : '0'}
                 attachments={attachments}
                 onAttachmentAdded={handleAttachmentAdded}
                 onAttachmentRemoved={handleAttachmentRemoved}
