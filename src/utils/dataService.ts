@@ -7,9 +7,6 @@ import { API_URL } from './dbConfig';
 // Always true - PostgreSQL is the only storage option
 const useAPI = true;
 
-// In-memory cache for users to prevent redundant API calls
-const userCache: Record<number, User> = {};
-
 export const setUseAPI = (value: boolean) => {
   // Always keep useAPI as true regardless of the request
   if (!value) {
@@ -95,26 +92,14 @@ export const getTaskByIdForState = async (id: string, setState: React.Dispatch<R
   }
 };
 
-// Enhanced getUserById with caching
 export const getUserByIdForState = async (
   id: number, 
   setState: React.Dispatch<React.SetStateAction<User | null>>
 ) => {
   try {
-    if (userCache[id]) {
-      console.log(`Using cached user data for ID: ${id}`);
-      setState(userCache[id]);
-      return userCache[id];
-    }
-    
     console.log(`Fetching user with ID: ${id}`);
     const user = await apiService.getUserById(id);
     console.log(`User retrieved:`, user);
-    
-    if (user) {
-      userCache[id] = user; // Cache the user data
-    }
-    
     setState(user || null);
     return user;
   } catch (error) {
@@ -124,45 +109,25 @@ export const getUserByIdForState = async (
   }
 };
 
-// Enhanced getUsersByIds with caching
+// New helper function to get multiple users by their IDs
 export const getUsersByIds = async (userIds: number[]): Promise<Record<number, User | null>> => {
   try {
     console.log(`Fetching users with IDs: ${userIds.join(', ')}`);
     const userMap: Record<number, User | null> = {};
     
-    // Filter out IDs that are already cached
-    const uncachedIds = userIds.filter(id => !userCache[id]);
-    
-    if (uncachedIds.length === 0) {
-      console.log('All requested users are already cached');
-      userIds.forEach(id => {
-        userMap[id] = userCache[id];
-      });
-      return userMap;
-    }
-    
-    // Process uncached IDs in batches to avoid too many parallel requests
+    // Process in batches to avoid too many parallel requests
     const batchSize = 5;
-    for (let i = 0; i < uncachedIds.length; i += batchSize) {
-      const batch = uncachedIds.slice(i, i + batchSize);
+    for (let i = 0; i < userIds.length; i += batchSize) {
+      const batch = userIds.slice(i, i + batchSize);
       const userPromises = batch.map(userId => apiService.getUserById(userId));
       const users = await Promise.all(userPromises);
       
       batch.forEach((userId, index) => {
-        const user = users[index];
-        if (user) {
-          userCache[userId] = user; // Cache the user data
-        }
-        userMap[userId] = user;
+        userMap[userId] = users[index];
       });
     }
     
-    // Add cached users to the response
-    userIds.filter(id => userCache[id] && !userMap[id]).forEach(id => {
-      userMap[id] = userCache[id];
-    });
-    
-    console.log(`Retrieved ${Object.keys(userMap).length} users (${uncachedIds.length} from API, ${userIds.length - uncachedIds.length} from cache)`);
+    console.log(`Retrieved ${Object.keys(userMap).length} users`);
     return userMap;
   } catch (error) {
     console.error('Error fetching multiple users:', error);

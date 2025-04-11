@@ -11,15 +11,12 @@ router.post('/verify', async (req, res) => {
   try {
     const { userId, password } = req.body;
     
-    if (!userId || !password) {
+    if (!userId && !password) {
       return res.status(400).json({ error: 'User ID and password are required' });
     }
 
-    console.log(`Verifying password for user ID: ${userId}`);
-    
     // Check if default password
     if (password === DEFAULT_PASSWORD) {
-      console.log('Default password matched');
       return res.json({ isValid: true });
     }
 
@@ -28,12 +25,10 @@ router.post('/verify', async (req, res) => {
     
     if (result.rows.length === 0) {
       // If no password set, default password is valid
-      console.log('No custom password set, using default');
       return res.json({ isValid: password === DEFAULT_PASSWORD });
     }
     
     const isValid = result.rows[0].password === password;
-    console.log(`Password validation result: ${isValid}`);
     res.json({ isValid });
   } catch (error) {
     console.error('Error verifying password:', error);
