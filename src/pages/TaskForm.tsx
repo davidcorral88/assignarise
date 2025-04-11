@@ -20,6 +20,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from '@/lib/utils';
 import { CheckSquare, ArrowLeft, Trash2, Plus, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
 import { FileUploader } from '@/components/files/FileUploader';
+import { getCategoryOptions, getProjectOptions } from '@/utils/categoryProjectData';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,8 +43,9 @@ const TaskForm = () => {
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   const [creatorUser, setCreatorUser] = useState<User | null>(null);
   
-  const [category, setCategory] = useState<string>('');
-  const [project, setProject] = useState<string>('');
+  const [category, setCategory] = useState<string>('-');
+  const [project, setProject] = useState<string>('-');
+  const [availableProjects, setAvailableProjects] = useState<string[]>(['-']);
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +54,16 @@ const TaskForm = () => {
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [assignedUserData, setAssignedUserData] = useState<Record<number, User | null>>({});
   const [recentlyAddedUsers, setRecentlyAddedUsers] = useState<Record<number, User | null>>({});
+
+  const handleCategoryChange = (newCategory: string) => {
+    setCategory(newCategory);
+    const projectOptions = getProjectOptions(newCategory);
+    setAvailableProjects(projectOptions);
+    
+    if (!projectOptions.includes(project)) {
+      setProject('-');
+    }
+  };
   
   useEffect(() => {
     const fetchUsers = async () => {
@@ -88,8 +100,13 @@ const TaskForm = () => {
             setStatus(taskData.status || 'pending');
             setPriority(taskData.priority || 'medium');
             
-            setCategory(taskData.category || '');
-            setProject(taskData.project || '');
+            const loadedCategory = taskData.category || '-';
+            setCategory(loadedCategory);
+            
+            const projectOptions = getProjectOptions(loadedCategory);
+            setAvailableProjects(projectOptions);
+            
+            setProject(taskData.project && projectOptions.includes(taskData.project) ? taskData.project : '-');
             
             if (taskData.startDate) {
               try {
@@ -220,8 +237,8 @@ const TaskForm = () => {
         tags: tags || [],
         assignments: normalizedAssignments,
         attachments: attachments || [],
-        category: category || undefined,
-        project: project || undefined,
+        category: category === '-' ? undefined : category,
+        project: project === '-' ? undefined : project,
       };
       
       console.log("Saving task data:", taskData);
@@ -500,22 +517,40 @@ const TaskForm = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="category">Categoría</Label>
-                      <Input
-                        id="category"
+                      <Select
                         value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        placeholder="Categoría da tarefa"
-                      />
+                        onValueChange={handleCategoryChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecciona categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getCategoryOptions().map((cat) => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="project">Proxecto</Label>
-                      <Input
-                        id="project"
+                      <Select
                         value={project}
-                        onChange={(e) => setProject(e.target.value)}
-                        placeholder="Proxecto relacionado"
-                      />
+                        onValueChange={(value) => setProject(value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecciona proxecto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProjects.map((proj) => (
+                            <SelectItem key={proj} value={proj}>
+                              {proj}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </CardContent>
