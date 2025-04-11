@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -20,6 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from '@/lib/utils';
 import { CheckSquare, ArrowLeft, Trash2, Plus, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
 import { FileUploader } from '@/components/files/FileUploader';
+import { getAllCategories, getProjectsByCategory } from '../utils/categoryProjectData';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -44,6 +46,7 @@ const TaskForm = () => {
   
   const [category, setCategory] = useState<string>('');
   const [project, setProject] = useState<string>('');
+  const [availableProjects, setAvailableProjects] = useState<string[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +55,18 @@ const TaskForm = () => {
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [assignedUserData, setAssignedUserData] = useState<Record<number, User | null>>({});
   const [recentlyAddedUsers, setRecentlyAddedUsers] = useState<Record<number, User | null>>({});
+  
+  // Lista de categorías disponibles
+  const categories = getAllCategories();
+  
+  // Actualizar proyectos disponibles cuando cambia la categoría
+  useEffect(() => {
+    setAvailableProjects(getProjectsByCategory(category));
+    // Si la categoría cambia, resetear el proyecto si no está en la nueva lista
+    if (project && !getProjectsByCategory(category).includes(project)) {
+      setProject('');
+    }
+  }, [category]);
   
   useEffect(() => {
     const fetchUsers = async () => {
@@ -500,22 +515,39 @@ const TaskForm = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="category">Categoría</Label>
-                      <Input
-                        id="category"
+                      <Select
                         value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        placeholder="Categoría da tarefa"
-                      />
+                        onValueChange={setCategory}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar categoría" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-80">
+                          <SelectItem value="">Ningunha</SelectItem>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="project">Proxecto</Label>
-                      <Input
-                        id="project"
+                      <Select
                         value={project}
-                        onChange={(e) => setProject(e.target.value)}
-                        placeholder="Proxecto relacionado"
-                      />
+                        onValueChange={setProject}
+                        disabled={!category}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={category ? "Seleccionar proxecto" : "Seleccione categoría primeiro"} />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-80">
+                          <SelectItem value="">Ningún</SelectItem>
+                          {availableProjects.map((proj) => (
+                            <SelectItem key={proj} value={proj}>{proj}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </CardContent>
