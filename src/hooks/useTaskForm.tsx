@@ -45,6 +45,12 @@ export const useTaskForm = (taskId?: string) => {
   const [assignedUserData, setAssignedUserData] = useState<Record<number, User | null>>({});
   const [recentlyAddedUsers, setRecentlyAddedUsers] = useState<Record<number, User | null>>({});
 
+  // Define isUserAssignedToTask early, before it's used elsewhere
+  const isUserAssignedToTask = currentUser && assignments.some(a => {
+    const userId = typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id;
+    return userId === currentUser.id;
+  });
+
   // Update available projects when category changes
   useEffect(() => {
     setAvailableProjects(getProjectsByCategory(category));
@@ -303,11 +309,6 @@ export const useTaskForm = (taskId?: string) => {
     (currentUser?.id === task?.createdBy);
     
   const isTaskCompleted = status === 'completed';
-  
-  const isUserAssignedToTask = currentUser && assignments.some(a => {
-    const userId = typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id;
-    return userId === currentUser.id;
-  });
   
   const canAddResolutionAttachments = isUserAssignedToTask || currentUser?.role === 'director';
 
