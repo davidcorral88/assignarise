@@ -185,8 +185,8 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
           category: existingEntry.category,
           project: existingEntry.project,
           activity: existingEntry.activity,
-          time_format: existingEntry.time_format
-        });
+          timeFormat: existingEntry.timeFormat
+        }, existingEntry.id);
         
         toast({
           title: 'Rexistro actualizado',
