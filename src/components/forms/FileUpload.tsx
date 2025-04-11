@@ -54,12 +54,13 @@ const FileUpload: React.FC<FileUploadProps> = ({ taskId, onFileUpload }) => {
         throw new Error("ID de usuario inválido");
       }
       
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('taskId', taskId);
-      formData.append('uploadedBy', userId.toString());
-      
-      await uploadTaskAttachment(formData);
+      // Fix: Pass all 4 required arguments to uploadTaskAttachment
+      const result = await uploadTaskAttachment(
+        taskId,
+        selectedFile,
+        userId,
+        false // isResolution parameter (default to false)
+      );
       
       toast({
         title: "Éxito",

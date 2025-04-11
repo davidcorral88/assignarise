@@ -52,7 +52,8 @@ const FileList: React.FC<FileListProps> = ({ taskId, attachments, setAttachments
     if (!attachmentToDelete) return;
     
     try {
-      await deleteTaskAttachment(attachmentToDelete.id);
+      // Fix: Pass both required arguments to deleteTaskAttachment
+      await deleteTaskAttachment(taskId, attachmentToDelete.id);
       
       // Update local state
       setAttachments(prev => prev.filter(a => a.id !== attachmentToDelete.id));
