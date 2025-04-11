@@ -774,14 +774,15 @@ const TaskList = () => {
                 <TableHead>Prioridade</TableHead>
                 <TableHead>Creador</TableHead>
                 <TableHead>Asignados</TableHead>
-                <TableHead>Vencemento</TableHead>
+                <TableHead>Data Creación</TableHead>
+                <TableHead>Data Vencemento</TableHead>
                 <TableHead className="text-right">Accións</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={9} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
                       <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                       <p className="mt-2 text-sm text-muted-foreground">Cargando tarefas...</p>
@@ -875,6 +876,9 @@ const TaskList = () => {
                         </div>
                       </TableCell>
                       <TableCell>
+                        {task.createdAt ? formatTaskDate(task.createdAt) : '—'}
+                      </TableCell>
+                      <TableCell>
                         {task.dueDate ? formatTaskDate(task.dueDate) : '—'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -924,7 +928,7 @@ const TaskList = () => {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={9} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
                       <Clock className="h-10 w-10 text-muted-foreground/50 mb-4" />
                       <p className="text-sm text-muted-foreground">Non se atoparon tarefas</p>
