@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, parseISO, getDay, addWeeks, subWeeks } from 'date-fns';
 import { es, gl } from 'date-fns/locale';
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from '@/components/ui/use-toast';
 import { Task, TimeEntry } from '@/utils/types';
-import { addTimeEntry } from '@/utils/dataService';
+import { addTimeEntry, updateTimeEntry, deleteTimeEntry } from '@/utils/dataService';
 
 interface WeeklyHoursProps {
   tasks: Task[];
@@ -135,7 +136,20 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     return `${wholeHours}:${minutes.toString().padStart(2, '0')}`;
   };
 
-  // Save hours for a task on a specific day
+  // Find existing entry for a task and day
+  const findExistingEntry = (taskId: string, dayDate: string): TimeEntry | undefined => {
+    return timeEntries.find(entry => {
+      const entryTaskId = typeof entry.task_id === 'string' 
+        ? entry.task_id 
+        : String(entry.task_id);
+      
+      const entryDate = format(new Date(entry.date), 'yyyy-MM-dd');
+      
+      return entryTaskId === taskId && entryDate === dayDate;
+    });
+  };
+
+  // Save or update hours for a task on a specific day
   const saveHours = async (taskId: string, dayDate: string) => {
     if (!taskHours[taskId][dayDate] || taskHours[taskId][dayDate] === '0') return;
 
@@ -154,18 +168,45 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
 
       const userIdAsNumber = typeof userId === 'string' ? parseInt(userId, 10) : userId;
       
-      const entry = await addTimeEntry({
-        task_id: parseInt(taskId, 10),
-        user_id: userIdAsNumber,
-        hours,
-        date: dayDate,
-        notes: `Rexistro semanal - ${format(parseISO(dayDate), 'EEEE', { locale: gl })}`
-      });
-
-      toast({
-        title: 'Rexistro gardado',
-        description: 'As horas foron rexistradas correctamente',
-      });
+      // Check if there's an existing entry for this task and date
+      const existingEntry = findExistingEntry(taskId, dayDate);
+      
+      let entry;
+      
+      if (existingEntry) {
+        // Update existing entry
+        entry = await updateTimeEntry({
+          id: existingEntry.id,
+          task_id: parseInt(taskId, 10),
+          user_id: userIdAsNumber,
+          hours,
+          date: dayDate,
+          notes: `Rexistro semanal - ${format(parseISO(dayDate), 'EEEE', { locale: gl })}`,
+          category: existingEntry.category,
+          project: existingEntry.project,
+          activity: existingEntry.activity,
+          time_format: existingEntry.time_format
+        });
+        
+        toast({
+          title: 'Rexistro actualizado',
+          description: 'As horas foron actualizadas correctamente',
+        });
+      } else {
+        // Create new entry
+        entry = await addTimeEntry({
+          task_id: parseInt(taskId, 10),
+          user_id: userIdAsNumber,
+          hours,
+          date: dayDate,
+          notes: `Rexistro semanal - ${format(parseISO(dayDate), 'EEEE', { locale: gl })}`
+        });
+        
+        toast({
+          title: 'Rexistro gardado',
+          description: 'As horas foron rexistradas correctamente',
+        });
+      }
 
       setWeekTimeEntries(prev => ({
         ...prev,
