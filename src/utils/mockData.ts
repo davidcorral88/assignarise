@@ -1,16 +1,16 @@
 
-import { Task, User, TimeEntry, WorkdaySchedule, Holiday, VacationDay, WorkSchedule } from './types';
+import { Task, User, TimeEntry, Holiday, VacationDay } from './types';
 
 // Empty mock objects for initial development
 export const mockUsers: User[] = [];
 export const mockTasks: Task[] = [];
 export const mockTimeEntries: TimeEntry[] = [];
-export const mockWorkdaySchedules: WorkdaySchedule[] = [];
+export const mockWorkdaySchedules: any[] = [];
 export const mockHolidays: Holiday[] = [];
 export const mockVacationDays: VacationDay[] = [];
-export const mockWorkSchedule: WorkSchedule = {
+export const mockWorkSchedule: any = {
   user_id: 0,
-  workday_schedule_id: 0, // Use a number to match the type
+  workday_schedule_id: 0, 
   start_date: '',
   end_date: null,
   defaultWorkdayScheduleId: '',
@@ -29,5 +29,8 @@ export const getTaskById = async (id: string): Promise<Task | undefined> => {
 
 export const getTimeEntriesByUserId = async (userId: number): Promise<TimeEntry[]> => {
   console.warn('Using deprecated mockData.getTimeEntriesByUserId - update to use apiService directly');
-  return mockTimeEntries.filter(entry => entry.user_id === userId);
+  return mockTimeEntries.filter(entry => {
+    const entryUserId = typeof entry.user_id === 'string' ? parseInt(entry.user_id, 10) : entry.user_id;
+    return entryUserId === userId;
+  });
 };

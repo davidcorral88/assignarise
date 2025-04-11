@@ -352,12 +352,12 @@ const TaskList = () => {
     return user ? user.name : 'Usuario descoñecido';
   };
 
-  const handleViewTask = (taskId: string) => {
-    navigate(`/tasks/${taskId}`);
+  const handleViewTask = (id: string | number) => {
+    navigate(`/tasks/${id.toString()}`);
   };
 
-  const handleEditTask = (taskId: string) => {
-    navigate(`/tasks/${taskId}/edit`);
+  const handleEditTask = (id: string | number) => {
+    navigate(`/tasks/${id.toString()}/edit`);
   };
 
   const renderCreatorCell = (task: Task) => {
@@ -391,6 +391,48 @@ const TaskList = () => {
       console.error('Error formateando fecha:', error);
       return '—';
     }
+  };
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    
+    if (!term.trim()) {
+      setFilteredTasks(tasks);
+      return;
+    }
+    
+    const filtered = tasks.filter(task => {
+      const searchString = term.toLowerCase();
+      const taskCreator = task.createdBy?.toString() || '';
+      const hasMatchingTag = task.tags?.some(tag => tag.toLowerCase().includes(searchString)) || false;
+      
+      return (
+        task.title.toLowerCase().includes(searchString) ||
+        (task.description && task.description.toLowerCase().includes(searchString)) ||
+        taskCreator.includes(searchString) ||
+        hasMatchingTag
+      );
+    });
+    
+    setFilteredTasks(filtered);
+  };
+
+  const handleFilterByCreator = (creatorId: number | null) => {
+    if (creatorId === null) {
+      setFilteredTasks(tasks);
+    } else {
+      const filtered = tasks.filter(task => {
+        const taskCreatedBy = typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy;
+        return taskCreatedBy === creatorId;
+      });
+      setFilteredTasks(filtered);
+    }
+  };
+
+  const handleCreatorFilterChange = (userId: string | number) => {
+    const numericId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    setCreatorFilter(numericId);
+    handleFilterByCreator(numericId);
   };
 
   return (

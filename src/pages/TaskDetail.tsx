@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -36,7 +35,6 @@ const TaskDetail = () => {
   const [assignedUsers, setAssignedUsers] = useState<Record<string, User | null>>({});
   const [allUsers, setAllUsers] = useState<User[]>([]);
   
-  // Fetch all users first to have a complete user reference
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
@@ -84,18 +82,15 @@ const TaskDetail = () => {
     fetchData();
   }, [id]);
   
-  // Process creator and users when task or allUsers change
   useEffect(() => {
     const processUsers = async () => {
       if (!task) return;
       
-      // Process creator
       if (task.createdBy) {
         const createdById = typeof task.createdBy === 'string' 
           ? parseInt(task.createdBy, 10) 
           : task.createdBy;
-            
-        // Try to find creator in allUsers first
+          
         const cachedUser = allUsers.find(user => {
           const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
           return userId === createdById;
@@ -104,7 +99,6 @@ const TaskDetail = () => {
         if (cachedUser) {
           setCreator(cachedUser);
         } else {
-          // If not found, fetch from API
           try {
             const user = await getUserById(createdById);
             setCreator(user || null);
@@ -114,17 +108,14 @@ const TaskDetail = () => {
         }
       }
       
-      // Process assigned users
       if (task.assignments && task.assignments.length > 0) {
         const users: Record<string, User | null> = {};
         
         for (const assignment of task.assignments) {
-          // Always convert user_id to number for consistency
           const userId = typeof assignment.user_id === 'string' 
             ? parseInt(assignment.user_id, 10) 
             : assignment.user_id;
           
-          // First check if user exists in the allUsers array
           const cachedUser = allUsers.find(user => {
             const userIdNum = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
             return userIdNum === userId;
@@ -133,7 +124,6 @@ const TaskDetail = () => {
           if (cachedUser) {
             users[userId.toString()] = cachedUser;
           } else {
-            // If not in cache, fetch from API
             try {
               const user = await getUserById(userId);
               if (user) {
@@ -148,7 +138,6 @@ const TaskDetail = () => {
         setAssignedUsers(users);
       }
       
-      // Also process users from time entries
       if (timeEntries.length > 0) {
         const updatedUsers = { ...assignedUsers };
         
@@ -157,10 +146,8 @@ const TaskDetail = () => {
             ? parseInt(entry.user_id, 10) 
             : entry.user_id;
           
-          // Skip if we already have this user
           if (updatedUsers[entryUserId.toString()]) continue;
           
-          // Check in allUsers cache first
           const cachedUser = allUsers.find(user => {
             const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
             return userId === entryUserId;
@@ -169,7 +156,6 @@ const TaskDetail = () => {
           if (cachedUser) {
             updatedUsers[entryUserId.toString()] = cachedUser;
           } else {
-            // If not in cache, fetch from API
             try {
               const user = await getUserById(entryUserId);
               if (user) {
@@ -181,7 +167,6 @@ const TaskDetail = () => {
           }
         }
         
-        // Only update state if we added new users
         if (Object.keys(updatedUsers).length > Object.keys(assignedUsers).length) {
           setAssignedUsers(updatedUsers);
         }
@@ -230,7 +215,6 @@ const TaskDetail = () => {
   
   const currentUserId = currentUser?.id;
   
-  // Display category and project information if available
   const hasCategory = task.category && task.category.trim() !== '';
   const hasProject = task.project && task.project.trim() !== '';
   
@@ -240,10 +224,9 @@ const TaskDetail = () => {
         <TaskDetailHeader 
           task={task} 
           currentUserId={currentUserId} 
-          canEdit={true} // Modificado para permitir editar a cualquier usuario
+          canEdit={true}
         />
         
-        {/* Category and Project display */}
         {(hasCategory || hasProject) && (
           <div className="flex flex-wrap gap-3 mb-4">
             {hasCategory && (
