@@ -146,113 +146,124 @@ const TaskList = () => {
   }, [currentUser]);
   
   useEffect(() => {
-    let result = [...tasks];
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        task => 
-          (task.title && task.title.toLowerCase().includes(query)) || 
-          (task.description && task.description.toLowerCase().includes(query)) ||
-          (task.id && task.id.toLowerCase().includes(query))
-      );
-    }
-    
-    if (statusFilter) {
-      result = result.filter(task => task.status === statusFilter);
-    }
+    try {
+      let result = [...tasks];
+      
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase().trim();
+        result = result.filter(
+          task => {
+            // Safe access to properties with null/undefined checks
+            const titleMatch = task.title ? task.title.toLowerCase().includes(query) : false;
+            const descriptionMatch = task.description ? task.description.toLowerCase().includes(query) : false;
+            const idMatch = task.id ? task.id.toLowerCase().includes(query) : false;
+            
+            console.log(`Filtering task ${task.id}: title=${titleMatch}, desc=${descriptionMatch}, id=${idMatch}`);
+            return titleMatch || descriptionMatch || idMatch;
+          }
+        );
+      }
+      
+      if (statusFilter) {
+        result = result.filter(task => task.status === statusFilter);
+      }
 
-    if (priorityFilter) {
-      result = result.filter(task => task.priority === priorityFilter);
-    }
+      if (priorityFilter) {
+        result = result.filter(task => task.priority === priorityFilter);
+      }
 
-    if (creatorFilter) {
-      result = result.filter(task => {
-        const createdByNum = task.createdBy ? 
-          (typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy) : 
-          (task.created_by ? (typeof task.created_by === 'string' ? parseInt(task.created_by, 10) : task.created_by) : null);
-        
-        console.log(`Filtering task ${task.id}: createdBy=${createdByNum}, filter=${creatorFilter}, match=${createdByNum === creatorFilter}`);
-        return createdByNum === creatorFilter;
-      });
-    }
-    
-    if (assignedToFilter) {
-      result = result.filter(task => {
-        if (!task.assignments || task.assignments.length === 0) return false;
-        
-        return task.assignments.some(assignment => {
-          const assignedUserId = typeof assignment.user_id === 'string' 
-            ? parseInt(assignment.user_id, 10) 
-            : assignment.user_id;
-          return assignedUserId === assignedToFilter;
+      if (creatorFilter) {
+        result = result.filter(task => {
+          const createdByNum = task.createdBy ? 
+            (typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy) : 
+            (task.created_by ? (typeof task.created_by === 'string' ? parseInt(task.created_by, 10) : task.created_by) : null);
+          
+          return createdByNum === creatorFilter;
         });
-      });
+      }
+      
+      if (assignedToFilter) {
+        result = result.filter(task => {
+          if (!task.assignments || task.assignments.length === 0) return false;
+          
+          return task.assignments.some(assignment => {
+            const assignedUserId = typeof assignment.user_id === 'string' 
+              ? parseInt(assignment.user_id, 10) 
+              : assignment.user_id;
+            return assignedUserId === assignedToFilter;
+          });
+        });
+      }
+
+      if (startDateFilter || endDateFilter) {
+        result = result.filter(task => {
+          if (!task.createdAt) return false;
+          
+          try {
+            const taskDate = parseISO(task.createdAt);
+            
+            if (isNaN(taskDate.getTime())) return false;
+            
+            if (startDateFilter) {
+              const startOfDay = new Date(startDateFilter);
+              startOfDay.setHours(0, 0, 0, 0);
+              
+              if (isBefore(taskDate, startOfDay)) return false;
+            }
+
+            if (endDateFilter) {
+              const endOfDay = new Date(endDateFilter);
+              endOfDay.setHours(23, 59, 59, 999);
+              
+              if (isAfter(taskDate, endOfDay)) return false;
+            }
+
+            return true;
+          } catch (error) {
+            console.error('Error filtering by creation date:', error);
+            return false;
+          }
+        });
+      }
+
+      if (dueDateStartFilter || dueDateEndFilter) {
+        result = result.filter(task => {
+          if (!task.dueDate) return false;
+          
+          try {
+            const taskDueDate = parseISO(task.dueDate);
+            
+            if (isNaN(taskDueDate.getTime())) return false;
+            
+            if (dueDateStartFilter) {
+              const startOfDay = new Date(dueDateStartFilter);
+              startOfDay.setHours(0, 0, 0, 0);
+              
+              if (isBefore(taskDueDate, startOfDay)) return false;
+            }
+
+            if (dueDateEndFilter) {
+              const endOfDay = new Date(dueDateEndFilter);
+              endOfDay.setHours(23, 59, 59, 999);
+              
+              if (isAfter(taskDueDate, endOfDay)) return false;
+            }
+
+            return true;
+          } catch (error) {
+            console.error('Error filtering by due date:', error);
+            return false;
+          }
+        });
+      }
+      
+      console.log(`Filtered tasks: ${result.length} of ${tasks.length} tasks match criteria`);
+      setFilteredTasks(result);
+    } catch (error) {
+      console.error('Error filtering tasks:', error);
+      // Fallback to showing all tasks if filtering fails
+      setFilteredTasks(tasks);
     }
-
-    if (startDateFilter || endDateFilter) {
-      result = result.filter(task => {
-        if (!task.createdAt) return false;
-        
-        try {
-          const taskDate = parseISO(task.createdAt);
-          
-          if (isNaN(taskDate.getTime())) return false;
-          
-          if (startDateFilter) {
-            const startOfDay = new Date(startDateFilter);
-            startOfDay.setHours(0, 0, 0, 0);
-            
-            if (isBefore(taskDate, startOfDay)) return false;
-          }
-
-          if (endDateFilter) {
-            const endOfDay = new Date(endDateFilter);
-            endOfDay.setHours(23, 59, 59, 999);
-            
-            if (isAfter(taskDate, endOfDay)) return false;
-          }
-
-          return true;
-        } catch (error) {
-          console.error('Error filtering by creation date:', error);
-          return false;
-        }
-      });
-    }
-
-    if (dueDateStartFilter || dueDateEndFilter) {
-      result = result.filter(task => {
-        if (!task.dueDate) return false;
-        
-        try {
-          const taskDueDate = parseISO(task.dueDate);
-          
-          if (isNaN(taskDueDate.getTime())) return false;
-          
-          if (dueDateStartFilter) {
-            const startOfDay = new Date(dueDateStartFilter);
-            startOfDay.setHours(0, 0, 0, 0);
-            
-            if (isBefore(taskDueDate, startOfDay)) return false;
-          }
-
-          if (dueDateEndFilter) {
-            const endOfDay = new Date(dueDateEndFilter);
-            endOfDay.setHours(23, 59, 59, 999);
-            
-            if (isAfter(taskDueDate, endOfDay)) return false;
-          }
-
-          return true;
-        } catch (error) {
-          console.error('Error filtering by due date:', error);
-          return false;
-        }
-      });
-    }
-    
-    setFilteredTasks(result);
   }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, assignedToFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
   
   const getStatusIcon = (status: string) => {
