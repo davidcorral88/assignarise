@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -20,6 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from '@/lib/utils';
 import { CheckSquare, ArrowLeft, Trash2, Plus, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
 import { FileUploader } from '@/components/files/FileUploader';
+import { projectOptions } from '@/utils/projectOptions';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -510,12 +512,22 @@ const TaskForm = () => {
                     
                     <div className="space-y-2">
                       <Label htmlFor="project">Proxecto</Label>
-                      <Input
-                        id="project"
-                        value={project}
-                        onChange={(e) => setProject(e.target.value)}
-                        placeholder="Proxecto relacionado"
-                      />
+                      <Select
+                        value={project || ""}
+                        onValueChange={(value) => setProject(value)}
+                      >
+                        <SelectTrigger id="project">
+                          <SelectValue placeholder="Seleccionar proxecto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">-- Ningún --</SelectItem>
+                          {projectOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </CardContent>
