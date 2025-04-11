@@ -77,31 +77,11 @@ export const {
   deleteTaskAttachment
 } = apiService;
 
-// Add caching for common requests to improve performance
-const userCache = new Map<number, User | null>();
-const taskCache = new Map<string, Task | null>();
-
-// Helper functions for React useState with caching
+// Helper functions for React useState - these all need to be adjusted to work with the correct typings
 export const getTaskByIdForState = async (id: string, setState: React.Dispatch<React.SetStateAction<Task | null>>) => {
   try {
     console.log(`Fetching task with ID: ${id}`);
-    
-    // Check cache first
-    if (taskCache.has(id)) {
-      const cachedTask = taskCache.get(id);
-      setState(cachedTask);
-      console.log(`Using cached task ${id}`);
-      return cachedTask;
-    }
-    
-    // If not in cache, fetch from API
     const task = await apiService.getTaskById(id);
-    
-    if (task) {
-      // Update cache
-      taskCache.set(id, task);
-    }
-    
     console.log(`Task retrieved:`, task);
     setState(task || null);
     return task;
@@ -118,23 +98,7 @@ export const getUserByIdForState = async (
 ) => {
   try {
     console.log(`Fetching user with ID: ${id}`);
-    
-    // Check cache first
-    if (userCache.has(id)) {
-      const cachedUser = userCache.get(id);
-      setState(cachedUser);
-      console.log(`Using cached user ${id}`);
-      return cachedUser;
-    }
-    
-    // If not in cache, fetch from API
     const user = await apiService.getUserById(id);
-    
-    if (user) {
-      // Update cache
-      userCache.set(id, user);
-    }
-    
     console.log(`User retrieved:`, user);
     setState(user || null);
     return user;
@@ -145,41 +109,22 @@ export const getUserByIdForState = async (
   }
 };
 
-// New helper function to get multiple users by their IDs with caching
+// New helper function to get multiple users by their IDs
 export const getUsersByIds = async (userIds: number[]): Promise<Record<number, User | null>> => {
   try {
     console.log(`Fetching users with IDs: ${userIds.join(', ')}`);
     const userMap: Record<number, User | null> = {};
     
-    // First check cache for each user
-    const usersToFetch: number[] = [];
-    
-    userIds.forEach(userId => {
-      if (userCache.has(userId)) {
-        userMap[userId] = userCache.get(userId);
-      } else {
-        usersToFetch.push(userId);
-      }
-    });
-    
-    if (usersToFetch.length > 0) {
-      // Process in batches to avoid too many parallel requests
-      const batchSize = 5;
-      for (let i = 0; i < usersToFetch.length; i += batchSize) {
-        const batch = usersToFetch.slice(i, i + batchSize);
-        const userPromises = batch.map(userId => apiService.getUserById(userId));
-        const users = await Promise.all(userPromises);
-        
-        batch.forEach((userId, index) => {
-          const user = users[index];
-          userMap[userId] = user;
-          
-          // Add to cache
-          if (user) {
-            userCache.set(userId, user);
-          }
-        });
-      }
+    // Process in batches to avoid too many parallel requests
+    const batchSize = 5;
+    for (let i = 0; i < userIds.length; i += batchSize) {
+      const batch = userIds.slice(i, i + batchSize);
+      const userPromises = batch.map(userId => apiService.getUserById(userId));
+      const users = await Promise.all(userPromises);
+      
+      batch.forEach((userId, index) => {
+        userMap[userId] = users[index];
+      });
     }
     
     console.log(`Retrieved ${Object.keys(userMap).length} users`);
@@ -190,7 +135,6 @@ export const getUsersByIds = async (userIds: number[]): Promise<Record<number, U
   }
 };
 
-// Helper function to get time entries for a specific task
 export const getTimeEntriesByTaskIdForState = async (
   taskId: string, 
   setState: React.Dispatch<React.SetStateAction<TimeEntry[]>>
@@ -239,10 +183,6 @@ export const resetDatabase = async (): Promise<void> => {
       throw new Error(errorData.message || 'Error al reiniciar la base de datos');
     }
     
-    // Reset caches on database reset
-    userCache.clear();
-    taskCache.clear();
-    
     return await response.json();
   } catch (error) {
     console.error('Error resetting database:', error);
@@ -252,41 +192,6 @@ export const resetDatabase = async (): Promise<void> => {
       variant: 'destructive',
     });
     throw error;
-  }
-};
-
-// Clear cache for a specific task or user
-export const clearTaskCache = (taskId?: string) => {
-  if (taskId) {
-    taskCache.delete(taskId);
-  } else {
-    taskCache.clear();
-  }
-};
-
-export const clearUserCache = (userId?: number) => {
-  if (userId) {
-    userCache.delete(userId);
-  } else {
-    userCache.clear();
-  }
-};
-
-// Clear cache for specific operations
-export const clearCacheAfterTaskChange = (taskId?: string) => {
-  if (taskId) {
-    taskCache.delete(taskId);
-  } else {
-    taskCache.clear();
-  }
-  // Also clear related caches that might be affected
-};
-
-export const clearCacheAfterUserChange = (userId?: number) => {
-  if (userId) {
-    userCache.delete(userId);
-  } else {
-    userCache.clear();
   }
 };
 
