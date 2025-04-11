@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -405,6 +404,11 @@ const TaskList = () => {
     }
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Search submitted with query:", searchQuery);
+  };
+
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -425,7 +429,7 @@ const TaskList = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
-          <div className="relative flex-1">
+          <form onSubmit={handleSearchSubmit} className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -434,7 +438,7 @@ const TaskList = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
+          </form>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
