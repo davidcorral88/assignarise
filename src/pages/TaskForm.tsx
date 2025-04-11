@@ -79,17 +79,20 @@ const TaskForm = () => {
   
   useEffect(() => {
     if (category) {
+      console.log(`Category changed to: ${category}, getting projects`);
       const projects = getProjectsForCategory(category);
+      console.log(`Available projects for category ${category}:`, projects);
       setAvailableProjects(projects);
       
       if (projects.length > 0 && project && !projects.includes(project)) {
         setProject('');
       }
     } else {
+      console.log('No category selected, clearing projects');
       setAvailableProjects([]);
       setProject('');
     }
-  }, [category, project]);
+  }, [category]);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -107,13 +110,18 @@ const TaskForm = () => {
             setPriority(taskData.priority || 'medium');
             
             if (taskData.category) {
+              console.log(`Task has category: ${taskData.category}`);
               setCategory(taskData.category);
               const projectsForCategory = getProjectsForCategory(taskData.category);
+              console.log(`Available projects for category ${taskData.category}:`, projectsForCategory);
               setAvailableProjects(projectsForCategory);
-            }
-            
-            if (taskData.project) {
-              setProject(taskData.project);
+              
+              if (taskData.project) {
+                console.log(`Task has project: ${taskData.project}`);
+                setProject(taskData.project);
+              }
+            } else {
+              console.log('Task has no category');
             }
             
             if (taskData.startDate) {
@@ -231,6 +239,8 @@ const TaskForm = () => {
       });
       
       console.log("Normalized assignments for submission:", normalizedAssignments);
+      console.log("Submitting with category:", category);
+      console.log("Submitting with project:", project);
       
       const taskData: Task = {
         ...(isEditMode && task ? { id: task.id } : {}),
