@@ -11,7 +11,7 @@ import { Calendar as CalendarIcon, UserIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { User } from '@/utils/types';
-import { getAllCategories, getProjectsByCategory } from '@/utils/categoryProjectData';
+import { getAllCategories } from '@/utils/categoryProjectData';
 
 interface TaskBasicInfoProps {
   task: any;
@@ -133,7 +133,13 @@ const TaskBasicInfo: React.FC<TaskBasicInfoProps> = ({
           <Label htmlFor="category">Categoría</Label>
           <Select
             value={category}
-            onValueChange={setCategory}
+            onValueChange={(value) => {
+              setCategory(value);
+              // Reset project when changing category
+              if (value !== category) {
+                setProject('');
+              }
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar categoría" />

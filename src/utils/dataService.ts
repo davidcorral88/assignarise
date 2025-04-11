@@ -190,6 +190,7 @@ export const getUsersByIds = async (userIds: number[]): Promise<Record<number, U
   }
 };
 
+// Helper function to get time entries for a specific task
 export const getTimeEntriesByTaskIdForState = async (
   taskId: string, 
   setState: React.Dispatch<React.SetStateAction<TimeEntry[]>>
@@ -264,6 +265,24 @@ export const clearTaskCache = (taskId?: string) => {
 };
 
 export const clearUserCache = (userId?: number) => {
+  if (userId) {
+    userCache.delete(userId);
+  } else {
+    userCache.clear();
+  }
+};
+
+// Clear cache for specific operations
+export const clearCacheAfterTaskChange = (taskId?: string) => {
+  if (taskId) {
+    taskCache.delete(taskId);
+  } else {
+    taskCache.clear();
+  }
+  // Also clear related caches that might be affected
+};
+
+export const clearCacheAfterUserChange = (userId?: number) => {
   if (userId) {
     userCache.delete(userId);
   } else {

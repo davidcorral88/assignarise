@@ -24,6 +24,13 @@ const TaskTags: React.FC<TaskTagsProps> = ({ tags, setTags }) => {
     setTags(tags.filter(t => t !== tagToRemove));
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
   return (
     <div>
       <div className="flex flex-wrap gap-2 mb-4">
@@ -35,6 +42,7 @@ const TaskTags: React.FC<TaskTagsProps> = ({ tags, setTags }) => {
               size="icon"
               className="h-4 w-4 ml-1 p-0"
               onClick={() => handleRemoveTag(tag)}
+              type="button"
             >
               <X className="h-3 w-3" />
               <span className="sr-only">Eliminar etiqueta</span>
@@ -55,12 +63,7 @@ const TaskTags: React.FC<TaskTagsProps> = ({ tags, setTags }) => {
             value={tag}
             onChange={(e) => setTag(e.target.value)}
             placeholder="Engadir nova etiqueta"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleAddTag();
-              }
-            }}
+            onKeyDown={handleKeyDown}
           />
         </div>
         <Button type="button" size="sm" onClick={handleAddTag}>

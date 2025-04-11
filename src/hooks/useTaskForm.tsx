@@ -28,7 +28,6 @@ export const useTaskForm = (taskId?: string) => {
   const [priority, setPriority] = useState<string>('medium');
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [tag, setTag] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
@@ -173,6 +172,7 @@ export const useTaskForm = (taskId?: string) => {
             return;
           }
         } else {
+          // If not in edit mode, set the current user as creator
           if (currentUser) {
             setCreatorUser(currentUser);
           }
@@ -298,13 +298,18 @@ export const useTaskForm = (taskId?: string) => {
   };
 
   // Derived values
-  const canEdit = true;
+  const canEdit = currentUser?.role === 'director' || 
+    (currentUser?.role === 'worker' && isUserAssignedToTask) || 
+    (currentUser?.id === task?.createdBy);
+    
   const isTaskCompleted = status === 'completed';
+  
   const isUserAssignedToTask = currentUser && assignments.some(a => {
     const userId = typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id;
     return userId === currentUser.id;
   });
-  const canAddResolutionAttachments = true;
+  
+  const canAddResolutionAttachments = isUserAssignedToTask || currentUser?.role === 'director';
 
   return {
     // State

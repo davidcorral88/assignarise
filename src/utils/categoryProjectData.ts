@@ -1,5 +1,13 @@
 
-export const categoryProjectData = {
+interface CategoryData {
+  categorias: {
+    [category: string]: {
+      proyectos: string[];
+    };
+  };
+}
+
+const categoryData: CategoryData = {
   "categorias": {
     "a. Gestión de los contratos de concesión": {
       "proyectos": [
@@ -53,14 +61,15 @@ export const categoryProjectData = {
   }
 };
 
-// Helper functions to work with the data
 export const getAllCategories = (): string[] => {
-  return Object.keys(categoryProjectData.categorias);
+  return Object.keys(categoryData.categorias);
 };
 
 export const getProjectsByCategory = (category: string): string[] => {
-  if (!category || !categoryProjectData.categorias[category]) {
+  if (!category || !categoryData.categorias[category]) {
     return [];
   }
-  return categoryProjectData.categorias[category].proyectos;
+  return categoryData.categorias[category].proyectos;
 };
+
+export default categoryData;

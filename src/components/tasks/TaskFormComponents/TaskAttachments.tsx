@@ -24,6 +24,9 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
   canAddResolutionAttachments,
   isUserAssignedToTask
 }) => {
+  const taskFiles = attachments.filter(a => !a.isResolution);
+  const resolutionFiles = attachments.filter(a => a.isResolution);
+
   return (
     <Tabs defaultValue="task-files">
       <TabsList className="grid w-full grid-cols-2">
@@ -40,7 +43,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
       <TabsContent value="task-files" className="mt-4">
         <FileUploader
           taskId={taskId || ''}
-          attachments={attachments}
+          attachments={taskFiles}
           isResolution={false}
           onAttachmentAdded={onAttachmentAdded}
           onAttachmentRemoved={onAttachmentRemoved}
@@ -51,7 +54,7 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({
       <TabsContent value="resolution-files" className="mt-4">
         <FileUploader
           taskId={taskId || ''}
-          attachments={attachments}
+          attachments={resolutionFiles}
           isResolution={true}
           onAttachmentAdded={onAttachmentAdded}
           onAttachmentRemoved={onAttachmentRemoved}
