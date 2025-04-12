@@ -384,7 +384,12 @@ export const getHolidays = async (year?: number): Promise<Holiday[]> => {
 
 export const addHoliday = async (holiday: Holiday): Promise<Holiday> => {
   try {
-    return await apiRequest<Holiday>('/holidays', 'POST', holiday);
+    // Ensure the date is properly formatted
+    const holidayToSend = {
+      ...holiday,
+      date: holiday.date.includes('T') ? holiday.date.split('T')[0] : holiday.date
+    };
+    return await apiRequest<Holiday>('/holidays', 'POST', holidayToSend);
   } catch (error) {
     handleFetchError(error, 'Error al crear festivo:');
     throw error;
@@ -393,7 +398,9 @@ export const addHoliday = async (holiday: Holiday): Promise<Holiday> => {
 
 export const removeHoliday = async (date: string): Promise<void> => {
   try {
-    await apiRequest<void>(`/holidays/${date}`, 'DELETE');
+    // Ensure we're using just the date portion (YYYY-MM-DD)
+    const formattedDate = date.includes('T') ? date.split('T')[0] : date;
+    await apiRequest<void>(`/holidays/${formattedDate}`, 'DELETE');
   } catch (error) {
     handleFetchError(error, `Error al eliminar festivo ${date}:`);
     throw error;

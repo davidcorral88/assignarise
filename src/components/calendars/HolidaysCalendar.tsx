@@ -115,11 +115,14 @@ const HolidaysCalendar = () => {
     if (!selectedHoliday) return;
     
     try {
-      // First remove the old holiday
-      await removeHoliday(selectedHoliday.date);
+      // Format the date properly for the API
+      const formattedDate = format(values.date, 'yyyy-MM-dd');
+      
+      // First remove the old holiday - using the date without time portion
+      const originalDate = selectedHoliday.date.split('T')[0];
+      await removeHoliday(originalDate);
       
       // Then add the new one
-      const formattedDate = format(values.date, 'yyyy-MM-dd');
       await addHoliday({
         id: selectedHoliday.id, // Preserve the original ID if possible
         date: formattedDate,
@@ -151,7 +154,9 @@ const HolidaysCalendar = () => {
 
   const handleDeleteHoliday = async (holiday: Holiday) => {
     try {
-      await removeHoliday(holiday.date);
+      // Format the date properly for the API - remove the time portion
+      const formattedDate = holiday.date.split('T')[0];
+      await removeHoliday(formattedDate);
       
       // Refresh holidays list
       const holidaysData = await getHolidays(parseInt(selectedYear));
