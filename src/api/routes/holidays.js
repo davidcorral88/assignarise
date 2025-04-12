@@ -76,20 +76,27 @@ router.delete('/:date', async (req, res) => {
     const { date } = req.params;
     console.log('Deleting holiday with date:', date);
     
-    // Try to parse the date to handle both ISO strings and date-only formats
-    const formattedDate = new Date(date).toISOString().split('T')[0];
-    console.log('Formatted date for deletion:', formattedDate);
+    // First, check if holiday exists
+    const checkQuery = 'SELECT * FROM holidays WHERE date::date = $1::date';
+    const checkResult = await pool.query(checkQuery, [date]);
+    console.log('Holiday check result:', checkResult.rows);
     
-    const query = 'DELETE FROM holidays WHERE date::date = $1::date RETURNING *';
-    const result = await pool.query(query, [formattedDate]);
-    
-    console.log('Delete result:', result.rows);
-    
-    if (result.rowCount === 0) {
+    if (checkResult.rowCount === 0) {
+      console.log('No holiday found for date:', date);
       return res.status(404).json({ error: 'Holiday not found' });
     }
     
-    res.json({ message: 'Holiday deleted successfully', holiday: result.rows[0] });
+    // Proceed with deletion if holiday exists
+    const deleteQuery = 'DELETE FROM holidays WHERE date::date = $1::date RETURNING *';
+    const deleteResult = await pool.query(deleteQuery, [date]);
+    
+    console.log('Delete result:', deleteResult.rows);
+    
+    if (deleteResult.rowCount === 0) {
+      return res.status(404).json({ error: 'Holiday not found' });
+    }
+    
+    res.json({ message: 'Holiday deleted successfully', holiday: deleteResult.rows[0] });
   } catch (error) {
     console.error('Error deleting holiday:', error);
     console.error('Error details:', error.message);

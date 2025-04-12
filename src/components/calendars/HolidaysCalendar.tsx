@@ -32,7 +32,8 @@ const HolidaysCalendar = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
-
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   const addForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -85,7 +86,7 @@ const HolidaysCalendar = () => {
       const formattedDate = format(values.date, 'yyyy-MM-dd');
       console.log('Adding holiday with formatted date:', formattedDate);
       
-      // Construct a valid Holiday object - removed description
+      // Construct a valid Holiday object
       const newHoliday: Holiday = {
         date: formattedDate,
         name: values.name
@@ -120,15 +121,16 @@ const HolidaysCalendar = () => {
       
       // First delete the existing holiday
       const originalDate = selectedHoliday.date.split('T')[0];
-      await removeHoliday(originalDate);
       
-      // Then add the updated holiday - removed description
+      // Create an updated holiday object
       const updatedHoliday: Holiday = {
         id: selectedHoliday.id,
         date: formattedDate,
         name: values.name
       };
       
+      // Update using the original date and new holiday data
+      await removeHoliday(originalDate);
       await addHoliday(updatedHoliday);
       await fetchHolidays(); // Refresh the holidays list
       
@@ -151,25 +153,49 @@ const HolidaysCalendar = () => {
   };
 
   const handleDeleteHoliday = async (holiday: Holiday) => {
+    // Prevent multiple deletion attempts
+    if (isDeleting) return;
+    
+    setIsDeleting(true);
     try {
       // Ensure we're using just the date portion (YYYY-MM-DD)
       const formattedDate = holiday.date.split('T')[0];
       console.log('Deleting holiday with formatted date:', formattedDate);
       
+      // First remove the holiday from the local state to give immediate UI feedback
+      setHolidays(prev => prev.filter(h => h.date.split('T')[0] !== formattedDate));
+      
       await removeHoliday(formattedDate);
-      await fetchHolidays(); // Refresh the holidays list
       
       toast({
         title: 'Festivo eliminado',
         description: `${holiday.name} foi eliminado correctamente`,
       });
+      
+      // Refresh the holidays list after a short delay to ensure backend has processed the deletion
+      setTimeout(() => {
+        fetchHolidays();
+      }, 500);
     } catch (error) {
       console.error('Error deleting holiday:', error);
+      
+      // Add the holiday back to the local state if the deletion failed
+      if (holidays.findIndex(h => h.date.split('T')[0] === holiday.date.split('T')[0]) === -1) {
+        setHolidays(prev => [...prev, holiday]);
+      }
+      
       toast({
         title: 'Error',
-        description: 'Non foi posible eliminar o festivo',
+        description: 'Non foi posible eliminar o festivo. Asegúrate de que aínda existe.',
         variant: 'destructive',
       });
+      
+      // Refresh to ensure our state matches the backend
+      setTimeout(() => {
+        fetchHolidays();
+      }, 1000);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -386,7 +412,12 @@ const HolidaysCalendar = () => {
                                 <Edit size={16} />
                                 <span className="sr-only">Editar</span>
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDeleteHoliday(holiday)}>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleDeleteHoliday(holiday)}
+                                disabled={isDeleting}
+                              >
                                 <Trash2 size={16} />
                                 <span className="sr-only">Eliminar</span>
                               </Button>
