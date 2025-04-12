@@ -29,10 +29,10 @@ router.get('/', async (req, res) => {
 // Add a new holiday
 router.post('/', async (req, res) => {
   try {
-    const { date, name, description } = req.body;
+    const { date, name } = req.body;
     
     // Add detailed logging to diagnose the issue
-    console.log('Received holiday data:', { date, name, description });
+    console.log('Received holiday data:', { date, name });
     
     // Validate required fields
     if (!date) {
@@ -47,8 +47,9 @@ router.post('/', async (req, res) => {
     const formattedDate = new Date(date).toISOString().split('T')[0];
     console.log('Formatted date:', formattedDate);
     
-    const query = 'INSERT INTO holidays (date, name, description) VALUES ($1, $2, $3) RETURNING *';
-    const values = [formattedDate, name, description || name]; // Use name as description if not provided
+    // Updated query to only use name (no description column)
+    const query = 'INSERT INTO holidays (date, name) VALUES ($1, $2) RETURNING *';
+    const values = [formattedDate, name];
     
     console.log('Executing query with values:', values);
     
@@ -100,9 +101,9 @@ router.delete('/:date', async (req, res) => {
 router.put('/:date', async (req, res) => {
   try {
     const oldDate = req.params.date;
-    const { date, name, description } = req.body;
+    const { date, name } = req.body;
     
-    console.log('Updating holiday:', { oldDate, newData: { date, name, description } });
+    console.log('Updating holiday:', { oldDate, newData: { date, name } });
     
     // Validate required fields
     if (!date) {
@@ -133,9 +134,9 @@ router.put('/:date', async (req, res) => {
       return res.status(404).json({ error: 'Holiday not found' });
     }
     
-    // Create a new holiday with the updated information
-    const insertQuery = 'INSERT INTO holidays (date, name, description) VALUES ($1, $2, $3) RETURNING *';
-    const insertValues = [newFormattedDate, name, description || name];
+    // Create a new holiday with the updated information (no description)
+    const insertQuery = 'INSERT INTO holidays (date, name) VALUES ($1, $2) RETURNING *';
+    const insertValues = [newFormattedDate, name];
     const insertResult = await pool.query(insertQuery, insertValues);
     
     console.log('Insert result in update:', insertResult.rows[0]);

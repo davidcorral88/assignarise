@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, getYear, addMonths, startOfYear } from 'date-fns';
 import { gl } from 'date-fns/locale';
@@ -86,12 +85,10 @@ const HolidaysCalendar = () => {
       const formattedDate = format(values.date, 'yyyy-MM-dd');
       console.log('Adding holiday with formatted date:', formattedDate);
       
-      // Construct a valid Holiday object
+      // Construct a valid Holiday object - removed description
       const newHoliday: Holiday = {
-        id: 0, // This will be assigned by the server
         date: formattedDate,
-        name: values.name,
-        description: values.name // Use name as description if not provided
+        name: values.name
       };
       
       await addHoliday(newHoliday);
@@ -125,12 +122,11 @@ const HolidaysCalendar = () => {
       const originalDate = selectedHoliday.date.split('T')[0];
       await removeHoliday(originalDate);
       
-      // Then add the updated holiday
+      // Then add the updated holiday - removed description
       const updatedHoliday: Holiday = {
         id: selectedHoliday.id,
         date: formattedDate,
-        name: values.name,
-        description: values.name
+        name: values.name
       };
       
       await addHoliday(updatedHoliday);
@@ -370,7 +366,7 @@ const HolidaysCalendar = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data</TableHead>
-                    <TableHead>Descrición</TableHead>
+                    <TableHead>Nome</TableHead>
                     <TableHead className="text-right">Accións</TableHead>
                   </TableRow>
                 </TableHeader>
