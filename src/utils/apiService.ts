@@ -499,6 +499,7 @@ export const getWorkdayScheduleById = async (id: number): Promise<WorkdaySchedul
 
 export const addWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<WorkdaySchedule> => {
   try {
+    console.log('Adding workday schedule:', schedule);
     return await apiRequest<WorkdaySchedule>('/workday_schedules', 'POST', schedule);
   } catch (error) {
     handleFetchError(error, 'Error al crear horario de trabajo:');
@@ -515,9 +516,10 @@ export const updateWorkdaySchedule = async (id: number, schedule: Partial<Workda
   }
 };
 
-export const deleteWorkdaySchedule = async (id: string): Promise<void> => {
+export const deleteWorkdaySchedule = async (id: string | number): Promise<void> => {
   try {
-    await apiRequest<void>(`/workday_schedules/${id}`, 'DELETE');
+    const scheduleId = typeof id === 'string' ? parseInt(id, 10) : id;
+    await apiRequest<void>(`/workday_schedules/${scheduleId}`, 'DELETE');
   } catch (error) {
     handleFetchError(error, `Error al eliminar horario de trabajo ${id}:`);
     throw error;
