@@ -16,6 +16,7 @@ import UserForm from "./pages/UserForm";
 import TimeTracking from "./pages/TimeTracking";
 import UserConfig from "./pages/UserConfig";
 import Settings from "./pages/Settings";
+import Calendars from "./pages/Calendars";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/time-tracking" element={<TimeTracking />} />
             <Route path="/config" element={<UserConfig />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/calendars" element={<Calendars />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -59,7 +59,7 @@ export const Navigation = () => {
       name: 'Calendarios',
       path: '/calendars',
       icon: <Calendar className="h-5 w-5" />,
-      show: isAdmin  // Only visible for administrators
+      show: true  // All users can see the Calendars section
     },
     {
       name: 'Configuración',

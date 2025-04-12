@@ -79,7 +79,7 @@ export const Header: React.FC = () => {
       to: '/calendars',
       icon: <Calendar className="mr-2 h-4 w-4" />,
       label: 'Calendarios',
-      show: isAdmin // Only admin can see Calendars
+      show: true // All users can see Calendars
     },
     {
       to: '/time-tracking',
