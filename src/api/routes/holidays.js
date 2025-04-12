@@ -76,19 +76,30 @@ router.delete('/:date', async (req, res) => {
     const { date } = req.params;
     console.log('Deleting holiday with date:', date);
     
+    // Make sure date is properly formatted for PostgreSQL
+    let formattedDate;
+    try {
+      // Handle various date formats
+      formattedDate = new Date(date).toISOString().split('T')[0];
+      console.log('Formatted date for deletion:', formattedDate);
+    } catch (error) {
+      console.error('Invalid date format:', date);
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+    
     // First, check if holiday exists
     const checkQuery = 'SELECT * FROM holidays WHERE date::date = $1::date';
-    const checkResult = await pool.query(checkQuery, [date]);
+    const checkResult = await pool.query(checkQuery, [formattedDate]);
     console.log('Holiday check result:', checkResult.rows);
     
     if (checkResult.rowCount === 0) {
-      console.log('No holiday found for date:', date);
+      console.log('No holiday found for date:', formattedDate);
       return res.status(404).json({ error: 'Holiday not found' });
     }
     
     // Proceed with deletion if holiday exists
     const deleteQuery = 'DELETE FROM holidays WHERE date::date = $1::date RETURNING *';
-    const deleteResult = await pool.query(deleteQuery, [date]);
+    const deleteResult = await pool.query(deleteQuery, [formattedDate]);
     
     console.log('Delete result:', deleteResult.rows);
     

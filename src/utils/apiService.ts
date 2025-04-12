@@ -1,4 +1,3 @@
-
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule, TaskAttachment } from './types';
 import { API_URL } from './dbConfig';
 
@@ -410,10 +409,25 @@ export const removeHoliday = async (date: string): Promise<void> => {
     // Ensure we're using just the date portion (YYYY-MM-DD)
     const formattedDate = date.includes('T') ? date.split('T')[0] : date;
     
-    // Enhanced logging for debugging
-    console.log(`Attempting to delete holiday with formatted date: ${formattedDate}`);
-    
-    await apiRequest<void>(`/holidays/${formattedDate}`, 'DELETE');
+    // Parse the date string into a Date object and format it consistently
+    try {
+      const dateObj = new Date(formattedDate);
+      if (isNaN(dateObj.getTime())) {
+        throw new Error(`Invalid date format: ${formattedDate}`);
+      }
+      
+      // Format as YYYY-MM-DD for the API
+      const apiFormattedDate = dateObj.toISOString().split('T')[0];
+      
+      // Enhanced logging for debugging
+      console.log(`Deleting holiday with date: ${formattedDate}, API formatted date: ${apiFormattedDate}`);
+      
+      await apiRequest<void>(`/holidays/${apiFormattedDate}`, 'DELETE');
+      console.log(`Holiday with date ${apiFormattedDate} deleted successfully`);
+    } catch (dateError) {
+      console.error(`Error formatting date for deletion: ${formattedDate}`, dateError);
+      throw new Error(`Invalid date format: ${formattedDate}`);
+    }
   } catch (error) {
     handleFetchError(error, `Error al eliminar festivo ${date}:`);
     throw error;

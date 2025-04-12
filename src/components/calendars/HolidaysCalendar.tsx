@@ -76,24 +76,21 @@ const HolidaysCalendar = () => {
   };
 
   const holidayDates = new Set(holidays.map(holiday => {
-    // Ensure we're using the date part only (strip time if present)
     return holiday.date.split('T')[0];
   }));
 
   const handleAddHoliday = async (values: z.infer<typeof formSchema>) => {
     try {
-      // Format the date as YYYY-MM-DD string
       const formattedDate = format(values.date, 'yyyy-MM-dd');
       console.log('Adding holiday with formatted date:', formattedDate);
       
-      // Construct a valid Holiday object
       const newHoliday: Holiday = {
         date: formattedDate,
         name: values.name
       };
       
       await addHoliday(newHoliday);
-      await fetchHolidays(); // Refresh the holidays list
+      await fetchHolidays();
       
       toast({
         title: 'Festivo engadido',
@@ -119,20 +116,17 @@ const HolidaysCalendar = () => {
       const formattedDate = format(values.date, 'yyyy-MM-dd');
       console.log('Updating holiday with formatted date:', formattedDate);
       
-      // First delete the existing holiday
       const originalDate = selectedHoliday.date.split('T')[0];
       
-      // Create an updated holiday object
       const updatedHoliday: Holiday = {
         id: selectedHoliday.id,
         date: formattedDate,
         name: values.name
       };
       
-      // Update using the original date and new holiday data
       await removeHoliday(originalDate);
       await addHoliday(updatedHoliday);
-      await fetchHolidays(); // Refresh the holidays list
+      await fetchHolidays();
       
       toast({
         title: 'Festivo actualizado',
@@ -153,47 +147,51 @@ const HolidaysCalendar = () => {
   };
 
   const handleDeleteHoliday = async (holiday: Holiday) => {
-    // Prevent multiple deletion attempts
     if (isDeleting) return;
     
     setIsDeleting(true);
     try {
-      // Ensure we're using just the date portion (YYYY-MM-DD)
       const formattedDate = holiday.date.split('T')[0];
-      console.log('Deleting holiday with formatted date:', formattedDate);
+      console.log('Attempting to delete holiday with formatted date:', formattedDate);
       
-      // First remove the holiday from the local state to give immediate UI feedback
       setHolidays(prev => prev.filter(h => h.date.split('T')[0] !== formattedDate));
       
-      await removeHoliday(formattedDate);
-      
-      toast({
-        title: 'Festivo eliminado',
-        description: `${holiday.name} foi eliminado correctamente`,
-      });
-      
-      // Refresh the holidays list after a short delay to ensure backend has processed the deletion
-      setTimeout(() => {
-        fetchHolidays();
-      }, 500);
-    } catch (error) {
-      console.error('Error deleting holiday:', error);
-      
-      // Add the holiday back to the local state if the deletion failed
-      if (holidays.findIndex(h => h.date.split('T')[0] === holiday.date.split('T')[0]) === -1) {
-        setHolidays(prev => [...prev, holiday]);
+      try {
+        await removeHoliday(formattedDate);
+        
+        toast({
+          title: 'Festivo eliminado',
+          description: `${holiday.name} foi eliminado correctamente`,
+        });
+        
+        setTimeout(() => {
+          fetchHolidays();
+        }, 500);
+      } catch (error) {
+        console.error('Error deleting holiday:', error);
+        
+        if (holidays.findIndex(h => h.date.split('T')[0] === holiday.date.split('T')[0]) === -1) {
+          setHolidays(prev => [...prev, holiday]);
+        }
+        
+        toast({
+          title: 'Error',
+          description: 'Non foi posible eliminar o festivo. Asegúrate de que aínda existe.',
+          variant: 'destructive',
+        });
+        
+        setTimeout(() => {
+          fetchHolidays();
+        }, 1000);
       }
+    } catch (error) {
+      console.error('Error preparing holiday deletion:', error);
       
       toast({
         title: 'Error',
-        description: 'Non foi posible eliminar o festivo. Asegúrate de que aínda existe.',
+        description: 'Ocorreu un erro ao preparar a eliminación do festivo.',
         variant: 'destructive',
       });
-      
-      // Refresh to ensure our state matches the backend
-      setTimeout(() => {
-        fetchHolidays();
-      }, 1000);
     } finally {
       setIsDeleting(false);
     }
@@ -202,7 +200,6 @@ const HolidaysCalendar = () => {
   const openEditDialog = (holiday: Holiday) => {
     setSelectedHoliday(holiday);
     
-    // Parse the date string to a Date object for the form
     const holidayDate = parseISO(holiday.date);
     
     editForm.setValue('name', holiday.name);
