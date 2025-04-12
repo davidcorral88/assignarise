@@ -104,7 +104,7 @@ const WorkdaySchedulesTab = () => {
         friday: values.friday,
         saturday: values.saturday,
         sunday: values.sunday,
-        days_of_week
+        days_of_week: days_of_week
       };
       
       await addWorkdaySchedule(newSchedule);
@@ -403,7 +403,7 @@ const WorkdaySchedulesTab = () => {
                       <TableCell>
                         <Button 
                           variant="ghost" 
-                          size="icon" 
+                          size="icon"
                           onClick={() => handleDeleteSchedule(schedule.id)}
                         >
                           <Trash2 className="h-4 w-4" />
