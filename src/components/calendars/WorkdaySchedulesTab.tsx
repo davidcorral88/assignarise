@@ -90,7 +90,7 @@ const WorkdaySchedulesTab = () => {
       if (values.sunday) days_of_week.push(7);
       
       const newSchedule: WorkdaySchedule = {
-        id: 0, // Will be assigned by server
+        id: "", // Changed from 0 to empty string to match the type
         name: values.name,
         type: values.type || "Standard",
         startTime: values.startTime,
@@ -127,7 +127,7 @@ const WorkdaySchedulesTab = () => {
     }
   };
 
-  const handleDeleteSchedule = async (id: number) => {
+  const handleDeleteSchedule = async (id: string) => { // Changed parameter type from number to string
     try {
       await deleteWorkdaySchedule(id);
       await fetchSchedules();
