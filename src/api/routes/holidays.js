@@ -36,8 +36,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Date and name are required' });
     }
     
-    const query = 'INSERT INTO holidays (date, description) VALUES ($1, $2) RETURNING *';
-    const values = [date, description || name]; // Use name as description if not provided
+    const query = 'INSERT INTO holidays (date, name, description) VALUES ($1, $2, $3) RETURNING *';
+    const values = [date, name, description || name]; // Use name as description if not provided
     
     const result = await pool.query(query, values);
     res.status(201).json(result.rows[0]);
@@ -103,8 +103,8 @@ router.put('/:date', async (req, res) => {
     }
     
     // Create a new holiday with the updated information
-    const insertQuery = 'INSERT INTO holidays (date, description) VALUES ($1, $2) RETURNING *';
-    const insertValues = [newFormattedDate, description || name];
+    const insertQuery = 'INSERT INTO holidays (date, name, description) VALUES ($1, $2, $3) RETURNING *';
+    const insertValues = [newFormattedDate, name, description || name];
     const insertResult = await pool.query(insertQuery, insertValues);
     
     // Commit the transaction

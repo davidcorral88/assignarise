@@ -384,10 +384,12 @@ export const getHolidays = async (year?: number): Promise<Holiday[]> => {
 
 export const addHoliday = async (holiday: Holiday): Promise<Holiday> => {
   try {
-    // Ensure the date is properly formatted
+    // Ensure the date is properly formatted and name is included
     const holidayToSend = {
       ...holiday,
-      date: holiday.date.includes('T') ? holiday.date.split('T')[0] : holiday.date
+      date: holiday.date.includes('T') ? holiday.date.split('T')[0] : holiday.date,
+      // Make sure name is set (the API expects it)
+      name: holiday.name || holiday.description
     };
     return await apiRequest<Holiday>('/holidays', 'POST', holidayToSend);
   } catch (error) {
@@ -403,6 +405,26 @@ export const removeHoliday = async (date: string): Promise<void> => {
     await apiRequest<void>(`/holidays/${formattedDate}`, 'DELETE');
   } catch (error) {
     handleFetchError(error, `Error al eliminar festivo ${date}:`);
+    throw error;
+  }
+};
+
+export const updateHoliday = async (originalDate: string, holiday: Holiday): Promise<Holiday> => {
+  try {
+    // Format both dates properly
+    const formattedOriginalDate = originalDate.includes('T') ? originalDate.split('T')[0] : originalDate;
+    const formattedNewDate = holiday.date.includes('T') ? holiday.date.split('T')[0] : holiday.date;
+    
+    // Prepare the data to send
+    const holidayToSend = {
+      date: formattedNewDate,
+      name: holiday.name || holiday.description,
+      description: holiday.description || holiday.name
+    };
+    
+    return await apiRequest<Holiday>(`/holidays/${formattedOriginalDate}`, 'PUT', holidayToSend);
+  } catch (error) {
+    handleFetchError(error, `Error al actualizar festivo ${originalDate}:`);
     throw error;
   }
 };
