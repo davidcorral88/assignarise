@@ -406,29 +406,36 @@ export const addHoliday = async (holiday: Holiday): Promise<Holiday> => {
 
 export const removeHoliday = async (date: string): Promise<void> => {
   try {
+    // Check if the date is a valid date string
+    if (!date || date.trim() === '') {
+      throw new Error('Invalid date: Empty date string');
+    }
+    
     // Ensure we're using just the date portion (YYYY-MM-DD)
     const formattedDate = date.includes('T') ? date.split('T')[0] : date;
     
-    // Parse the date string into a Date object and format it consistently
+    console.log(`Deleting holiday with date: ${formattedDate}, API formatted date: ${formattedDate}`);
+    
     try {
+      // Verify the date is valid by creating a new Date object
       const dateObj = new Date(formattedDate);
       if (isNaN(dateObj.getTime())) {
         throw new Error(`Invalid date format: ${formattedDate}`);
       }
       
-      // Format as YYYY-MM-DD for the API
-      const apiFormattedDate = dateObj.toISOString().split('T')[0];
-      
-      // Enhanced logging for debugging
-      console.log(`Deleting holiday with date: ${formattedDate}, API formatted date: ${apiFormattedDate}`);
-      
-      await apiRequest<void>(`/holidays/${apiFormattedDate}`, 'DELETE');
-      console.log(`Holiday with date ${apiFormattedDate} deleted successfully`);
-    } catch (dateError) {
-      console.error(`Error formatting date for deletion: ${formattedDate}`, dateError);
-      throw new Error(`Invalid date format: ${formattedDate}`);
+      // No further formatting needed - just use the original formattedDate
+      await apiRequest<void>(`/holidays/${formattedDate}`, 'DELETE');
+      console.log(`Holiday with date ${formattedDate} deleted successfully`);
+    } catch (apiError: any) {
+      // Check if the error is a "holiday not found" error (404)
+      if (apiError.message && apiError.message.includes('404')) {
+        console.log(`Holiday with date ${formattedDate} not found - already deleted or never existed`);
+        // We'll treat this as a success case for idempotency
+        return;
+      }
+      throw apiError; // re-throw other errors
     }
-  } catch (error) {
+  } catch (error: any) {
     handleFetchError(error, `Error al eliminar festivo ${date}:`);
     throw error;
   }

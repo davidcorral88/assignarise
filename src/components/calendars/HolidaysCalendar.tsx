@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, getYear, addMonths, startOfYear } from 'date-fns';
 import { gl } from 'date-fns/locale';
@@ -206,7 +205,7 @@ const HolidaysCalendar = () => {
       } catch (error: any) {
         console.error('Error deleting holiday:', error);
         
-        // Check if it's a "holiday not found" error
+        // Check if it's a "holiday not found" error (which is not actually an error for us)
         const isNotFoundError = error.message?.includes('404') || 
                               error.message?.includes('not found') ||
                               error.message?.includes('Holiday not found');
