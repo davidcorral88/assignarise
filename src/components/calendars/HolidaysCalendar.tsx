@@ -23,7 +23,7 @@ const HolidaysCalendar = () => {
     const fetchHolidays = async () => {
       setLoading(true);
       try {
-        const holidaysData = await getHolidays(selectedYear);
+        const holidaysData = await getHolidays(parseInt(selectedYear));
         setHolidays(holidaysData);
       } catch (error) {
         console.error('Error fetching holidays:', error);
