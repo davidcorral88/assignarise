@@ -84,6 +84,7 @@ const HolidaysCalendar = () => {
     try {
       const formattedDate = format(values.date, 'yyyy-MM-dd');
       await addHoliday({
+        id: 0, // Using 0 as a placeholder, the API will assign the correct ID
         date: formattedDate,
         name: values.name,
         description: values.name // Using name as description too for simplicity
@@ -120,6 +121,7 @@ const HolidaysCalendar = () => {
       // Then add the new one
       const formattedDate = format(values.date, 'yyyy-MM-dd');
       await addHoliday({
+        id: selectedHoliday.id, // Preserve the original ID if possible
         date: formattedDate,
         name: values.name,
         description: values.name
