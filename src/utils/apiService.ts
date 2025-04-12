@@ -1,4 +1,3 @@
-
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule, TaskAttachment } from './types';
 import { API_URL } from './dbConfig';
 
@@ -393,8 +392,7 @@ export const addHoliday = async (holiday: Holiday): Promise<Holiday> => {
     // Create a properly formatted object for the API
     const holidayToSend = {
       date: formattedDate,
-      name: holiday.name || holiday.description,
-      description: holiday.description || holiday.name
+      name: holiday.name
     };
     
     console.log('Sending holiday to server:', holidayToSend);
@@ -428,8 +426,7 @@ export const updateHoliday = async (originalDate: string, holiday: Holiday): Pro
     // Prepare the data to send
     const holidayToSend = {
       date: formattedNewDate,
-      name: holiday.name || holiday.description,
-      description: holiday.description || holiday.name
+      name: holiday.name
     };
     
     console.log('Updating holiday:', { originalDate: formattedOriginalDate, newData: holidayToSend });
