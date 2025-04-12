@@ -1,3 +1,4 @@
+
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule, TaskAttachment } from './types';
 import { API_URL } from './dbConfig';
 
@@ -384,15 +385,16 @@ export const getHolidays = async (year?: number): Promise<Holiday[]> => {
 
 export const addHoliday = async (holiday: Holiday): Promise<Holiday> => {
   try {
-    // Ensure the date is properly formatted
+    // Make sure the date is in the correct format (YYYY-MM-DD)
+    const formattedDate = typeof holiday.date === 'string' 
+      ? holiday.date.split('T')[0] 
+      : String(holiday.date);
+    
+    // Create a properly formatted object for the API
     const holidayToSend = {
-      ...holiday,
-      // Make sure date is in YYYY-MM-DD format
-      date: typeof holiday.date === 'string' ? 
-        (holiday.date.includes('T') ? holiday.date.split('T')[0] : holiday.date) : 
-        holiday.date,
-      // Make sure name is set
-      name: holiday.name || holiday.description
+      date: formattedDate,
+      name: holiday.name || holiday.description,
+      description: holiday.description || holiday.name
     };
     
     console.log('Sending holiday to server:', holidayToSend);
@@ -421,7 +423,7 @@ export const updateHoliday = async (originalDate: string, holiday: Holiday): Pro
     const formattedOriginalDate = originalDate.includes('T') ? originalDate.split('T')[0] : originalDate;
     const formattedNewDate = typeof holiday.date === 'string' ? 
       (holiday.date.includes('T') ? holiday.date.split('T')[0] : holiday.date) : 
-      holiday.date;
+      String(holiday.date);
     
     // Prepare the data to send
     const holidayToSend = {
@@ -481,6 +483,7 @@ export const removeVacationDay = async (userId: number, date: string): Promise<v
 // Workday schedules related functions
 export const getWorkdaySchedules = async (): Promise<WorkdaySchedule[]> => {
   try {
+    // Use the improved endpoint
     return await apiRequest<WorkdaySchedule[]>('/workday_schedules');
   } catch (error) {
     handleFetchError(error, 'Error al obtener horarios de trabajo:');
@@ -488,7 +491,7 @@ export const getWorkdaySchedules = async (): Promise<WorkdaySchedule[]> => {
   }
 };
 
-export const getWorkdayScheduleById = async (id: number): Promise<WorkdaySchedule> => {
+export const getWorkdayScheduleById = async (id: string): Promise<WorkdaySchedule> => {
   try {
     return await apiRequest<WorkdaySchedule>(`/workday_schedules/${id}`);
   } catch (error) {
@@ -499,27 +502,49 @@ export const getWorkdayScheduleById = async (id: number): Promise<WorkdaySchedul
 
 export const addWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<WorkdaySchedule> => {
   try {
-    console.log('Adding workday schedule:', schedule);
-    return await apiRequest<WorkdaySchedule>('/workday_schedules', 'POST', schedule);
+    // Format the data for the API
+    const scheduleToSend = {
+      name: schedule.name,
+      type: schedule.type || 'Standard',
+      start_time: schedule.start_time || schedule.startTime,
+      end_time: schedule.end_time || schedule.endTime,
+      break_start: schedule.breakStart || null,
+      break_end: schedule.breakEnd || null,
+      days_of_week: schedule.days_of_week
+    };
+    
+    console.log('Adding workday schedule:', scheduleToSend);
+    
+    return await apiRequest<WorkdaySchedule>('/workday_schedules', 'POST', scheduleToSend);
   } catch (error) {
     handleFetchError(error, 'Error al crear horario de trabajo:');
     throw error;
   }
 };
 
-export const updateWorkdaySchedule = async (id: number, schedule: Partial<WorkdaySchedule>): Promise<WorkdaySchedule> => {
+export const updateWorkdaySchedule = async (id: string, schedule: Partial<WorkdaySchedule>): Promise<WorkdaySchedule> => {
   try {
-    return await apiRequest<WorkdaySchedule>(`/workday_schedules/${id}`, 'PUT', schedule);
+    // Format the data for the API
+    const scheduleToSend = {
+      name: schedule.name,
+      type: schedule.type || 'Standard',
+      start_time: schedule.start_time || schedule.startTime,
+      end_time: schedule.end_time || schedule.endTime,
+      break_start: schedule.breakStart || null,
+      break_end: schedule.breakEnd || null,
+      days_of_week: schedule.days_of_week
+    };
+    
+    return await apiRequest<WorkdaySchedule>(`/workday_schedules/${id}`, 'PUT', scheduleToSend);
   } catch (error) {
     handleFetchError(error, `Error al actualizar horario de trabajo ${id}:`);
     throw error;
   }
 };
 
-export const deleteWorkdaySchedule = async (id: string | number): Promise<void> => {
+export const deleteWorkdaySchedule = async (id: string): Promise<void> => {
   try {
-    const scheduleId = typeof id === 'string' ? parseInt(id, 10) : id;
-    await apiRequest<void>(`/workday_schedules/${scheduleId}`, 'DELETE');
+    await apiRequest<void>(`/workday_schedules/${id}`, 'DELETE');
   } catch (error) {
     handleFetchError(error, `Error al eliminar horario de trabajo ${id}:`);
     throw error;

@@ -59,6 +59,7 @@ export const {
   getHolidays,
   addHoliday,
   removeHoliday,
+  updateHoliday,
   getVacationDays,
   addVacationDay,
   removeVacationDay,
