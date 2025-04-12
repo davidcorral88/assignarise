@@ -90,11 +90,14 @@ const WorkdaySchedulesTab = () => {
       if (values.sunday) days_of_week.push(7);
       
       const newSchedule: WorkdaySchedule = {
-        id: "", // Changed from 0 to empty string to match the type
+        id: "", // Empty string to match the type
         name: values.name,
         type: values.type || "Standard",
+        // Set both camelCase and snake_case properties to satisfy TypeScript
         startTime: values.startTime,
+        start_time: values.startTime,
         endTime: values.endTime,
+        end_time: values.endTime,
         breakStart: values.breakStart || null,
         breakEnd: values.breakEnd || null,
         monday: values.monday,
@@ -127,7 +130,7 @@ const WorkdaySchedulesTab = () => {
     }
   };
 
-  const handleDeleteSchedule = async (id: string) => { // Changed parameter type from number to string
+  const handleDeleteSchedule = async (id: string) => { // Using string type for id
     try {
       await deleteWorkdaySchedule(id);
       await fetchSchedules();
