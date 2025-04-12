@@ -103,10 +103,6 @@ router.delete('/:date', async (req, res) => {
     
     console.log('Delete result:', deleteResult.rows);
     
-    if (deleteResult.rowCount === 0) {
-      return res.status(404).json({ error: 'Holiday not found' });
-    }
-    
     res.json({ message: 'Holiday deleted successfully', holiday: deleteResult.rows[0] });
   } catch (error) {
     console.error('Error deleting holiday:', error);
@@ -137,6 +133,16 @@ router.put('/:date', async (req, res) => {
     const newFormattedDate = new Date(date).toISOString().split('T')[0];
     
     console.log('Formatted dates:', { old: oldFormattedDate, new: newFormattedDate });
+    
+    // Check if the holiday exists before trying to update
+    const checkQuery = 'SELECT * FROM holidays WHERE date::date = $1::date';
+    const checkResult = await pool.query(checkQuery, [oldFormattedDate]);
+    console.log('Holiday check result:', checkResult.rows);
+    
+    if (checkResult.rowCount === 0) {
+      console.log('No holiday found for date:', oldFormattedDate);
+      return res.status(404).json({ error: 'Holiday not found' });
+    }
     
     // Begin a transaction
     await pool.query('BEGIN');

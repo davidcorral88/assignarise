@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, getYear, addMonths, startOfYear } from 'date-fns';
 import { gl } from 'date-fns/locale';
@@ -124,23 +125,61 @@ const HolidaysCalendar = () => {
         name: values.name
       };
       
-      await removeHoliday(originalDate);
-      await addHoliday(updatedHoliday);
-      await fetchHolidays();
+      // First, remove the existing holiday from local state for optimistic UI update
+      setHolidays(prev => prev.filter(h => h.date.split('T')[0] !== originalDate));
       
-      toast({
-        title: 'Festivo actualizado',
-        description: `${values.name} foi actualizado correctamente`,
-      });
+      try {
+        // Try to remove the holiday from the backend
+        await removeHoliday(originalDate);
+        
+        // Then add the updated holiday
+        await addHoliday(updatedHoliday);
+        
+        toast({
+          title: 'Festivo actualizado',
+          description: `${values.name} foi actualizado correctamente`,
+        });
+      } catch (error: any) {
+        console.error('Error during holiday update:', error);
+        
+        // Check if the error is a "holiday not found" error
+        const isNotFoundError = error.message?.includes('404') || 
+                              error.message?.includes('not found') ||
+                              error.message?.includes('Holiday not found');
+        
+        if (isNotFoundError) {
+          // If holiday was not found, just add the new one without removing first
+          await addHoliday(updatedHoliday);
+          toast({
+            title: 'Festivo engadido',
+            description: `${values.name} foi engadido como novo festivo`,
+          });
+        } else {
+          // For other types of errors, show an error message
+          toast({
+            title: 'Error',
+            description: 'Non foi posible actualizar o festivo',
+            variant: 'destructive',
+          });
+          
+          // Restore the original holiday in the local state
+          if (selectedHoliday) {
+            setHolidays(prev => [...prev, selectedHoliday]);
+          }
+        }
+      }
+      
+      // Refresh the holidays list to ensure it's up to date
+      await fetchHolidays();
       
       setIsEditDialogOpen(false);
       setSelectedHoliday(null);
       editForm.reset();
     } catch (error) {
-      console.error('Error updating holiday:', error);
+      console.error('Error handling holiday update:', error);
       toast({
         title: 'Error',
-        description: 'Non foi posible actualizar o festivo',
+        description: 'Ocorreu un erro ao actualizar o festivo',
         variant: 'destructive',
       });
     }
@@ -154,6 +193,7 @@ const HolidaysCalendar = () => {
       const formattedDate = holiday.date.split('T')[0];
       console.log('Attempting to delete holiday with formatted date:', formattedDate);
       
+      // Optimistic UI update - remove from local state immediately
       setHolidays(prev => prev.filter(h => h.date.split('T')[0] !== formattedDate));
       
       try {
@@ -163,33 +203,42 @@ const HolidaysCalendar = () => {
           title: 'Festivo eliminado',
           description: `${holiday.name} foi eliminado correctamente`,
         });
+      } catch (error: any) {
+        console.error('Error deleting holiday:', error);
         
+        // Check if it's a "holiday not found" error
+        const isNotFoundError = error.message?.includes('404') || 
+                              error.message?.includes('not found') ||
+                              error.message?.includes('Holiday not found');
+        
+        if (isNotFoundError) {
+          // If the holiday was already removed, show a success message
+          toast({
+            title: 'Festivo eliminado',
+            description: `${holiday.name} xa foi eliminado previamente`,
+          });
+        } else {
+          // For other errors, restore the holiday in the local state and show an error
+          setHolidays(prev => [...prev, holiday]);
+          
+          toast({
+            title: 'Error',
+            description: 'Non foi posible eliminar o festivo',
+            variant: 'destructive',
+          });
+        }
+      } finally {
+        // Refresh the holidays list after a short delay to ensure UI is updated correctly
         setTimeout(() => {
           fetchHolidays();
         }, 500);
-      } catch (error) {
-        console.error('Error deleting holiday:', error);
-        
-        if (holidays.findIndex(h => h.date.split('T')[0] === holiday.date.split('T')[0]) === -1) {
-          setHolidays(prev => [...prev, holiday]);
-        }
-        
-        toast({
-          title: 'Error',
-          description: 'Non foi posible eliminar o festivo. Asegúrate de que aínda existe.',
-          variant: 'destructive',
-        });
-        
-        setTimeout(() => {
-          fetchHolidays();
-        }, 1000);
       }
     } catch (error) {
       console.error('Error preparing holiday deletion:', error);
       
       toast({
         title: 'Error',
-        description: 'Ocorreu un erro ao preparar a eliminación do festivo.',
+        description: 'Ocorreu un erro ao preparar a eliminación do festivo',
         variant: 'destructive',
       });
     } finally {
