@@ -32,11 +32,11 @@ router.get('/', async (req, res) => {
         thursday_hours: schedule.thursday_hours || 8,
         friday_hours: schedule.friday_hours || 8,
         // For frontend compatibility
-        mondayHours: Number(schedule.monday_hours) || 8,
-        tuesdayHours: Number(schedule.tuesday_hours) || 8,
-        wednesdayHours: Number(schedule.wednesday_hours) || 8,
-        thursdayHours: Number(schedule.thursday_hours) || 8,
-        fridayHours: Number(schedule.friday_hours) || 8,
+        mondayHours: parseFloat(schedule.monday_hours) || 8,
+        tuesdayHours: parseFloat(schedule.tuesday_hours) || 8,
+        wednesdayHours: parseFloat(schedule.wednesday_hours) || 8,
+        thursdayHours: parseFloat(schedule.thursday_hours) || 8,
+        fridayHours: parseFloat(schedule.friday_hours) || 8,
         // Required by interface but not used
         start_time: "08:00",
         end_time: "16:00",
@@ -82,11 +82,11 @@ router.get('/:id', async (req, res) => {
       thursday_hours: schedule.thursday_hours || 8,
       friday_hours: schedule.friday_hours || 8,
       // For frontend compatibility
-      mondayHours: Number(schedule.monday_hours) || 8,
-      tuesdayHours: Number(schedule.tuesday_hours) || 8,
-      wednesdayHours: Number(schedule.wednesday_hours) || 8,
-      thursdayHours: Number(schedule.thursday_hours) || 8,
-      fridayHours: Number(schedule.friday_hours) || 8,
+      mondayHours: parseFloat(schedule.monday_hours) || 8,
+      tuesdayHours: parseFloat(schedule.tuesday_hours) || 8,
+      wednesdayHours: parseFloat(schedule.wednesday_hours) || 8,
+      thursdayHours: parseFloat(schedule.thursday_hours) || 8,
+      fridayHours: parseFloat(schedule.friday_hours) || 8,
       // Required by interface but not used
       start_time: "08:00",
       end_time: "16:00",
@@ -127,6 +127,7 @@ router.post('/', async (req, res) => {
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
     // Ensure all values are properly parsed as floating-point numbers
+    // Use the exact values from the request without defaulting if they're provided
     const monday = mondayHours !== undefined ? parseFloat(mondayHours) : 8;
     const tuesday = tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
     const wednesday = wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
@@ -218,6 +219,7 @@ router.put('/:id', async (req, res) => {
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
     // Ensure all values are properly parsed as floating-point numbers
+    // Use the exact values from the request without defaulting if they're provided
     const monday = mondayHours !== undefined ? parseFloat(mondayHours) : 8;
     const tuesday = tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
     const wednesday = wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
