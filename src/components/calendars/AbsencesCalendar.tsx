@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, eachDayOfInterval, isSameDay, addDays } from 'date-fns';
 import { gl } from 'date-fns/locale';
@@ -142,7 +143,23 @@ const AbsencesCalendar = () => {
     }
     
     try {
-      const userId = typeof absence.userId === 'number' ? absence.userId : parseInt(absence.userId as unknown as string);
+      // Ensure we have a valid numerical userId - use Number() instead of parseInt for more reliable conversion
+      let userId: number;
+      
+      if (typeof absence.userId === 'number') {
+        userId = absence.userId;
+      } else if (typeof absence.userId === 'string') {
+        userId = Number(absence.userId);
+        if (isNaN(userId)) {
+          throw new Error(`Invalid user ID: ${absence.userId}`);
+        }
+      } else {
+        // If userId is undefined or another type
+        userId = Number(selectedUserId);
+        if (isNaN(userId)) {
+          throw new Error('Invalid or missing user ID');
+        }
+      }
       
       const formattedDate = format(parseISO(absence.date), 'yyyy-MM-dd');
       

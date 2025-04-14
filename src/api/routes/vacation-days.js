@@ -46,7 +46,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: userId, date, and type are mandatory' });
     }
     
-    // Insert the vacation day - REMOVED reason field as it doesn't exist in the database
+    // Insert the vacation day
     const query = 'INSERT INTO vacation_days (user_id, date, type) VALUES ($1, $2, $3) RETURNING *';
     const values = [userId, date, type];
     
@@ -69,20 +69,21 @@ router.delete('/:userId/:date', async (req, res) => {
   try {
     const { userId, date } = req.params;
     
-    // Validate that userId is provided and is a number
-    if (!userId || isNaN(parseInt(userId))) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+    // Validate that userId is provided and is a valid number
+    const userIdNum = Number(userId);
+    if (!userId || isNaN(userIdNum)) {
+      return res.status(400).json({ error: `Invalid user ID: ${userId}` });
     }
     
-    // Validate that date is provided
-    if (!date) {
-      return res.status(400).json({ error: 'Date is required' });
+    // Validate that date is provided and is in a valid format
+    if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return res.status(400).json({ error: `Invalid date format: ${date}. Expected format: YYYY-MM-DD` });
     }
     
-    console.log(`Attempting to delete vacation day for user ${userId} on date ${date}`);
+    console.log(`Attempting to delete vacation day for user ${userIdNum} on date ${date}`);
     
     const query = 'DELETE FROM vacation_days WHERE user_id = $1 AND date = $2 RETURNING *';
-    const values = [parseInt(userId), date];
+    const values = [userIdNum, date];
     
     const result = await pool.query(query, values);
     
