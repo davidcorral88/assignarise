@@ -16,6 +16,8 @@ import WorkdayScheduleTable from '../schedule/WorkdayScheduleTable';
 
 const formSchema = z.object({
   type: z.string().min(1, "O tipo é obrigatorio"),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   mondayHours: z.number().min(0, "O valor debe ser positivo").optional(),
   tuesdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
   wednesdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
@@ -34,6 +36,8 @@ const WorkdaySchedulesTab = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: "Standard",
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
       mondayHours: 8,
       tuesdayHours: 8,
       wednesdayHours: 8,
@@ -67,8 +71,9 @@ const WorkdaySchedulesTab = () => {
     try {
       const newSchedule: WorkdaySchedule = {
         id: "",
-        name: values.type, // Use type as name for simplicity
         type: values.type,
+        startDate: values.startDate,
+        endDate: values.endDate,
         // Required values for the API but not displayed
         start_time: "08:00",
         end_time: "16:00", 
@@ -106,6 +111,8 @@ const WorkdaySchedulesTab = () => {
     
     form.reset({
       type: schedule.type || "Standard",
+      startDate: schedule.startDate || "",
+      endDate: schedule.endDate || "",
       mondayHours: schedule.mondayHours || undefined,
       tuesdayHours: schedule.tuesdayHours || undefined,
       wednesdayHours: schedule.wednesdayHours || undefined,
@@ -122,8 +129,9 @@ const WorkdaySchedulesTab = () => {
     try {
       const updatedSchedule: WorkdaySchedule = {
         ...currentSchedule,
-        name: values.type,
         type: values.type,
+        startDate: values.startDate,
+        endDate: values.endDate,
         mondayHours: values.mondayHours,
         tuesdayHours: values.tuesdayHours,
         wednesdayHours: values.wednesdayHours,
@@ -168,6 +176,40 @@ const WorkdaySchedulesTab = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const renderDateFields = () => {
+    return (
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <FormField
+          control={form.control}
+          name="startDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Data inicio</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="endDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Data fin</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    );
   };
 
   const renderHoursFields = () => {
@@ -296,6 +338,7 @@ const WorkdaySchedulesTab = () => {
           )}
         />
         
+        {renderDateFields()}
         {renderHoursFields()}
         
         <DialogFooter>
@@ -335,7 +378,7 @@ const WorkdaySchedulesTab = () => {
             <DialogHeader>
               <DialogTitle>Engadir nova xornada</DialogTitle>
               <DialogDescription>
-                Introduce as horas de traballo para cada día da semana
+                Introduce as datas de validez e horas de traballo para cada día da semana
               </DialogDescription>
             </DialogHeader>
             
@@ -351,7 +394,7 @@ const WorkdaySchedulesTab = () => {
             <DialogHeader>
               <DialogTitle>Editar xornada</DialogTitle>
               <DialogDescription>
-                Modifica as horas de traballo para cada día
+                Modifica as datas de validez e horas de traballo para cada día
               </DialogDescription>
             </DialogHeader>
             

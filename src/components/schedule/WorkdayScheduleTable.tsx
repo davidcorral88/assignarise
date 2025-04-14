@@ -18,11 +18,19 @@ const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, 
     return `${hours}h`;
   };
 
+  // Helper function to format date display
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString();
+  };
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Tipo de xornada</TableHead>
+          <TableHead className="text-center">Data inicio</TableHead>
+          <TableHead className="text-center">Data fin</TableHead>
           <TableHead className="text-center">Luns</TableHead>
           <TableHead className="text-center">Martes</TableHead>
           <TableHead className="text-center">Mércores</TableHead>
@@ -36,6 +44,8 @@ const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, 
           schedules.map(schedule => (
             <TableRow key={schedule.id}>
               <TableCell className="font-medium">{schedule.type}</TableCell>
+              <TableCell className="text-center">{formatDate(schedule.startDate)}</TableCell>
+              <TableCell className="text-center">{formatDate(schedule.endDate)}</TableCell>
               <TableCell className="text-center">{formatHours(schedule.mondayHours)}</TableCell>
               <TableCell className="text-center">{formatHours(schedule.tuesdayHours)}</TableCell>
               <TableCell className="text-center">{formatHours(schedule.wednesdayHours)}</TableCell>
@@ -57,7 +67,7 @@ const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, 
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={7} className="text-center py-4">
+            <TableCell colSpan={9} className="text-center py-4">
               Non hai xornadas configuradas
             </TableCell>
           </TableRow>

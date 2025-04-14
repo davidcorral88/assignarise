@@ -2,14 +2,13 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
+const { v4: uuidv4 } = require('uuid');
 
 // Get all workday schedules
 router.get('/', async (req, res) => {
   try {
-    // Instead of selecting by name (which doesn't exist), group schedules by type
-    // We'll create a new structure that groups records by type for the frontend
     const query = `
-      SELECT id, type, monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours 
+      SELECT id, type, start_date, end_date, monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours 
       FROM workday_schedules 
       ORDER BY type
     `;
@@ -24,19 +23,25 @@ router.get('/', async (req, res) => {
     const schedules = result.rows.map(schedule => {
       return {
         id: schedule.id.toString(),
-        name: schedule.type || "Standard", // Use type as name since we don't have a name column
         type: schedule.type || "Standard",
+        startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
+        endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
+        // For database compatibility
         monday_hours: schedule.monday_hours || 8,
         tuesday_hours: schedule.tuesday_hours || 8,
         wednesday_hours: schedule.wednesday_hours || 8,
         thursday_hours: schedule.thursday_hours || 8,
-        friday_hours: schedule.friday_hours || 7,
+        friday_hours: schedule.friday_hours || 8,
         // For frontend compatibility
         mondayHours: schedule.monday_hours || 8,
         tuesdayHours: schedule.tuesday_hours || 8,
         wednesdayHours: schedule.wednesday_hours || 8,
         thursdayHours: schedule.thursday_hours || 8,
-        fridayHours: schedule.friday_hours || 7
+        fridayHours: schedule.friday_hours || 8,
+        // Required by interface but not used
+        start_time: "08:00",
+        end_time: "16:00",
+        days_of_week: [1, 2, 3, 4, 5]
       };
     });
     
@@ -52,7 +57,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const query = `
-      SELECT id, type, monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours 
+      SELECT id, type, start_date, end_date, monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours 
       FROM workday_schedules 
       WHERE id = $1
     `;
@@ -68,19 +73,25 @@ router.get('/:id', async (req, res) => {
     // Format the response to match the expected WorkdaySchedule type
     const formattedSchedule = {
       id: schedule.id.toString(),
-      name: schedule.type || "Standard", // Use type as name
       type: schedule.type || "Standard",
+      startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
+      endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
+      // For database compatibility
       monday_hours: schedule.monday_hours || 8,
       tuesday_hours: schedule.tuesday_hours || 8,
       wednesday_hours: schedule.wednesday_hours || 8,
       thursday_hours: schedule.thursday_hours || 8,
-      friday_hours: schedule.friday_hours || 7,
+      friday_hours: schedule.friday_hours || 8,
       // For frontend compatibility
       mondayHours: schedule.monday_hours || 8,
       tuesdayHours: schedule.tuesday_hours || 8,
       wednesdayHours: schedule.wednesday_hours || 8,
       thursdayHours: schedule.thursday_hours || 8,
-      fridayHours: schedule.friday_hours || 7
+      fridayHours: schedule.friday_hours || 8,
+      // Required by interface but not used
+      start_time: "08:00",
+      end_time: "16:00",
+      days_of_week: [1, 2, 3, 4, 5]
     };
     
     res.json(formattedSchedule);
@@ -95,6 +106,8 @@ router.post('/', async (req, res) => {
   try {
     const { 
       type,
+      startDate,
+      endDate,
       mondayHours,
       tuesdayHours,
       wednesdayHours,
@@ -109,13 +122,15 @@ router.post('/', async (req, res) => {
     
     const query = `
       INSERT INTO workday_schedules 
-      (type, monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours) 
-      VALUES ($1, $2, $3, $4, $5, $6) 
+      (type, start_date, end_date, monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
       RETURNING *
     `;
     
     const values = [
       type,
+      startDate || null,
+      endDate || null,
       mondayHours || 8,
       tuesdayHours || 8,
       wednesdayHours || 8,
@@ -129,13 +144,18 @@ router.post('/', async (req, res) => {
     // Format the response to match the expected WorkdaySchedule type
     const formattedSchedule = {
       id: schedule.id.toString(),
-      name: schedule.type, // Use type as name
       type: schedule.type,
+      startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
+      endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
       mondayHours: schedule.monday_hours || 8,
       tuesdayHours: schedule.tuesday_hours || 8,
       wednesdayHours: schedule.wednesday_hours || 8,
       thursdayHours: schedule.thursday_hours || 8,
-      fridayHours: schedule.friday_hours || 7
+      fridayHours: schedule.friday_hours || 7,
+      // Required by interface but not used
+      start_time: "08:00",
+      end_time: "16:00",
+      days_of_week: [1, 2, 3, 4, 5]
     };
     
     res.status(201).json(formattedSchedule);
@@ -151,6 +171,8 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { 
       type,
+      startDate,
+      endDate,
       mondayHours,
       tuesdayHours,
       wednesdayHours,
@@ -165,14 +187,16 @@ router.put('/:id', async (req, res) => {
     
     const query = `
       UPDATE workday_schedules 
-      SET type = $1, monday_hours = $2, tuesday_hours = $3, wednesday_hours = $4,
-          thursday_hours = $5, friday_hours = $6
-      WHERE id = $7
+      SET type = $1, start_date = $2, end_date = $3, monday_hours = $4, tuesday_hours = $5, 
+          wednesday_hours = $6, thursday_hours = $7, friday_hours = $8
+      WHERE id = $9
       RETURNING *
     `;
     
     const values = [
       type,
+      startDate || null,
+      endDate || null,
       mondayHours || 8,
       tuesdayHours || 8,
       wednesdayHours || 8,
@@ -192,13 +216,18 @@ router.put('/:id', async (req, res) => {
     // Format the response to match the expected WorkdaySchedule type
     const formattedSchedule = {
       id: schedule.id.toString(),
-      name: schedule.type, // Use type as name
       type: schedule.type,
+      startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
+      endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
       mondayHours: schedule.monday_hours || 8,
       tuesdayHours: schedule.tuesday_hours || 8,
       wednesdayHours: schedule.wednesday_hours || 8,
       thursdayHours: schedule.thursday_hours || 8,
-      fridayHours: schedule.friday_hours || 7
+      fridayHours: schedule.friday_hours || 7,
+      // Required by interface but not used
+      start_time: "08:00",
+      end_time: "16:00",
+      days_of_week: [1, 2, 3, 4, 5]
     };
     
     res.json(formattedSchedule);
