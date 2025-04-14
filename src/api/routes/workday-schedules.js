@@ -126,12 +126,12 @@ router.post('/', async (req, res) => {
     // Make sure end_date is never null by providing a default value (end of year)
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
-    // Asegurarse de que todos los valores son números
-    const monday = Number(mondayHours) || 8;
-    const tuesday = Number(tuesdayHours) || 8;
-    const wednesday = Number(wednesdayHours) || 8;
-    const thursday = Number(thursdayHours) || 8;
-    const friday = Number(fridayHours) || 7;
+    // Make sure all values are properly parsed numbers
+    const monday = mondayHours !== undefined ? Number(mondayHours) : 8;
+    const tuesday = tuesdayHours !== undefined ? Number(tuesdayHours) : 8;
+    const wednesday = wednesdayHours !== undefined ? Number(wednesdayHours) : 8;
+    const thursday = thursdayHours !== undefined ? Number(thursdayHours) : 8;
+    const friday = fridayHours !== undefined ? Number(fridayHours) : 7;
     
     console.log('Processed hours values:', { monday, tuesday, wednesday, thursday, friday });
     
@@ -170,11 +170,11 @@ router.post('/', async (req, res) => {
       type: schedule.type,
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-      mondayHours: Number(schedule.monday_hours) || 8,
-      tuesdayHours: Number(schedule.tuesday_hours) || 8,
-      wednesdayHours: Number(schedule.wednesday_hours) || 8,
-      thursdayHours: Number(schedule.thursday_hours) || 8,
-      fridayHours: Number(schedule.friday_hours) || 7,
+      mondayHours: Number(schedule.monday_hours),
+      tuesdayHours: Number(schedule.tuesday_hours),
+      wednesdayHours: Number(schedule.wednesday_hours),
+      thursdayHours: Number(schedule.thursday_hours),
+      fridayHours: Number(schedule.friday_hours),
       // Required by interface but not used
       start_time: "08:00",
       end_time: "16:00",
@@ -217,12 +217,12 @@ router.put('/:id', async (req, res) => {
     // Make sure end_date is never null by providing a default value (end of year)
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
-    // Asegurarse de que todos los valores son números
-    const monday = Number(mondayHours) || 8;
-    const tuesday = Number(tuesdayHours) || 8;
-    const wednesday = Number(wednesdayHours) || 8;
-    const thursday = Number(thursdayHours) || 8;
-    const friday = Number(fridayHours) || 7;
+    // Make sure all values are properly parsed numbers
+    const monday = mondayHours !== undefined ? Number(mondayHours) : 8;
+    const tuesday = tuesdayHours !== undefined ? Number(tuesdayHours) : 8;
+    const wednesday = wednesdayHours !== undefined ? Number(wednesdayHours) : 8;
+    const thursday = thursdayHours !== undefined ? Number(thursdayHours) : 8;
+    const friday = fridayHours !== undefined ? Number(fridayHours) : 7;
     
     console.log('Processed hours values for update:', { monday, tuesday, wednesday, thursday, friday });
     
@@ -262,11 +262,11 @@ router.put('/:id', async (req, res) => {
       type: schedule.type,
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-      mondayHours: Number(schedule.monday_hours) || 8,
-      tuesdayHours: Number(schedule.tuesday_hours) || 8,
-      wednesdayHours: Number(schedule.wednesday_hours) || 8,
-      thursdayHours: Number(schedule.thursday_hours) || 8,
-      fridayHours: Number(schedule.friday_hours) || 7,
+      mondayHours: Number(schedule.monday_hours),
+      tuesdayHours: Number(schedule.tuesday_hours),
+      wednesdayHours: Number(schedule.wednesday_hours),
+      thursdayHours: Number(schedule.thursday_hours),
+      fridayHours: Number(schedule.friday_hours),
       // Required by interface but not used
       start_time: "08:00",
       end_time: "16:00",
