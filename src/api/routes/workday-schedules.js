@@ -126,12 +126,12 @@ router.post('/', async (req, res) => {
     // Make sure end_date is never null by providing a default value (end of year)
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
-    // Make sure all values are properly parsed numbers
-    const monday = mondayHours !== undefined ? Number(mondayHours) : 8;
-    const tuesday = tuesdayHours !== undefined ? Number(tuesdayHours) : 8;
-    const wednesday = wednesdayHours !== undefined ? Number(wednesdayHours) : 8;
-    const thursday = thursdayHours !== undefined ? Number(thursdayHours) : 8;
-    const friday = fridayHours !== undefined ? Number(fridayHours) : 7;
+    // Ensure all values are properly parsed as floating-point numbers
+    const monday = mondayHours !== undefined ? parseFloat(mondayHours) : 8;
+    const tuesday = tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
+    const wednesday = wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
+    const thursday = thursdayHours !== undefined ? parseFloat(thursdayHours) : 8;
+    const friday = fridayHours !== undefined ? parseFloat(fridayHours) : 7;
     
     console.log('Processed hours values:', { monday, tuesday, wednesday, thursday, friday });
     
@@ -170,11 +170,11 @@ router.post('/', async (req, res) => {
       type: schedule.type,
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-      mondayHours: Number(schedule.monday_hours),
-      tuesdayHours: Number(schedule.tuesday_hours),
-      wednesdayHours: Number(schedule.wednesday_hours),
-      thursdayHours: Number(schedule.thursday_hours),
-      fridayHours: Number(schedule.friday_hours),
+      mondayHours: parseFloat(schedule.monday_hours),
+      tuesdayHours: parseFloat(schedule.tuesday_hours),
+      wednesdayHours: parseFloat(schedule.wednesday_hours),
+      thursdayHours: parseFloat(schedule.thursday_hours),
+      fridayHours: parseFloat(schedule.friday_hours),
       // Required by interface but not used
       start_time: "08:00",
       end_time: "16:00",
@@ -217,12 +217,12 @@ router.put('/:id', async (req, res) => {
     // Make sure end_date is never null by providing a default value (end of year)
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
-    // Make sure all values are properly parsed numbers
-    const monday = mondayHours !== undefined ? Number(mondayHours) : 8;
-    const tuesday = tuesdayHours !== undefined ? Number(tuesdayHours) : 8;
-    const wednesday = wednesdayHours !== undefined ? Number(wednesdayHours) : 8;
-    const thursday = thursdayHours !== undefined ? Number(thursdayHours) : 8;
-    const friday = fridayHours !== undefined ? Number(fridayHours) : 7;
+    // Ensure all values are properly parsed as floating-point numbers
+    const monday = mondayHours !== undefined ? parseFloat(mondayHours) : 8;
+    const tuesday = tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
+    const wednesday = wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
+    const thursday = thursdayHours !== undefined ? parseFloat(thursdayHours) : 8;
+    const friday = fridayHours !== undefined ? parseFloat(fridayHours) : 7;
     
     console.log('Processed hours values for update:', { monday, tuesday, wednesday, thursday, friday });
     
@@ -262,11 +262,11 @@ router.put('/:id', async (req, res) => {
       type: schedule.type,
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-      mondayHours: Number(schedule.monday_hours),
-      tuesdayHours: Number(schedule.tuesday_hours),
-      wednesdayHours: Number(schedule.wednesday_hours),
-      thursdayHours: Number(schedule.thursday_hours),
-      fridayHours: Number(schedule.friday_hours),
+      mondayHours: parseFloat(schedule.monday_hours),
+      tuesdayHours: parseFloat(schedule.tuesday_hours),
+      wednesdayHours: parseFloat(schedule.wednesday_hours),
+      thursdayHours: parseFloat(schedule.thursday_hours),
+      fridayHours: parseFloat(schedule.friday_hours),
       // Required by interface but not used
       start_time: "08:00",
       end_time: "16:00",
