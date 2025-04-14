@@ -1,4 +1,3 @@
-
 export interface User {
   id: number;
   name: string;
@@ -85,9 +84,8 @@ export interface VacationDay {
   id?: number;
   userId: number;
   date: string;
-  reason?: string;
-  status?: 'pending' | 'approved' | 'rejected';
-  type?: VacationType;
+  type: VacationType;
+  reason?: string; 
 }
 
 export interface WorkdaySchedule {

@@ -487,12 +487,11 @@ export const getVacationDays = async (userId?: number, year?: number): Promise<V
 
 export const addVacationDay = async (vacationDay: VacationDay): Promise<VacationDay> => {
   try {
-    // Ensure we're only sending the required fields to match the database schema
+    // Ensure we're only sending the required fields that exist in the database schema
     const payload = {
       userId: vacationDay.userId,
       date: vacationDay.date,
-      type: vacationDay.type || 'vacation',
-      reason: vacationDay.reason
+      type: vacationDay.type || 'vacation'
     };
     
     return await apiRequest<VacationDay>('/vacation_days', 'POST', payload);

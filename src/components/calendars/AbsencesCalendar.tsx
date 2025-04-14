@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, eachDayOfInterval, isSameDay, addDays } from 'date-fns';
 import { gl } from 'date-fns/locale';
@@ -17,7 +16,6 @@ import { getVacationDays, getUsers, addVacationDay, removeVacationDay } from '@/
 import { eachYearOfInterval } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
-// Define colors for different types of absences
 const absenceColors = {
   vacation: '#D3E4FD', // Soft blue
   personal: '#FFDEE2', // Soft pink
@@ -25,7 +23,6 @@ const absenceColors = {
   sick_leave: '#ea384c' // Red
 };
 
-// Helper to translate vacation type to Spanish
 const vacationTypeToLabel = (type: VacationType): string => {
   switch (type) {
     case 'vacation': return 'Vacacións';
@@ -43,26 +40,21 @@ const AbsencesCalendar = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // States for date range selection
   const [rangeDialogOpen, setRangeDialogOpen] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>();
   const [selectedAbsenceType, setSelectedAbsenceType] = useState<VacationType>('vacation');
-  const [absenceReason, setAbsenceReason] = useState<string>('');
   const [applyToWeekends, setApplyToWeekends] = useState<boolean>(false);
 
   const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 3 + i).toString());
 
-  // Function to handle date range selection
   const handleDateRangeSelect = (range: DateRange | undefined) => {
     setSelectedDateRange(range);
     
-    // If user has selected a complete range (from and to dates), open the absence type dialog
     if (range && range.from && range.to) {
       setRangeDialogOpen(true);
     }
   };
-  
-  // Function to save the date range with the selected absence type
+
   const handleSaveAbsence = async () => {
     if (!selectedDateRange || !selectedDateRange.from || !selectedDateRange.to || !selectedUserId) {
       toast({
@@ -77,10 +69,7 @@ const AbsencesCalendar = () => {
     const endDate = selectedDateRange.to;
     const userId = parseInt(selectedUserId);
     
-    // Generate all days in the selected range
     const daysInRange = eachDayOfInterval({ start: startDate, end: endDate });
-    
-    // Filter out weekends if not applying to weekends
     const daysToApply = applyToWeekends 
       ? daysInRange 
       : daysInRange.filter(date => date.getDay() !== 0 && date.getDay() !== 6);
@@ -91,17 +80,14 @@ const AbsencesCalendar = () => {
       let successCount = 0;
       const errors = [];
       
-      // Create a vacation day entry for each day in the range - one by one
       for (const day of daysToApply) {
         try {
           const dateStr = format(day, 'yyyy-MM-dd');
           
-          // Only send the required fields to the API: userId, date, and type
           await addVacationDay({
             userId,
             date: dateStr,
-            type: selectedAbsenceType,
-            reason: absenceReason || undefined
+            type: selectedAbsenceType
           });
           
           successCount++;
@@ -111,10 +97,8 @@ const AbsencesCalendar = () => {
         }
       }
       
-      // Reload absences
       const absencesData = await getVacationDays(parseInt(selectedUserId));
       
-      // Filter absences for the selected year
       const filteredAbsences = absencesData.filter(absence => {
         const absenceYear = absence.date.substring(0, 4);
         return absenceYear === selectedYear;
@@ -135,7 +119,6 @@ const AbsencesCalendar = () => {
         });
       }
       
-      // Reset states
       setRangeDialogOpen(false);
       setSelectedDateRange(undefined);
       setAbsenceReason('');
@@ -151,8 +134,7 @@ const AbsencesCalendar = () => {
       setLoading(false);
     }
   };
-  
-  // Function to handle absence deletion
+
   const handleDeleteAbsence = async (absence: VacationDay) => {
     if (!confirm(`¿Seguro que desea eliminar esta ausencia de ${format(parseISO(absence.date), 'dd/MM/yyyy', { locale: gl })}?`)) {
       return;
@@ -161,7 +143,6 @@ const AbsencesCalendar = () => {
     try {
       await removeVacationDay(absence.userId, absence.date);
       
-      // Remove from local state
       setAbsences(absences.filter(a => 
         !(a.userId === absence.userId && a.date === absence.date)
       ));
@@ -181,14 +162,12 @@ const AbsencesCalendar = () => {
     }
   };
 
-  // Fetch users
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const usersData = await getUsers();
         setUsers(usersData);
         
-        // If there are users, select the first one by default
         if (usersData.length > 0 && !selectedUserId) {
           setSelectedUserId(usersData[0].id.toString());
         }
@@ -205,7 +184,6 @@ const AbsencesCalendar = () => {
     fetchUsers();
   }, [selectedUserId]);
 
-  // Function to fetch absences for the selected user and year
   useEffect(() => {
     const fetchAbsences = async () => {
       if (!selectedUserId) return;
@@ -214,7 +192,6 @@ const AbsencesCalendar = () => {
       try {
         const absencesData = await getVacationDays(parseInt(selectedUserId));
         
-        // Filter absences for the selected year
         const filteredAbsences = absencesData.filter(absence => {
           const absenceYear = absence.date.substring(0, 4);
           return absenceYear === selectedYear;
@@ -236,17 +213,14 @@ const AbsencesCalendar = () => {
     fetchAbsences();
   }, [selectedUserId, selectedYear]);
 
-  // Create maps of absence dates by type for easier lookup
   const absenceMap = new Map<string, string>();
   absences.forEach(absence => {
     const dateStr = absence.date.split('T')[0];
     absenceMap.set(dateStr, absence.type || 'vacation');
   });
 
-  // Get the selected user's name
   const selectedUser = users.find(user => user.id.toString() === selectedUserId);
 
-  // Function to generate the modifier styles for the calendar
   const modifiersStyles = {
     vacation: { backgroundColor: absenceColors.vacation },
     personal: { backgroundColor: absenceColors.personal },
@@ -254,7 +228,6 @@ const AbsencesCalendar = () => {
     sick_leave: { backgroundColor: absenceColors.sick_leave, color: 'white' }
   };
 
-  // Group absences by type to display in legend
   const absenceTypes = Array.from(new Set(absences.map(a => a.type || 'vacation')));
 
   return (
@@ -434,7 +407,6 @@ const AbsencesCalendar = () => {
         </div>
       </div>
       
-      {/* Dialog for adding absence details */}
       <Dialog open={rangeDialogOpen} onOpenChange={setRangeDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

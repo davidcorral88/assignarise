@@ -39,16 +39,16 @@ router.get('/', async (req, res) => {
 // Add a vacation day
 router.post('/', async (req, res) => {
   try {
-    const { userId, date, type, reason } = req.body;
+    const { userId, date, type } = req.body;
     
     // Validate required fields
     if (!userId || !date || !type) {
       return res.status(400).json({ error: 'Missing required fields: userId, date, and type are mandatory' });
     }
     
-    // Insert the vacation day
-    const query = 'INSERT INTO vacation_days (user_id, date, type, reason) VALUES ($1, $2, $3, $4) RETURNING *';
-    const values = [userId, date, type, reason || null];
+    // Insert the vacation day - REMOVED reason field as it doesn't exist in the database
+    const query = 'INSERT INTO vacation_days (user_id, date, type) VALUES ($1, $2, $3) RETURNING *';
+    const values = [userId, date, type];
     
     const result = await pool.query(query, values);
     res.status(201).json(result.rows[0]);
