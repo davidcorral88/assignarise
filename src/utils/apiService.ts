@@ -32,6 +32,12 @@ async function apiRequest<T>(endpoint: string, method: string = 'GET', body?: an
       return [] as unknown as T;
     }
     
+    // Handle 404 errors for holiday deletion - we'll treat them as non-errors
+    if (response.status === 404 && method === 'DELETE' && endpoint.includes('/holidays/')) {
+      console.log(`Holiday not found at ${endpoint}, treating as already deleted`);
+      return { success: true, message: 'Holiday already deleted or not found' } as unknown as T;
+    }
+    
     // Handle other HTTP errors
     if (!response.ok) {
       const errorText = await response.text();
@@ -424,16 +430,12 @@ export const removeHoliday = async (date: string): Promise<void> => {
       }
       
       // No further formatting needed - just use the original formattedDate
-      await apiRequest<void>(`/holidays/${formattedDate}`, 'DELETE');
-      console.log(`Holiday with date ${formattedDate} deleted successfully`);
+      const result = await apiRequest<{ success: boolean; message?: string }>(`/holidays/${formattedDate}`, 'DELETE');
+      console.log(`Holiday deletion result:`, result);
+      return;
     } catch (apiError: any) {
-      // Check if the error is a "holiday not found" error (404)
-      if (apiError.message && apiError.message.includes('404')) {
-        console.log(`Holiday with date ${formattedDate} not found - already deleted or never existed`);
-        // We'll treat this as a success case for idempotency
-        return;
-      }
-      throw apiError; // re-throw other errors
+      // Already handled in apiRequest - will treat 404 as success
+      throw apiError;
     }
   } catch (error: any) {
     handleFetchError(error, `Error al eliminar festivo ${date}:`);

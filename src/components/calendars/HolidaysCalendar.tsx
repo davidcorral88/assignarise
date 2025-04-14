@@ -124,14 +124,11 @@ const HolidaysCalendar = () => {
         name: values.name
       };
       
-      // First, remove the existing holiday from local state for optimistic UI update
       setHolidays(prev => prev.filter(h => h.date.split('T')[0] !== originalDate));
       
       try {
-        // Try to remove the holiday from the backend
         await removeHoliday(originalDate);
         
-        // Then add the updated holiday
         await addHoliday(updatedHoliday);
         
         toast({
@@ -141,34 +138,29 @@ const HolidaysCalendar = () => {
       } catch (error: any) {
         console.error('Error during holiday update:', error);
         
-        // Check if the error is a "holiday not found" error
         const isNotFoundError = error.message?.includes('404') || 
                               error.message?.includes('not found') ||
                               error.message?.includes('Holiday not found');
         
         if (isNotFoundError) {
-          // If holiday was not found, just add the new one without removing first
           await addHoliday(updatedHoliday);
           toast({
             title: 'Festivo engadido',
             description: `${values.name} foi engadido como novo festivo`,
           });
         } else {
-          // For other types of errors, show an error message
           toast({
             title: 'Error',
             description: 'Non foi posible actualizar o festivo',
             variant: 'destructive',
           });
           
-          // Restore the original holiday in the local state
           if (selectedHoliday) {
             setHolidays(prev => [...prev, selectedHoliday]);
           }
         }
       }
       
-      // Refresh the holidays list to ensure it's up to date
       await fetchHolidays();
       
       setIsEditDialogOpen(false);
@@ -192,7 +184,6 @@ const HolidaysCalendar = () => {
       const formattedDate = holiday.date.split('T')[0];
       console.log('Attempting to delete holiday with formatted date:', formattedDate);
       
-      // Optimistic UI update - remove from local state immediately
       setHolidays(prev => prev.filter(h => h.date.split('T')[0] !== formattedDate));
       
       try {
@@ -205,19 +196,15 @@ const HolidaysCalendar = () => {
       } catch (error: any) {
         console.error('Error deleting holiday:', error);
         
-        // Check if it's a "holiday not found" error (which is not actually an error for us)
-        const isNotFoundError = error.message?.includes('404') || 
-                              error.message?.includes('not found') ||
-                              error.message?.includes('Holiday not found');
+        const isNotAnError = error.message?.includes('already deleted') || 
+                           error.message?.includes('treating as already deleted');
         
-        if (isNotFoundError) {
-          // If the holiday was already removed, show a success message
+        if (isNotAnError) {
           toast({
             title: 'Festivo eliminado',
             description: `${holiday.name} xa foi eliminado previamente`,
           });
         } else {
-          // For other errors, restore the holiday in the local state and show an error
           setHolidays(prev => [...prev, holiday]);
           
           toast({
@@ -227,7 +214,6 @@ const HolidaysCalendar = () => {
           });
         }
       } finally {
-        // Refresh the holidays list after a short delay to ensure UI is updated correctly
         setTimeout(() => {
           fetchHolidays();
         }, 500);
