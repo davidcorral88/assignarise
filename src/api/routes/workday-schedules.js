@@ -17,26 +17,22 @@ router.get('/', async (req, res) => {
       return res.json([]);
     }
     
-    // Format the response to match the expected WorkdaySchedule type in the frontend
     const schedules = result.rows.map(schedule => {
       return {
         id: schedule.id.toString(),
         type: schedule.type || "Standard",
         startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
         endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-        // For database compatibility
         monday_hours: parseFloat(schedule.monday_hours) || 8,
         tuesday_hours: parseFloat(schedule.tuesday_hours) || 8,
         wednesday_hours: parseFloat(schedule.wednesday_hours) || 8,
         thursday_hours: parseFloat(schedule.thursday_hours) || 8,
         friday_hours: parseFloat(schedule.friday_hours) || 8,
-        // For frontend compatibility
         mondayHours: parseFloat(schedule.monday_hours) || 8,
         tuesdayHours: parseFloat(schedule.tuesday_hours) || 8,
         wednesdayHours: parseFloat(schedule.wednesday_hours) || 8,
         thursdayHours: parseFloat(schedule.thursday_hours) || 8,
         fridayHours: parseFloat(schedule.friday_hours) || 8,
-        // Required by interface but not used
         start_time: "08:00",
         end_time: "16:00",
         days_of_week: [1, 2, 3, 4, 5]
@@ -68,25 +64,21 @@ router.get('/:id', async (req, res) => {
     
     const schedule = result.rows[0];
     
-    // Format the response to match the expected WorkdaySchedule type
     const formattedSchedule = {
       id: schedule.id.toString(),
       type: schedule.type || "Standard",
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-      // For database compatibility
       monday_hours: parseFloat(schedule.monday_hours) || 8,
       tuesday_hours: parseFloat(schedule.tuesday_hours) || 8,
       wednesday_hours: parseFloat(schedule.wednesday_hours) || 8,
       thursday_hours: parseFloat(schedule.thursday_hours) || 8,
       friday_hours: parseFloat(schedule.friday_hours) || 8,
-      // For frontend compatibility
       mondayHours: parseFloat(schedule.monday_hours) || 8,
       tuesdayHours: parseFloat(schedule.tuesday_hours) || 8,
       wednesdayHours: parseFloat(schedule.wednesday_hours) || 8,
       thursdayHours: parseFloat(schedule.thursday_hours) || 8,
       fridayHours: parseFloat(schedule.friday_hours) || 8,
-      // Required by interface but not used
       start_time: "08:00",
       end_time: "16:00",
       days_of_week: [1, 2, 3, 4, 5]
@@ -115,26 +107,10 @@ router.post('/', async (req, res) => {
     
     console.log('POST workday_schedules - Received data:', req.body);
     
-    // Validate required fields
-    if (!type) {
-      return res.status(400).json({ error: 'Type is required' });
+    if (!type || !startDate || !endDate) {
+      return res.status(400).json({ error: 'Type and dates are required' });
     }
     
-    // Make sure start_date is never null by providing a default value (today's date)
-    const start_date = startDate || new Date().toISOString().split('T')[0];
-    // Make sure end_date is never null by providing a default value (end of year)
-    const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
-    
-    // Ensure all values are properly parsed as floating-point numbers
-    const monday = parseFloat(mondayHours) || 8;
-    const tuesday = parseFloat(tuesdayHours) || 8;
-    const wednesday = parseFloat(wednesdayHours) || 8;
-    const thursday = parseFloat(thursdayHours) || 8;
-    const friday = parseFloat(fridayHours) || 7;
-    
-    console.log('Processed hours values:', { monday, tuesday, wednesday, thursday, friday });
-    
-    // First get the next ID
     const idQuery = "SELECT MAX(id) as max_id FROM workday_schedules";
     const idResult = await pool.query(idQuery);
     const nextId = idResult.rows[0].max_id ? parseInt(idResult.rows[0].max_id) + 1 : 1;
@@ -149,13 +125,13 @@ router.post('/', async (req, res) => {
     const values = [
       nextId,
       type,
-      start_date,
-      end_date,
-      monday,
-      tuesday,
-      wednesday,
-      thursday,
-      friday
+      startDate,
+      endDate,
+      parseFloat(mondayHours),
+      parseFloat(tuesdayHours),
+      parseFloat(wednesdayHours),
+      parseFloat(thursdayHours),
+      parseFloat(fridayHours)
     ];
     
     console.log('Executing query with values:', values);
@@ -163,7 +139,6 @@ router.post('/', async (req, res) => {
     const result = await pool.query(query, values);
     const schedule = result.rows[0];
     
-    // Format the response to match the expected WorkdaySchedule type
     const formattedSchedule = {
       id: schedule.id.toString(),
       type: schedule.type,
@@ -173,14 +148,8 @@ router.post('/', async (req, res) => {
       tuesdayHours: parseFloat(schedule.tuesday_hours),
       wednesdayHours: parseFloat(schedule.wednesday_hours),
       thursdayHours: parseFloat(schedule.thursday_hours),
-      fridayHours: parseFloat(schedule.friday_hours),
-      // Required by interface but not used
-      start_time: "08:00",
-      end_time: "16:00",
-      days_of_week: [1, 2, 3, 4, 5]
+      fridayHours: parseFloat(schedule.friday_hours)
     };
-    
-    console.log('Returning formatted schedule:', formattedSchedule);
     
     res.status(201).json(formattedSchedule);
   } catch (error) {
@@ -206,17 +175,13 @@ router.put('/:id', async (req, res) => {
     
     console.log(`PUT workday_schedules/${id} - Received data:`, req.body);
     
-    // Validate required fields
     if (!type) {
       return res.status(400).json({ error: 'Type is required' });
     }
     
-    // Make sure start_date is never null by providing a default value (today's date)
     const start_date = startDate || new Date().toISOString().split('T')[0];
-    // Make sure end_date is never null by providing a default value (end of year)
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
-    // Ensure all values are properly parsed as floating-point numbers
     const monday = parseFloat(mondayHours) || 8;
     const tuesday = parseFloat(tuesdayHours) || 8;
     const wednesday = parseFloat(wednesdayHours) || 8;
@@ -255,7 +220,6 @@ router.put('/:id', async (req, res) => {
     
     const schedule = result.rows[0];
     
-    // Format the response to match the expected WorkdaySchedule type
     const formattedSchedule = {
       id: schedule.id.toString(),
       type: schedule.type,
@@ -265,14 +229,8 @@ router.put('/:id', async (req, res) => {
       tuesdayHours: parseFloat(schedule.tuesday_hours),
       wednesdayHours: parseFloat(schedule.wednesday_hours),
       thursdayHours: parseFloat(schedule.thursday_hours),
-      fridayHours: parseFloat(schedule.friday_hours),
-      // Required by interface but not used
-      start_time: "08:00",
-      end_time: "16:00",
-      days_of_week: [1, 2, 3, 4, 5]
+      fridayHours: parseFloat(schedule.friday_hours)
     };
-    
-    console.log('Returning updated formatted schedule:', formattedSchedule);
     
     res.json(formattedSchedule);
   } catch (error) {

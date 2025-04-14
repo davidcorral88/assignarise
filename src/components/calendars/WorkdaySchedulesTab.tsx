@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { WorkdaySchedule } from '@/utils/types';
-import { getWorkdaySchedules, deleteWorkdaySchedule, updateWorkdaySchedule } from '@/utils/dataService';
+import { getWorkdaySchedules, deleteWorkdaySchedule, updateWorkdaySchedule, addWorkdaySchedule } from '@/utils/dataService';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -12,16 +11,17 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import WorkdayScheduleTable from '../schedule/WorkdayScheduleTable';
+import { Plus } from 'lucide-react';
 
 const formSchema = z.object({
   type: z.string().min(1, "O tipo é obrigatorio"),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  mondayHours: z.coerce.number().default(8),
-  tuesdayHours: z.coerce.number().default(8),
-  wednesdayHours: z.coerce.number().default(8),
-  thursdayHours: z.coerce.number().default(8),
-  fridayHours: z.coerce.number().default(7)
+  startDate: z.string().min(1, "A data de inicio é obrigatoria"),
+  endDate: z.string().min(1, "A data de fin é obrigatoria"),
+  mondayHours: z.coerce.number().min(0, "As horas deben ser maiores que 0"),
+  tuesdayHours: z.coerce.number().min(0, "As horas deben ser maiores que 0"),
+  wednesdayHours: z.coerce.number().min(0, "As horas deben ser maiores que 0"),
+  thursdayHours: z.coerce.number().min(0, "As horas deben ser maiores que 0"),
+  fridayHours: z.coerce.number().min(0, "As horas deben ser maiores que 0")
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -30,19 +30,20 @@ const WorkdaySchedulesTab = () => {
   const [schedules, setSchedules] = useState<WorkdaySchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [currentSchedule, setCurrentSchedule] = useState<WorkdaySchedule | null>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      type: "Standard",
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
-      mondayHours: 8,
-      tuesdayHours: 8,
-      wednesdayHours: 8,
-      thursdayHours: 8,
-      fridayHours: 7
+      type: "",
+      startDate: "",
+      endDate: "",
+      mondayHours: 0,
+      tuesdayHours: 0,
+      wednesdayHours: 0,
+      thursdayHours: 0,
+      fridayHours: 0
     },
   });
 
@@ -118,6 +119,39 @@ const WorkdaySchedulesTab = () => {
       toast({
         title: 'Error',
         description: 'Non foi posible actualizar a xornada',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAddSchedule = async (values: FormValues) => {
+    try {
+      const newSchedule: Partial<WorkdaySchedule> = {
+        type: values.type,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        mondayHours: values.mondayHours,
+        tuesdayHours: values.tuesdayHours,
+        wednesdayHours: values.wednesdayHours,
+        thursdayHours: values.thursdayHours,
+        fridayHours: values.fridayHours,
+      };
+      
+      await addWorkdaySchedule(newSchedule);
+      await fetchSchedules();
+      
+      toast({
+        title: 'Xornada engadida',
+        description: `A xornada ${values.type} foi engadida correctamente`,
+      });
+      
+      setIsAddDialogOpen(false);
+      form.reset();
+    } catch (error) {
+      console.error('Error adding workday schedule:', error);
+      toast({
+        title: 'Error',
+        description: 'Non foi posible engadir a xornada',
         variant: 'destructive',
       });
     }
@@ -327,6 +361,11 @@ const WorkdaySchedulesTab = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-medium">Xornadas de traballo</h2>
         
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Engadir Xornada
+        </Button>
+
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
           setIsEditDialogOpen(open);
           if (!open) setCurrentSchedule(null);
@@ -338,8 +377,22 @@ const WorkdaySchedulesTab = () => {
                 Modifica as datas de validez e horas de traballo para cada día
               </DialogDescription>
             </DialogHeader>
-            
             {renderDialogForm(handleUpdateSchedule)}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+          setIsAddDialogOpen(open);
+          if (!open) form.reset();
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Engadir xornada</DialogTitle>
+              <DialogDescription>
+                Introduce os datos da nova xornada de traballo
+              </DialogDescription>
+            </DialogHeader>
+            {renderDialogForm(handleAddSchedule)}
           </DialogContent>
         </Dialog>
       </div>
