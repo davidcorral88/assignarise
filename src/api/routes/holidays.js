@@ -56,6 +56,10 @@ router.post('/', async (req, res) => {
     const result = await pool.query(query, values);
     console.log('Insert result:', result.rows[0]);
     
+    // Log the date as stored in the database for debugging
+    console.log('Date as stored in DB:', result.rows[0].date);
+    console.log('Date without timezone adjustment:', new Date(result.rows[0].date).toISOString().split('T')[0]);
+    
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error adding holiday:', error);
@@ -87,26 +91,60 @@ router.delete('/:date', async (req, res) => {
       return res.status(400).json({ error: 'Invalid date format' });
     }
     
-    // FIXED: Changed to a more reliable query that doesn't rely on type casting
-    // Use a more forgiving comparison by extracting the date part only from both sides
-    const checkQuery = "SELECT * FROM holidays WHERE date::date = $1::date";
-    const checkResult = await pool.query(checkQuery, [formattedDate]);
-    console.log('Holiday check result:', checkResult.rows);
+    // IMPROVED: Use multiple possible methods to find the holiday
+    console.log('Trying multiple query methods to find holiday');
     
-    if (checkResult.rowCount === 0) {
+    // Method 1: Direct date comparison
+    const directQuery = "SELECT * FROM holidays WHERE date::date = $1::date";
+    let result = await pool.query(directQuery, [formattedDate]);
+    console.log('Direct query result:', result.rows);
+    
+    // Method 2: Text format comparison
+    if (result.rowCount === 0) {
+      const textQuery = "SELECT * FROM holidays WHERE TO_CHAR(date, 'YYYY-MM-DD') = $1";
+      result = await pool.query(textQuery, [formattedDate]);
+      console.log('Text format query result:', result.rows);
+    }
+    
+    // Method 3: Try with date +/- 1 day to account for timezone issues
+    if (result.rowCount === 0) {
+      // Try with tomorrow's date
+      const nextDate = new Date(formattedDate);
+      nextDate.setDate(nextDate.getDate() + 1);
+      const nextDateStr = nextDate.toISOString().split('T')[0];
+      
+      const nextDayQuery = "SELECT * FROM holidays WHERE date::date = $1::date";
+      result = await pool.query(nextDayQuery, [nextDateStr]);
+      console.log('Next day query result:', result.rows);
+      
+      if (result.rowCount === 0) {
+        // Try with yesterday's date
+        const prevDate = new Date(formattedDate);
+        prevDate.setDate(prevDate.getDate() - 1);
+        const prevDateStr = prevDate.toISOString().split('T')[0];
+        
+        const prevDayQuery = "SELECT * FROM holidays WHERE date::date = $1::date";
+        result = await pool.query(prevDayQuery, [prevDateStr]);
+        console.log('Previous day query result:', result.rows);
+      }
+    }
+    
+    // Method 4: Get all holidays and find close matches for debugging
+    const allHolidays = await pool.query('SELECT * FROM holidays');
+    console.log('All holidays for debugging:', allHolidays.rows);
+    
+    if (result.rowCount === 0) {
       console.log('No holiday found for date:', formattedDate);
-      
-      // Try an alternative query with just the text format to debug
-      const debugQuery = "SELECT * FROM holidays WHERE TO_CHAR(date, 'YYYY-MM-DD') = $1";
-      const debugResult = await pool.query(debugQuery, [formattedDate]);
-      console.log('Debug query result:', debugResult.rows);
-      
       return res.status(404).json({ error: 'Holiday not found' });
     }
     
-    // Use the same reliable query format for deletion
-    const deleteQuery = 'DELETE FROM holidays WHERE date::date = $1::date RETURNING *';
-    const deleteResult = await pool.query(deleteQuery, [formattedDate]);
+    // Execute deletion using the found holiday's ID or date
+    const holidayToDelete = result.rows[0];
+    console.log('Holiday found for deletion:', holidayToDelete);
+    
+    // Delete using the exact date from the database record
+    const deleteQuery = 'DELETE FROM holidays WHERE id = $1 RETURNING *';
+    const deleteResult = await pool.query(deleteQuery, [holidayToDelete.id]);
     
     console.log('Delete result:', deleteResult.rows);
     

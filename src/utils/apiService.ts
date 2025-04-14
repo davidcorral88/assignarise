@@ -420,7 +420,7 @@ export const removeHoliday = async (date: string): Promise<void> => {
     // Ensure we're using just the date portion (YYYY-MM-DD)
     const formattedDate = date.includes('T') ? date.split('T')[0] : date;
     
-    console.log(`Deleting holiday with date: ${formattedDate}, API formatted date: ${encodeURIComponent(formattedDate)}`);
+    console.log(`Deleting holiday with date: ${formattedDate}`);
     
     try {
       // Verify the date is valid by creating a new Date object
@@ -430,11 +430,24 @@ export const removeHoliday = async (date: string): Promise<void> => {
       }
       
       // URL encode the date to handle any special characters
-      const result = await apiRequest<{ success: boolean; message?: string }>(`/holidays/${encodeURIComponent(formattedDate)}`, 'DELETE');
+      const result = await apiRequest<{ success: boolean; message?: string; holiday?: Holiday }>(
+        `/holidays/${encodeURIComponent(formattedDate)}`, 
+        'DELETE'
+      );
+      
       console.log(`Holiday deletion result:`, result);
+      
+      // If we have a holiday in the result, store the ID for future reference
+      if (result.holiday && result.holiday.id) {
+        console.log(`Successfully deleted holiday with ID: ${result.holiday.id}`);
+      }
+      
       return;
     } catch (apiError: any) {
-      // Already handled in apiRequest - will treat 404 as success
+      if (apiError.message?.includes('404') || apiError.message?.includes('not found')) {
+        console.log(`Holiday not found at ${formattedDate}, treating as already deleted`);
+        return;
+      }
       throw apiError;
     }
   } catch (error: any) {

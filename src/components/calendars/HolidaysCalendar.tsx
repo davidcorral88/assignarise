@@ -181,10 +181,23 @@ const HolidaysCalendar = () => {
     
     setIsDeleting(true);
     try {
-      const formattedDate = holiday.date.split('T')[0];
-      console.log('Attempting to delete holiday with formatted date:', formattedDate);
+      const rawDate = holiday.date;
+      const dateObj = new Date(rawDate);
+      const formattedDate = dateObj.toISOString().split('T')[0];
       
-      setHolidays(prev => prev.filter(h => h.date.split('T')[0] !== formattedDate));
+      console.log('Preparing to delete holiday:', { 
+        originalDate: rawDate,
+        formattedDate,
+        holidayId: holiday.id,
+        holidayName: holiday.name
+      });
+      
+      setHolidays(prev => prev.filter(h => {
+        if (holiday.id && h.id) {
+          return h.id !== holiday.id;
+        }
+        return h.date.split('T')[0] !== formattedDate;
+      }));
       
       try {
         await removeHoliday(formattedDate);
@@ -193,21 +206,18 @@ const HolidaysCalendar = () => {
           title: 'Festivo eliminado',
           description: `${holiday.name} foi eliminado correctamente`,
         });
-        
-        await fetchHolidays();
       } catch (error: any) {
         console.error('Error deleting holiday:', error);
         
-        const isNotAnError = error.message?.includes('already deleted') || 
-                           error.message?.includes('treating as already deleted');
+        const isNotFound = error.message?.includes('404') || 
+                          error.message?.includes('not found') ||
+                          error.message?.includes('Holiday not found');
         
-        if (isNotAnError) {
+        if (isNotFound) {
           toast({
             title: 'Festivo eliminado',
             description: `${holiday.name} xa foi eliminado previamente`,
           });
-          
-          await fetchHolidays();
         } else {
           setHolidays(prev => [...prev, holiday]);
           
@@ -218,6 +228,9 @@ const HolidaysCalendar = () => {
           });
         }
       }
+      
+      await fetchHolidays();
+      
     } catch (error) {
       console.error('Error preparing holiday deletion:', error);
       
