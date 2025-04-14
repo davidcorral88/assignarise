@@ -2,7 +2,6 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
-const { v4: uuidv4 } = require('uuid');
 
 // Get all workday schedules
 router.get('/', async (req, res) => {
@@ -120,6 +119,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Type is required' });
     }
     
+    // Let PostgreSQL assign the ID automatically using SERIAL
     const query = `
       INSERT INTO workday_schedules 
       (type, start_date, end_date, monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours) 
