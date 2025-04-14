@@ -1,3 +1,4 @@
+
 export interface User {
   id: number;
   name: string;
@@ -78,7 +79,7 @@ export interface Holiday {
   name: string;
 }
 
-export type VacationType = 'vacation' | 'personal' | 'sick' | 'sick_leave';
+export type VacationType = 'vacacions' | 'baixa_medica' | 'outros';
 
 export interface VacationDay {
   id?: number;

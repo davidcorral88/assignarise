@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, eachDayOfInterval, isSameDay, addDays } from 'date-fns';
 import { gl } from 'date-fns/locale';
@@ -18,18 +17,16 @@ import { eachYearOfInterval } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
 const absenceColors = {
-  vacation: '#D3E4FD', // Soft blue
-  personal: '#FFDEE2', // Soft pink
-  sick: '#FDE1D3', // Soft peach
-  sick_leave: '#ea384c' // Red
+  vacacions: '#F2FCE2', // Light green
+  baixa_medica: '#D3E4FD', // Light blue
+  outros: '#FEF7CD' // Yellow
 };
 
 const vacationTypeToLabel = (type: VacationType): string => {
   switch (type) {
-    case 'vacation': return 'Vacacións';
-    case 'personal': return 'Persoal';
-    case 'sick': return 'Enfermidade';
-    case 'sick_leave': return 'Baixa médica';
+    case 'vacacions': return 'Vacacións';
+    case 'baixa_medica': return 'Baixa Médica';
+    case 'outros': return 'Outros';
     default: return type;
   }
 };
@@ -44,7 +41,7 @@ const AbsencesCalendar = () => {
 
   const [rangeDialogOpen, setRangeDialogOpen] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>();
-  const [selectedAbsenceType, setSelectedAbsenceType] = useState<VacationType>('vacation');
+  const [selectedAbsenceType, setSelectedAbsenceType] = useState<VacationType>('vacacions');
   const [applyToWeekends, setApplyToWeekends] = useState<boolean>(false);
 
   const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 3 + i).toString());
@@ -240,19 +237,18 @@ const AbsencesCalendar = () => {
   const absenceMap = new Map<string, string>();
   absences.forEach(absence => {
     const dateStr = absence.date.split('T')[0];
-    absenceMap.set(dateStr, absence.type || 'vacation');
+    absenceMap.set(dateStr, absence.type || 'vacacions');
   });
 
   const selectedUser = users.find(user => user.id.toString() === selectedUserId);
 
   const modifiersStyles = {
-    vacation: { backgroundColor: absenceColors.vacation },
-    personal: { backgroundColor: absenceColors.personal },
-    sick: { backgroundColor: absenceColors.sick },
-    sick_leave: { backgroundColor: absenceColors.sick_leave, color: 'white' }
+    vacacions: { backgroundColor: absenceColors.vacacions },
+    baixa_medica: { backgroundColor: absenceColors.baixa_medica },
+    outros: { backgroundColor: absenceColors.outros }
   };
 
-  const absenceTypes = Array.from(new Set(absences.map(a => a.type || 'vacation')));
+  const absenceTypes = Array.from(new Set(absences.map(a => a.type || 'vacacions')));
 
   return (
     <div className="space-y-6">
@@ -318,21 +314,17 @@ const AbsencesCalendar = () => {
                       className="rounded-md border w-full"
                       locale={gl}
                       modifiers={{
-                        vacation: (date) => {
+                        vacacions: (date) => {
                           const dateStr = format(date, 'yyyy-MM-dd');
-                          return absenceMap.get(dateStr) === 'vacation';
+                          return absenceMap.get(dateStr) === 'vacacions';
                         },
-                        personal: (date) => {
+                        baixa_medica: (date) => {
                           const dateStr = format(date, 'yyyy-MM-dd');
-                          return absenceMap.get(dateStr) === 'personal';
+                          return absenceMap.get(dateStr) === 'baixa_medica';
                         },
-                        sick: (date) => {
+                        outros: (date) => {
                           const dateStr = format(date, 'yyyy-MM-dd');
-                          return absenceMap.get(dateStr) === 'sick';
-                        },
-                        sick_leave: (date) => {
-                          const dateStr = format(date, 'yyyy-MM-dd');
-                          return absenceMap.get(dateStr) === 'sick_leave';
+                          return absenceMap.get(dateStr) === 'outros';
                         }
                       }}
                       modifiersStyles={modifiersStyles}
@@ -342,28 +334,22 @@ const AbsencesCalendar = () => {
                   {absenceTypes.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-4 justify-center">
                       <div className="text-sm font-medium">Lenda:</div>
-                      {absenceTypes.includes('vacation') && (
+                      {absenceTypes.includes('vacacions') && (
                         <div className="flex items-center">
-                          <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: absenceColors.vacation }}></div>
+                          <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: absenceColors.vacacions }}></div>
                           <span className="text-sm">Vacacións</span>
                         </div>
                       )}
-                      {absenceTypes.includes('personal') && (
+                      {absenceTypes.includes('baixa_medica') && (
                         <div className="flex items-center">
-                          <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: absenceColors.personal }}></div>
-                          <span className="text-sm">Persoal</span>
+                          <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: absenceColors.baixa_medica }}></div>
+                          <span className="text-sm">Baixa Médica</span>
                         </div>
                       )}
-                      {absenceTypes.includes('sick') && (
+                      {absenceTypes.includes('outros') && (
                         <div className="flex items-center">
-                          <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: absenceColors.sick }}></div>
-                          <span className="text-sm">Enfermidade</span>
-                        </div>
-                      )}
-                      {absenceTypes.includes('sick_leave') && (
-                        <div className="flex items-center">
-                          <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: absenceColors.sick_leave }}></div>
-                          <span className="text-sm">Baixa médica</span>
+                          <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: absenceColors.outros }}></div>
+                          <span className="text-sm">Outros</span>
                         </div>
                       )}
                     </div>
@@ -386,7 +372,7 @@ const AbsencesCalendar = () => {
                     absences
                       .sort((a, b) => a.date.localeCompare(b.date))
                       .map(absence => {
-                        const absenceType = absence.type || 'vacation';
+                        const absenceType = absence.type || 'vacacions';
                         const typeLabel = vacationTypeToLabel(absenceType);
                         
                         return (
@@ -455,23 +441,19 @@ const AbsencesCalendar = () => {
               <RadioGroup 
                 value={selectedAbsenceType} 
                 onValueChange={(value) => setSelectedAbsenceType(value as VacationType)}
-                className="grid grid-cols-2 gap-2"
+                className="grid grid-cols-1 gap-2"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="vacation" id="vacation" />
-                  <Label htmlFor="vacation">Vacacións</Label>
+                  <RadioGroupItem value="vacacions" id="vacacions" />
+                  <Label htmlFor="vacacions">Vacacións</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="personal" id="personal" />
-                  <Label htmlFor="personal">Persoal</Label>
+                  <RadioGroupItem value="baixa_medica" id="baixa_medica" />
+                  <Label htmlFor="baixa_medica">Baixa Médica</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="sick" id="sick" />
-                  <Label htmlFor="sick">Enfermidade</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="sick_leave" id="sick_leave" />
-                  <Label htmlFor="sick_leave">Baixa médica</Label>
+                  <RadioGroupItem value="outros" id="outros" />
+                  <Label htmlFor="outros">Outros</Label>
                 </div>
               </RadioGroup>
             </div>
