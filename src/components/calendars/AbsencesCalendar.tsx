@@ -39,7 +39,8 @@ const AbsencesCalendar = () => {
   const [absences, setAbsences] = useState<VacationDay[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  
+  const [absenceReason, setAbsenceReason] = useState<string>('');
+
   const [rangeDialogOpen, setRangeDialogOpen] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>();
   const [selectedAbsenceType, setSelectedAbsenceType] = useState<VacationType>('vacation');
