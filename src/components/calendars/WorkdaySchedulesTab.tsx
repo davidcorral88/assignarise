@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { WorkdaySchedule } from '@/utils/types';
 import { getWorkdaySchedules, addWorkdaySchedule, deleteWorkdaySchedule, updateWorkdaySchedule } from '@/utils/dataService';
 import { toast } from '@/components/ui/use-toast';
@@ -12,11 +11,11 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2, Edit } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import WorkdayScheduleTable from '../schedule/WorkdayScheduleTable';
 
 const formSchema = z.object({
-  name: z.string().min(1, "O nome é obrigatorio"),
-  type: z.string().optional(),
+  type: z.string().min(1, "O tipo é obrigatorio"),
   mondayHours: z.number().min(0, "O valor debe ser positivo").optional(),
   tuesdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
   wednesdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
@@ -34,7 +33,6 @@ const WorkdaySchedulesTab = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
       type: "Standard",
       mondayHours: 8,
       tuesdayHours: 8,
@@ -67,25 +65,15 @@ const WorkdaySchedulesTab = () => {
 
   const handleAddSchedule = async (values: z.infer<typeof formSchema>) => {
     try {
-      // Predeterminado para días de la semana (siempre L-V)
-      const days_of_week = [1, 2, 3, 4, 5]; // Lunes a Viernes
-      
       const newSchedule: WorkdaySchedule = {
         id: "",
-        name: values.name,
-        type: values.type || "Standard",
-        // Valores predeterminados para campos obligatorios en la API
+        name: values.type, // Use type as name for simplicity
+        type: values.type,
+        // Required values for the API but not displayed
         start_time: "08:00",
         end_time: "16:00", 
-        days_of_week: days_of_week,
-        monday: true,
-        tuesday: true,
-        wednesday: true,
-        thursday: true,
-        friday: true,
-        saturday: false,
-        sunday: false,
-        // Los valores de horas por día
+        days_of_week: [1, 2, 3, 4, 5],
+        // Hours for each day
         mondayHours: values.mondayHours,
         tuesdayHours: values.tuesdayHours,
         wednesdayHours: values.wednesdayHours,
@@ -98,7 +86,7 @@ const WorkdaySchedulesTab = () => {
       
       toast({
         title: 'Xornada engadida',
-        description: `A xornada ${values.name} foi engadida correctamente`,
+        description: `A xornada ${values.type} foi engadida correctamente`,
       });
       
       setIsAddDialogOpen(false);
@@ -117,7 +105,6 @@ const WorkdaySchedulesTab = () => {
     setCurrentSchedule(schedule);
     
     form.reset({
-      name: schedule.name,
       type: schedule.type || "Standard",
       mondayHours: schedule.mondayHours || undefined,
       tuesdayHours: schedule.tuesdayHours || undefined,
@@ -133,21 +120,10 @@ const WorkdaySchedulesTab = () => {
     if (!currentSchedule) return;
     
     try {
-      // Predeterminado para días de la semana (siempre L-V)
-      const days_of_week = [1, 2, 3, 4, 5]; // Lunes a Viernes
-      
       const updatedSchedule: WorkdaySchedule = {
         ...currentSchedule,
-        name: values.name,
-        type: values.type || "Standard",
-        days_of_week: days_of_week,
-        monday: true,
-        tuesday: true,
-        wednesday: true,
-        thursday: true,
-        friday: true,
-        saturday: false,
-        sunday: false,
+        name: values.type,
+        type: values.type,
         mondayHours: values.mondayHours,
         tuesdayHours: values.tuesdayHours,
         wednesdayHours: values.wednesdayHours,
@@ -160,7 +136,7 @@ const WorkdaySchedulesTab = () => {
       
       toast({
         title: 'Xornada actualizada',
-        description: `A xornada ${values.name} foi actualizada correctamente`,
+        description: `A xornada ${values.type} foi actualizada correctamente`,
       });
       
       setIsEditDialogOpen(false);
@@ -192,11 +168,6 @@ const WorkdaySchedulesTab = () => {
         variant: 'destructive',
       });
     }
-  };
-
-  const formatHours = (hours: number | undefined) => {
-    if (hours === undefined) return '-';
-    return `${hours}h`;
   };
 
   const renderHoursFields = () => {
@@ -313,20 +284,6 @@ const WorkdaySchedulesTab = () => {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Nome da xornada" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
           name="type"
           render={({ field }) => (
             <FormItem>
@@ -408,65 +365,11 @@ const WorkdaySchedulesTab = () => {
           {loading ? (
             <div className="text-center py-4">Cargando xornadas...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Nome da xornada</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="text-center">Luns</TableHead>
-                  <TableHead className="text-center">Martes</TableHead>
-                  <TableHead className="text-center">Mércores</TableHead>
-                  <TableHead className="text-center">Xoves</TableHead>
-                  <TableHead className="text-center">Venres</TableHead>
-                  <TableHead className="w-[100px]">Accións</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {schedules.length > 0 ? (
-                  schedules.map(schedule => (
-                    <TableRow key={schedule.id}>
-                      <TableCell className="font-medium">
-                        {schedule.name}
-                      </TableCell>
-                      <TableCell>
-                        {schedule.type || "Standard"}
-                      </TableCell>
-                      <TableCell className="text-center">{formatHours(schedule.mondayHours)}</TableCell>
-                      <TableCell className="text-center">{formatHours(schedule.tuesdayHours)}</TableCell>
-                      <TableCell className="text-center">{formatHours(schedule.wednesdayHours)}</TableCell>
-                      <TableCell className="text-center">{formatHours(schedule.thursdayHours)}</TableCell>
-                      <TableCell className="text-center">{formatHours(schedule.fridayHours)}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleEditSchedule(schedule)}
-                          >
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleDeleteSchedule(schedule.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Eliminar</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-4">
-                      Non hai xornadas rexistradas
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <WorkdayScheduleTable 
+              schedules={schedules}
+              onEdit={handleEditSchedule}
+              onDelete={handleDeleteSchedule}
+            />
           )}
         </CardContent>
       </Card>

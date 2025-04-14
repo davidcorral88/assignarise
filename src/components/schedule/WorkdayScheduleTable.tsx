@@ -22,8 +22,7 @@ const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, 
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Nome</TableHead>
-          <TableHead>Tipo</TableHead>
+          <TableHead>Tipo de xornada</TableHead>
           <TableHead className="text-center">Luns</TableHead>
           <TableHead className="text-center">Martes</TableHead>
           <TableHead className="text-center">Mércores</TableHead>
@@ -36,8 +35,7 @@ const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, 
         {schedules.length > 0 ? (
           schedules.map(schedule => (
             <TableRow key={schedule.id}>
-              <TableCell className="font-medium">{schedule.name}</TableCell>
-              <TableCell>{schedule.type}</TableCell>
+              <TableCell className="font-medium">{schedule.type}</TableCell>
               <TableCell className="text-center">{formatHours(schedule.mondayHours)}</TableCell>
               <TableCell className="text-center">{formatHours(schedule.tuesdayHours)}</TableCell>
               <TableCell className="text-center">{formatHours(schedule.wednesdayHours)}</TableCell>
@@ -59,7 +57,7 @@ const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, 
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={8} className="text-center py-4">
+            <TableCell colSpan={7} className="text-center py-4">
               Non hai xornadas configuradas
             </TableCell>
           </TableRow>
