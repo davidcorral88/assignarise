@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { WorkdaySchedule } from '@/utils/types';
@@ -68,6 +69,13 @@ const WorkdaySchedulesTab = () => {
 
   const handleAddSchedule = async (values: z.infer<typeof formSchema>) => {
     try {
+      // Convert string values to numbers for hours
+      const mondayHours = values.mondayHours !== undefined ? Number(values.mondayHours) : 8;
+      const tuesdayHours = values.tuesdayHours !== undefined ? Number(values.tuesdayHours) : 8;
+      const wednesdayHours = values.wednesdayHours !== undefined ? Number(values.wednesdayHours) : 8;
+      const thursdayHours = values.thursdayHours !== undefined ? Number(values.thursdayHours) : 8;
+      const fridayHours = values.fridayHours !== undefined ? Number(values.fridayHours) : 7;
+      
       const newSchedule: WorkdaySchedule = {
         id: "",
         type: values.type,
@@ -76,11 +84,11 @@ const WorkdaySchedulesTab = () => {
         start_time: "08:00",
         end_time: "16:00",
         days_of_week: [1, 2, 3, 4, 5],
-        mondayHours: values.mondayHours !== undefined ? Number(values.mondayHours) : 8,
-        tuesdayHours: values.tuesdayHours !== undefined ? Number(values.tuesdayHours) : 8,
-        wednesdayHours: values.wednesdayHours !== undefined ? Number(values.wednesdayHours) : 8,
-        thursdayHours: values.thursdayHours !== undefined ? Number(values.thursdayHours) : 8,
-        fridayHours: values.fridayHours !== undefined ? Number(values.fridayHours) : 7,
+        mondayHours: mondayHours,
+        tuesdayHours: tuesdayHours,
+        wednesdayHours: wednesdayHours,
+        thursdayHours: thursdayHours,
+        fridayHours: fridayHours,
       };
       
       console.log('Form values being submitted:', values);
@@ -127,16 +135,23 @@ const WorkdaySchedulesTab = () => {
     if (!currentSchedule) return;
     
     try {
+      // Convert string values to numbers for hours
+      const mondayHours = values.mondayHours !== undefined ? Number(values.mondayHours) : 8;
+      const tuesdayHours = values.tuesdayHours !== undefined ? Number(values.tuesdayHours) : 8;
+      const wednesdayHours = values.wednesdayHours !== undefined ? Number(values.wednesdayHours) : 8;
+      const thursdayHours = values.thursdayHours !== undefined ? Number(values.thursdayHours) : 8;
+      const fridayHours = values.fridayHours !== undefined ? Number(values.fridayHours) : 7;
+      
       const updatedSchedule: WorkdaySchedule = {
         ...currentSchedule,
         type: values.type,
         startDate: values.startDate,
         endDate: values.endDate,
-        mondayHours: values.mondayHours !== undefined ? Number(values.mondayHours) : 8,
-        tuesdayHours: values.tuesdayHours !== undefined ? Number(values.tuesdayHours) : 8,
-        wednesdayHours: values.wednesdayHours !== undefined ? Number(values.wednesdayHours) : 8,
-        thursdayHours: values.thursdayHours !== undefined ? Number(values.thursdayHours) : 8,
-        fridayHours: values.fridayHours !== undefined ? Number(values.fridayHours) : 7,
+        mondayHours: mondayHours,
+        tuesdayHours: tuesdayHours,
+        wednesdayHours: wednesdayHours,
+        thursdayHours: thursdayHours,
+        fridayHours: fridayHours,
       };
       
       console.log('Form values for update:', values);

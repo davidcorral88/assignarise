@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -25,11 +26,11 @@ router.get('/', async (req, res) => {
         startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
         endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
         // For database compatibility
-        monday_hours: schedule.monday_hours || 8,
-        tuesday_hours: schedule.tuesday_hours || 8,
-        wednesday_hours: schedule.wednesday_hours || 8,
-        thursday_hours: schedule.thursday_hours || 8,
-        friday_hours: schedule.friday_hours || 8,
+        monday_hours: parseFloat(schedule.monday_hours) || 8,
+        tuesday_hours: parseFloat(schedule.tuesday_hours) || 8,
+        wednesday_hours: parseFloat(schedule.wednesday_hours) || 8,
+        thursday_hours: parseFloat(schedule.thursday_hours) || 8,
+        friday_hours: parseFloat(schedule.friday_hours) || 8,
         // For frontend compatibility
         mondayHours: parseFloat(schedule.monday_hours) || 8,
         tuesdayHours: parseFloat(schedule.tuesday_hours) || 8,
@@ -75,11 +76,11 @@ router.get('/:id', async (req, res) => {
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
       // For database compatibility
-      monday_hours: schedule.monday_hours || 8,
-      tuesday_hours: schedule.tuesday_hours || 8,
-      wednesday_hours: schedule.wednesday_hours || 8,
-      thursday_hours: schedule.thursday_hours || 8,
-      friday_hours: schedule.friday_hours || 8,
+      monday_hours: parseFloat(schedule.monday_hours) || 8,
+      tuesday_hours: parseFloat(schedule.tuesday_hours) || 8,
+      wednesday_hours: parseFloat(schedule.wednesday_hours) || 8,
+      thursday_hours: parseFloat(schedule.thursday_hours) || 8,
+      friday_hours: parseFloat(schedule.friday_hours) || 8,
       // For frontend compatibility
       mondayHours: parseFloat(schedule.monday_hours) || 8,
       tuesdayHours: parseFloat(schedule.tuesday_hours) || 8,
@@ -126,11 +127,11 @@ router.post('/', async (req, res) => {
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
     // Ensure all values are properly parsed as floating-point numbers
-    const monday = typeof mondayHours === 'number' ? mondayHours : mondayHours !== undefined ? parseFloat(mondayHours) : 8;
-    const tuesday = typeof tuesdayHours === 'number' ? tuesdayHours : tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
-    const wednesday = typeof wednesdayHours === 'number' ? wednesdayHours : wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
-    const thursday = typeof thursdayHours === 'number' ? thursdayHours : thursdayHours !== undefined ? parseFloat(thursdayHours) : 8;
-    const friday = typeof fridayHours === 'number' ? fridayHours : fridayHours !== undefined ? parseFloat(fridayHours) : 7;
+    const monday = typeof mondayHours === 'number' ? mondayHours : parseFloat(mondayHours) || 8;
+    const tuesday = typeof tuesdayHours === 'number' ? tuesdayHours : parseFloat(tuesdayHours) || 8;
+    const wednesday = typeof wednesdayHours === 'number' ? wednesdayHours : parseFloat(wednesdayHours) || 8;
+    const thursday = typeof thursdayHours === 'number' ? thursdayHours : parseFloat(thursdayHours) || 8;
+    const friday = typeof fridayHours === 'number' ? fridayHours : parseFloat(fridayHours) || 7;
     
     console.log('Processed hours values:', { monday, tuesday, wednesday, thursday, friday });
     
@@ -217,11 +218,11 @@ router.put('/:id', async (req, res) => {
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
     // Ensure all values are properly parsed as floating-point numbers
-    const monday = typeof mondayHours === 'number' ? mondayHours : mondayHours !== undefined ? parseFloat(mondayHours) : 8;
-    const tuesday = typeof tuesdayHours === 'number' ? tuesdayHours : tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
-    const wednesday = typeof wednesdayHours === 'number' ? wednesdayHours : wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
-    const thursday = typeof thursdayHours === 'number' ? thursdayHours : thursdayHours !== undefined ? parseFloat(thursdayHours) : 8;
-    const friday = typeof fridayHours === 'number' ? fridayHours : fridayHours !== undefined ? parseFloat(fridayHours) : 7;
+    const monday = typeof mondayHours === 'number' ? mondayHours : parseFloat(mondayHours) || 8;
+    const tuesday = typeof tuesdayHours === 'number' ? tuesdayHours : parseFloat(tuesdayHours) || 8;
+    const wednesday = typeof wednesdayHours === 'number' ? wednesdayHours : parseFloat(wednesdayHours) || 8;
+    const thursday = typeof thursdayHours === 'number' ? thursdayHours : parseFloat(thursdayHours) || 8;
+    const friday = typeof fridayHours === 'number' ? fridayHours : parseFloat(fridayHours) || 7;
     
     console.log('Processed hours values for update:', { monday, tuesday, wednesday, thursday, friday });
     
