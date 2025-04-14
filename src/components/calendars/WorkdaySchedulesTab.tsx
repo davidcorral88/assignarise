@@ -1,41 +1,27 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { WorkdaySchedule } from '@/utils/types';
 import { getWorkdaySchedules, addWorkdaySchedule, deleteWorkdaySchedule, updateWorkdaySchedule } from '@/utils/dataService';
 import { toast } from '@/components/ui/use-toast';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, Edit } from 'lucide-react';
-
-const dayNames = ['Luns', 'Martes', 'Mércores', 'Xoves', 'Venres', 'Sábado', 'Domingo'];
 
 const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatorio"),
   type: z.string().optional(),
-  startTime: z.string().min(1, "A hora de inicio é obrigatoria"),
-  endTime: z.string().min(1, "A hora de fin é obrigatoria"),
-  breakStart: z.string().optional(),
-  breakEnd: z.string().optional(),
-  monday: z.boolean().default(true),
-  tuesday: z.boolean().default(true),
-  wednesday: z.boolean().default(true),
-  thursday: z.boolean().default(true),
-  friday: z.boolean().default(true),
-  saturday: z.boolean().default(false),
-  sunday: z.boolean().default(false),
-  mondayHours: z.number().optional(),
-  tuesdayHours: z.number().optional(),
-  wednesdayHours: z.number().optional(),
-  thursdayHours: z.number().optional(),
-  fridayHours: z.number().optional()
+  mondayHours: z.number().min(0, "O valor debe ser positivo").optional(),
+  tuesdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
+  wednesdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
+  thursdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
+  fridayHours: z.number().min(0, "O valor debe ser positivo").optional()
 });
 
 const WorkdaySchedulesTab = () => {
@@ -50,20 +36,11 @@ const WorkdaySchedulesTab = () => {
     defaultValues: {
       name: "",
       type: "Standard",
-      startTime: "09:00",
-      endTime: "17:00",
-      monday: true,
-      tuesday: true,
-      wednesday: true,
-      thursday: true,
-      friday: true,
-      saturday: false,
-      sunday: false,
       mondayHours: 8,
       tuesdayHours: 8,
       wednesdayHours: 8,
       thursdayHours: 8,
-      fridayHours: 8
+      fridayHours: 7
     },
   });
 
@@ -90,33 +67,25 @@ const WorkdaySchedulesTab = () => {
 
   const handleAddSchedule = async (values: z.infer<typeof formSchema>) => {
     try {
-      const days_of_week = [];
-      if (values.monday) days_of_week.push(1);
-      if (values.tuesday) days_of_week.push(2);
-      if (values.wednesday) days_of_week.push(3);
-      if (values.thursday) days_of_week.push(4);
-      if (values.friday) days_of_week.push(5);
-      if (values.saturday) days_of_week.push(6);
-      if (values.sunday) days_of_week.push(7);
+      // Predeterminado para días de la semana (siempre L-V)
+      const days_of_week = [1, 2, 3, 4, 5]; // Lunes a Viernes
       
       const newSchedule: WorkdaySchedule = {
         id: "",
         name: values.name,
         type: values.type || "Standard",
-        startTime: values.startTime,
-        start_time: values.startTime,
-        endTime: values.endTime,
-        end_time: values.endTime,
-        breakStart: values.breakStart || null,
-        breakEnd: values.breakEnd || null,
-        monday: values.monday,
-        tuesday: values.tuesday,
-        wednesday: values.wednesday,
-        thursday: values.thursday,
-        friday: values.friday,
-        saturday: values.saturday,
-        sunday: values.sunday,
+        // Valores predeterminados para campos obligatorios en la API
+        start_time: "08:00",
+        end_time: "16:00", 
         days_of_week: days_of_week,
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false,
+        // Los valores de horas por día
         mondayHours: values.mondayHours,
         tuesdayHours: values.tuesdayHours,
         wednesdayHours: values.wednesdayHours,
@@ -150,17 +119,6 @@ const WorkdaySchedulesTab = () => {
     form.reset({
       name: schedule.name,
       type: schedule.type || "Standard",
-      startTime: schedule.startTime || schedule.start_time,
-      endTime: schedule.endTime || schedule.end_time,
-      breakStart: schedule.breakStart || undefined,
-      breakEnd: schedule.breakEnd || undefined,
-      monday: schedule.monday || schedule.days_of_week.includes(1),
-      tuesday: schedule.tuesday || schedule.days_of_week.includes(2),
-      wednesday: schedule.wednesday || schedule.days_of_week.includes(3),
-      thursday: schedule.thursday || schedule.days_of_week.includes(4),
-      friday: schedule.friday || schedule.days_of_week.includes(5),
-      saturday: schedule.saturday || schedule.days_of_week.includes(6),
-      sunday: schedule.sunday || schedule.days_of_week.includes(7),
       mondayHours: schedule.mondayHours || undefined,
       tuesdayHours: schedule.tuesdayHours || undefined,
       wednesdayHours: schedule.wednesdayHours || undefined,
@@ -175,33 +133,21 @@ const WorkdaySchedulesTab = () => {
     if (!currentSchedule) return;
     
     try {
-      const days_of_week = [];
-      if (values.monday) days_of_week.push(1);
-      if (values.tuesday) days_of_week.push(2);
-      if (values.wednesday) days_of_week.push(3);
-      if (values.thursday) days_of_week.push(4);
-      if (values.friday) days_of_week.push(5);
-      if (values.saturday) days_of_week.push(6);
-      if (values.sunday) days_of_week.push(7);
+      // Predeterminado para días de la semana (siempre L-V)
+      const days_of_week = [1, 2, 3, 4, 5]; // Lunes a Viernes
       
       const updatedSchedule: WorkdaySchedule = {
         ...currentSchedule,
         name: values.name,
         type: values.type || "Standard",
-        startTime: values.startTime,
-        start_time: values.startTime,
-        endTime: values.endTime,
-        end_time: values.endTime,
-        breakStart: values.breakStart || null,
-        breakEnd: values.breakEnd || null,
-        monday: values.monday,
-        tuesday: values.tuesday,
-        wednesday: values.wednesday,
-        thursday: values.thursday,
-        friday: values.friday,
-        saturday: values.saturday,
-        sunday: values.sunday,
         days_of_week: days_of_week,
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false,
         mondayHours: values.mondayHours,
         tuesdayHours: values.tuesdayHours,
         wednesdayHours: values.wednesdayHours,
@@ -248,62 +194,9 @@ const WorkdaySchedulesTab = () => {
     }
   };
 
-  const isDayIncluded = (schedule: WorkdaySchedule, dayIndex: number) => {
-    if (schedule.days_of_week && Array.isArray(schedule.days_of_week)) {
-      return schedule.days_of_week.includes(dayIndex + 1);
-    }
-
-    const dayProps = [
-      schedule.monday,
-      schedule.tuesday,
-      schedule.wednesday,
-      schedule.thursday,
-      schedule.friday,
-      schedule.saturday,
-      schedule.sunday,
-    ];
-
-    return dayProps[dayIndex] === true;
-  };
-
-  const getHoursForDay = (schedule: WorkdaySchedule, dayIndex: number) => {
-    if (!isDayIncluded(schedule, dayIndex)) return '-';
-
-    switch (dayIndex) {
-      case 0:
-        if (schedule.mondayHours !== undefined) return schedule.mondayHours;
-        break;
-      case 1:
-        if (schedule.tuesdayHours !== undefined) return schedule.tuesdayHours;
-        break;
-      case 2:
-        if (schedule.wednesdayHours !== undefined) return schedule.wednesdayHours;
-        break;
-      case 3:
-        if (schedule.thursdayHours !== undefined) return schedule.thursdayHours;
-        break;
-      case 4:
-        if (schedule.fridayHours !== undefined) return schedule.fridayHours;
-        break;
-    }
-
-    if (schedule.startTime && schedule.endTime) {
-      const start = new Date(`1970-01-01T${schedule.startTime || schedule.start_time}`);
-      const end = new Date(`1970-01-01T${schedule.endTime || schedule.end_time}`);
-      
-      let hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-      
-      if (schedule.breakStart && schedule.breakEnd) {
-        const breakStart = new Date(`1970-01-01T${schedule.breakStart}`);
-        const breakEnd = new Date(`1970-01-01T${schedule.breakEnd}`);
-        const breakHours = (breakEnd.getTime() - breakStart.getTime()) / (1000 * 60 * 60);
-        hours -= breakHours;
-      }
-      
-      return hours.toFixed(1);
-    }
-
-    return '8.0';
+  const formatHours = (hours: number | undefined) => {
+    if (hours === undefined) return '-';
+    return `${hours}h`;
   };
 
   const renderHoursFields = () => {
@@ -446,100 +339,6 @@ const WorkdaySchedulesTab = () => {
           )}
         />
         
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="startTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Hora de inicio</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="endTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Hora de fin</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="breakStart"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Inicio descanso</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="time" 
-                    {...field} 
-                    value={field.value || ""} 
-                    onChange={e => field.onChange(e.target.value || undefined)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="breakEnd"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Fin descanso</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="time" 
-                    {...field} 
-                    value={field.value || ""} 
-                    onChange={e => field.onChange(e.target.value || undefined)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <div>
-          <FormLabel className="block mb-2">Días da semana</FormLabel>
-          <div className="grid grid-cols-7 gap-2">
-            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day, index) => (
-              <FormField
-                key={day}
-                control={form.control}
-                name={day as any}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col items-center space-y-1">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel className="text-xs">{dayNames[index].substring(0, 3)}</FormLabel>
-                  </FormItem>
-                )}
-              />
-            ))}
-          </div>
-        </div>
-        
         {renderHoursFields()}
         
         <DialogFooter>
@@ -579,7 +378,7 @@ const WorkdaySchedulesTab = () => {
             <DialogHeader>
               <DialogTitle>Engadir nova xornada</DialogTitle>
               <DialogDescription>
-                Introduce os detalles da xornada de traballo
+                Introduce as horas de traballo para cada día da semana
               </DialogDescription>
             </DialogHeader>
             
@@ -595,7 +394,7 @@ const WorkdaySchedulesTab = () => {
             <DialogHeader>
               <DialogTitle>Editar xornada</DialogTitle>
               <DialogDescription>
-                Modifica os detalles da xornada de traballo
+                Modifica as horas de traballo para cada día
               </DialogDescription>
             </DialogHeader>
             
@@ -613,10 +412,12 @@ const WorkdaySchedulesTab = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[200px]">Nome da xornada</TableHead>
-                  <TableHead>Horario</TableHead>
-                  {dayNames.map(day => (
-                    <TableHead key={day} className="text-center">{day}</TableHead>
-                  ))}
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-center">Luns</TableHead>
+                  <TableHead className="text-center">Martes</TableHead>
+                  <TableHead className="text-center">Mércores</TableHead>
+                  <TableHead className="text-center">Xoves</TableHead>
+                  <TableHead className="text-center">Venres</TableHead>
                   <TableHead className="w-[100px]">Accións</TableHead>
                 </TableRow>
               </TableHeader>
@@ -626,24 +427,15 @@ const WorkdaySchedulesTab = () => {
                     <TableRow key={schedule.id}>
                       <TableCell className="font-medium">
                         {schedule.name}
-                        {schedule.type && (
-                          <Badge variant="outline" className="ml-2">
-                            {schedule.type}
-                          </Badge>
-                        )}
                       </TableCell>
                       <TableCell>
-                        {schedule.startTime || schedule.start_time} - {schedule.endTime || schedule.end_time}
+                        {schedule.type || "Standard"}
                       </TableCell>
-                      {dayNames.map((_, index) => (
-                        <TableCell key={index} className="text-center">
-                          {isDayIncluded(schedule, index) ? (
-                            <span className="font-medium">{getHoursForDay(schedule, index)}h</span>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                      ))}
+                      <TableCell className="text-center">{formatHours(schedule.mondayHours)}</TableCell>
+                      <TableCell className="text-center">{formatHours(schedule.tuesdayHours)}</TableCell>
+                      <TableCell className="text-center">{formatHours(schedule.wednesdayHours)}</TableCell>
+                      <TableCell className="text-center">{formatHours(schedule.thursdayHours)}</TableCell>
+                      <TableCell className="text-center">{formatHours(schedule.fridayHours)}</TableCell>
                       <TableCell>
                         <div className="flex space-x-1">
                           <Button 
@@ -668,7 +460,7 @@ const WorkdaySchedulesTab = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4">
+                    <TableCell colSpan={8} className="text-center py-4">
                       Non hai xornadas rexistradas
                     </TableCell>
                   </TableRow>
