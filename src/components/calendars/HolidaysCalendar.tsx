@@ -193,6 +193,8 @@ const HolidaysCalendar = () => {
           title: 'Festivo eliminado',
           description: `${holiday.name} foi eliminado correctamente`,
         });
+        
+        await fetchHolidays();
       } catch (error: any) {
         console.error('Error deleting holiday:', error);
         
@@ -204,6 +206,8 @@ const HolidaysCalendar = () => {
             title: 'Festivo eliminado',
             description: `${holiday.name} xa foi eliminado previamente`,
           });
+          
+          await fetchHolidays();
         } else {
           setHolidays(prev => [...prev, holiday]);
           
@@ -213,10 +217,6 @@ const HolidaysCalendar = () => {
             variant: 'destructive',
           });
         }
-      } finally {
-        setTimeout(() => {
-          fetchHolidays();
-        }, 500);
       }
     } catch (error) {
       console.error('Error preparing holiday deletion:', error);
@@ -226,6 +226,8 @@ const HolidaysCalendar = () => {
         description: 'Ocorreu un erro ao preparar a eliminación do festivo',
         variant: 'destructive',
       });
+      
+      await fetchHolidays();
     } finally {
       setIsDeleting(false);
     }

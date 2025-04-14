@@ -420,7 +420,7 @@ export const removeHoliday = async (date: string): Promise<void> => {
     // Ensure we're using just the date portion (YYYY-MM-DD)
     const formattedDate = date.includes('T') ? date.split('T')[0] : date;
     
-    console.log(`Deleting holiday with date: ${formattedDate}, API formatted date: ${formattedDate}`);
+    console.log(`Deleting holiday with date: ${formattedDate}, API formatted date: ${encodeURIComponent(formattedDate)}`);
     
     try {
       // Verify the date is valid by creating a new Date object
@@ -429,8 +429,8 @@ export const removeHoliday = async (date: string): Promise<void> => {
         throw new Error(`Invalid date format: ${formattedDate}`);
       }
       
-      // No further formatting needed - just use the original formattedDate
-      const result = await apiRequest<{ success: boolean; message?: string }>(`/holidays/${formattedDate}`, 'DELETE');
+      // URL encode the date to handle any special characters
+      const result = await apiRequest<{ success: boolean; message?: string }>(`/holidays/${encodeURIComponent(formattedDate)}`, 'DELETE');
       console.log(`Holiday deletion result:`, result);
       return;
     } catch (apiError: any) {

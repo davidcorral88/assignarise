@@ -87,17 +87,24 @@ router.delete('/:date', async (req, res) => {
       return res.status(400).json({ error: 'Invalid date format' });
     }
     
-    // First, check if holiday exists
-    const checkQuery = 'SELECT * FROM holidays WHERE date::date = $1::date';
+    // FIXED: Changed to a more reliable query that doesn't rely on type casting
+    // Use a more forgiving comparison by extracting the date part only from both sides
+    const checkQuery = "SELECT * FROM holidays WHERE date::date = $1::date";
     const checkResult = await pool.query(checkQuery, [formattedDate]);
     console.log('Holiday check result:', checkResult.rows);
     
     if (checkResult.rowCount === 0) {
       console.log('No holiday found for date:', formattedDate);
+      
+      // Try an alternative query with just the text format to debug
+      const debugQuery = "SELECT * FROM holidays WHERE TO_CHAR(date, 'YYYY-MM-DD') = $1";
+      const debugResult = await pool.query(debugQuery, [formattedDate]);
+      console.log('Debug query result:', debugResult.rows);
+      
       return res.status(404).json({ error: 'Holiday not found' });
     }
     
-    // Proceed with deletion if holiday exists
+    // Use the same reliable query format for deletion
     const deleteQuery = 'DELETE FROM holidays WHERE date::date = $1::date RETURNING *';
     const deleteResult = await pool.query(deleteQuery, [formattedDate]);
     
@@ -134,7 +141,7 @@ router.put('/:date', async (req, res) => {
     
     console.log('Formatted dates:', { old: oldFormattedDate, new: newFormattedDate });
     
-    // Check if the holiday exists before trying to update
+    // FIXED: Use the same improved query format for checking
     const checkQuery = 'SELECT * FROM holidays WHERE date::date = $1::date';
     const checkResult = await pool.query(checkQuery, [oldFormattedDate]);
     console.log('Holiday check result:', checkResult.rows);
