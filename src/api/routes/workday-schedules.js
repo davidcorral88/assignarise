@@ -119,15 +119,20 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Type is required' });
     }
     
-    // Let PostgreSQL assign the ID automatically using SERIAL
+    // First get the next ID
+    const idQuery = "SELECT MAX(id) as max_id FROM workday_schedules";
+    const idResult = await pool.query(idQuery);
+    const nextId = idResult.rows[0].max_id ? parseInt(idResult.rows[0].max_id) + 1 : 1;
+    
     const query = `
       INSERT INTO workday_schedules 
-      (type, start_date, end_date, monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+      (id, type, start_date, end_date, monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
       RETURNING *
     `;
     
     const values = [
+      nextId,
       type,
       startDate || null,
       endDate || null,
