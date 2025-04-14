@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -127,11 +126,11 @@ router.post('/', async (req, res) => {
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
     // Ensure all values are properly parsed as floating-point numbers
-    const monday = typeof mondayHours === 'number' ? mondayHours : parseFloat(mondayHours) || 8;
-    const tuesday = typeof tuesdayHours === 'number' ? tuesdayHours : parseFloat(tuesdayHours) || 8;
-    const wednesday = typeof wednesdayHours === 'number' ? wednesdayHours : parseFloat(wednesdayHours) || 8;
-    const thursday = typeof thursdayHours === 'number' ? thursdayHours : parseFloat(thursdayHours) || 8;
-    const friday = typeof fridayHours === 'number' ? fridayHours : parseFloat(fridayHours) || 7;
+    const monday = parseFloat(mondayHours) || 8;
+    const tuesday = parseFloat(tuesdayHours) || 8;
+    const wednesday = parseFloat(wednesdayHours) || 8;
+    const thursday = parseFloat(thursdayHours) || 8;
+    const friday = parseFloat(fridayHours) || 7;
     
     console.log('Processed hours values:', { monday, tuesday, wednesday, thursday, friday });
     
@@ -218,11 +217,11 @@ router.put('/:id', async (req, res) => {
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
     // Ensure all values are properly parsed as floating-point numbers
-    const monday = typeof mondayHours === 'number' ? mondayHours : parseFloat(mondayHours) || 8;
-    const tuesday = typeof tuesdayHours === 'number' ? tuesdayHours : parseFloat(tuesdayHours) || 8;
-    const wednesday = typeof wednesdayHours === 'number' ? wednesdayHours : parseFloat(wednesdayHours) || 8;
-    const thursday = typeof thursdayHours === 'number' ? thursdayHours : parseFloat(thursdayHours) || 8;
-    const friday = typeof fridayHours === 'number' ? fridayHours : parseFloat(fridayHours) || 7;
+    const monday = parseFloat(mondayHours) || 8;
+    const tuesday = parseFloat(tuesdayHours) || 8;
+    const wednesday = parseFloat(wednesdayHours) || 8;
+    const thursday = parseFloat(thursdayHours) || 8;
+    const friday = parseFloat(fridayHours) || 7;
     
     console.log('Processed hours values for update:', { monday, tuesday, wednesday, thursday, friday });
     

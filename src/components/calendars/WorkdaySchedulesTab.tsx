@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { WorkdaySchedule } from '@/utils/types';
@@ -18,12 +17,14 @@ const formSchema = z.object({
   type: z.string().min(1, "O tipo é obrigatorio"),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  mondayHours: z.string().transform(val => val === '' ? undefined : parseFloat(val)).optional(),
-  tuesdayHours: z.string().transform(val => val === '' ? undefined : parseFloat(val)).optional(),
-  wednesdayHours: z.string().transform(val => val === '' ? undefined : parseFloat(val)).optional(),
-  thursdayHours: z.string().transform(val => val === '' ? undefined : parseFloat(val)).optional(),
-  fridayHours: z.string().transform(val => val === '' ? undefined : parseFloat(val)).optional()
+  mondayHours: z.coerce.number().default(8),
+  tuesdayHours: z.coerce.number().default(8),
+  wednesdayHours: z.coerce.number().default(8),
+  thursdayHours: z.coerce.number().default(8),
+  fridayHours: z.coerce.number().default(7)
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 const WorkdaySchedulesTab = () => {
   const [schedules, setSchedules] = useState<WorkdaySchedule[]>([]);
@@ -32,17 +33,17 @@ const WorkdaySchedulesTab = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentSchedule, setCurrentSchedule] = useState<WorkdaySchedule | null>(null);
   
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: "Standard",
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
-      mondayHours: "8",
-      tuesdayHours: "8",
-      wednesdayHours: "8",
-      thursdayHours: "8",
-      fridayHours: "7"
+      mondayHours: 8,
+      tuesdayHours: 8,
+      wednesdayHours: 8,
+      thursdayHours: 8,
+      fridayHours: 7
     },
   });
 
@@ -67,15 +68,8 @@ const WorkdaySchedulesTab = () => {
     }
   };
 
-  const handleAddSchedule = async (values: z.infer<typeof formSchema>) => {
+  const handleAddSchedule = async (values: FormValues) => {
     try {
-      // Convert string values to numbers for hours
-      const mondayHours = values.mondayHours !== undefined ? Number(values.mondayHours) : 8;
-      const tuesdayHours = values.tuesdayHours !== undefined ? Number(values.tuesdayHours) : 8;
-      const wednesdayHours = values.wednesdayHours !== undefined ? Number(values.wednesdayHours) : 8;
-      const thursdayHours = values.thursdayHours !== undefined ? Number(values.thursdayHours) : 8;
-      const fridayHours = values.fridayHours !== undefined ? Number(values.fridayHours) : 7;
-      
       const newSchedule: WorkdaySchedule = {
         id: "",
         type: values.type,
@@ -84,11 +78,11 @@ const WorkdaySchedulesTab = () => {
         start_time: "08:00",
         end_time: "16:00",
         days_of_week: [1, 2, 3, 4, 5],
-        mondayHours: mondayHours,
-        tuesdayHours: tuesdayHours,
-        wednesdayHours: wednesdayHours,
-        thursdayHours: thursdayHours,
-        fridayHours: fridayHours,
+        mondayHours: values.mondayHours,
+        tuesdayHours: values.tuesdayHours,
+        wednesdayHours: values.wednesdayHours,
+        thursdayHours: values.thursdayHours,
+        fridayHours: values.fridayHours,
       };
       
       console.log('Form values being submitted:', values);
@@ -121,37 +115,30 @@ const WorkdaySchedulesTab = () => {
       type: schedule.type || "Standard",
       startDate: schedule.startDate || "",
       endDate: schedule.endDate || "",
-      mondayHours: schedule.mondayHours !== undefined ? String(schedule.mondayHours) : "8",
-      tuesdayHours: schedule.tuesdayHours !== undefined ? String(schedule.tuesdayHours) : "8",
-      wednesdayHours: schedule.wednesdayHours !== undefined ? String(schedule.wednesdayHours) : "8",
-      thursdayHours: schedule.thursdayHours !== undefined ? String(schedule.thursdayHours) : "8",
-      fridayHours: schedule.fridayHours !== undefined ? String(schedule.fridayHours) : "7"
+      mondayHours: schedule.mondayHours !== undefined ? schedule.mondayHours : 8,
+      tuesdayHours: schedule.tuesdayHours !== undefined ? schedule.tuesdayHours : 8,
+      wednesdayHours: schedule.wednesdayHours !== undefined ? schedule.wednesdayHours : 8,
+      thursdayHours: schedule.thursdayHours !== undefined ? schedule.thursdayHours : 8,
+      fridayHours: schedule.fridayHours !== undefined ? schedule.fridayHours : 7
     });
     
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateSchedule = async (values: z.infer<typeof formSchema>) => {
+  const handleUpdateSchedule = async (values: FormValues) => {
     if (!currentSchedule) return;
     
     try {
-      // Convert string values to numbers for hours
-      const mondayHours = values.mondayHours !== undefined ? Number(values.mondayHours) : 8;
-      const tuesdayHours = values.tuesdayHours !== undefined ? Number(values.tuesdayHours) : 8;
-      const wednesdayHours = values.wednesdayHours !== undefined ? Number(values.wednesdayHours) : 8;
-      const thursdayHours = values.thursdayHours !== undefined ? Number(values.thursdayHours) : 8;
-      const fridayHours = values.fridayHours !== undefined ? Number(values.fridayHours) : 7;
-      
       const updatedSchedule: WorkdaySchedule = {
         ...currentSchedule,
         type: values.type,
         startDate: values.startDate,
         endDate: values.endDate,
-        mondayHours: mondayHours,
-        tuesdayHours: tuesdayHours,
-        wednesdayHours: wednesdayHours,
-        thursdayHours: thursdayHours,
-        fridayHours: fridayHours,
+        mondayHours: values.mondayHours,
+        tuesdayHours: values.tuesdayHours,
+        wednesdayHours: values.wednesdayHours,
+        thursdayHours: values.thursdayHours,
+        fridayHours: values.fridayHours,
       };
       
       console.log('Form values for update:', values);
@@ -247,6 +234,7 @@ const WorkdaySchedulesTab = () => {
                     step="0.5" 
                     min="0"
                     {...field}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -266,6 +254,7 @@ const WorkdaySchedulesTab = () => {
                     step="0.5" 
                     min="0"
                     {...field}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -285,6 +274,7 @@ const WorkdaySchedulesTab = () => {
                     step="0.5" 
                     min="0"
                     {...field}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -304,6 +294,7 @@ const WorkdaySchedulesTab = () => {
                     step="0.5" 
                     min="0"
                     {...field}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -323,6 +314,7 @@ const WorkdaySchedulesTab = () => {
                     step="0.5" 
                     min="0"
                     {...field}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -334,7 +326,7 @@ const WorkdaySchedulesTab = () => {
     );
   };
 
-  const renderDialogForm = (onSubmit: (values: z.infer<typeof formSchema>) => Promise<void>, dialogTitle: string, submitButtonText: string) => (
+  const renderDialogForm = (onSubmit: (values: FormValues) => Promise<void>, dialogTitle: string, submitButtonText: string) => (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
