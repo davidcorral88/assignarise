@@ -1,16 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { WorkdaySchedule } from '@/utils/types';
-import { getWorkdaySchedules, addWorkdaySchedule, deleteWorkdaySchedule, updateWorkdaySchedule } from '@/utils/dataService';
+import { getWorkdaySchedules, deleteWorkdaySchedule, updateWorkdaySchedule } from '@/utils/dataService';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus } from 'lucide-react';
 import WorkdayScheduleTable from '../schedule/WorkdayScheduleTable';
 
 const formSchema = z.object({
@@ -29,7 +29,6 @@ type FormValues = z.infer<typeof formSchema>;
 const WorkdaySchedulesTab = () => {
   const [schedules, setSchedules] = useState<WorkdaySchedule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentSchedule, setCurrentSchedule] = useState<WorkdaySchedule | null>(null);
   
@@ -65,46 +64,6 @@ const WorkdaySchedulesTab = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAddSchedule = async (values: FormValues) => {
-    try {
-      const newSchedule: WorkdaySchedule = {
-        id: "",
-        type: values.type,
-        startDate: values.startDate,
-        endDate: values.endDate,
-        start_time: "08:00",
-        end_time: "16:00",
-        days_of_week: [1, 2, 3, 4, 5],
-        mondayHours: values.mondayHours,
-        tuesdayHours: values.tuesdayHours,
-        wednesdayHours: values.wednesdayHours,
-        thursdayHours: values.thursdayHours,
-        fridayHours: values.fridayHours,
-      };
-      
-      console.log('Form values being submitted:', values);
-      console.log('Schedule being sent to API:', newSchedule);
-      
-      await addWorkdaySchedule(newSchedule);
-      await fetchSchedules();
-      
-      toast({
-        title: 'Xornada engadida',
-        description: `A xornada ${values.type} foi engadida correctamente`,
-      });
-      
-      setIsAddDialogOpen(false);
-      form.reset();
-    } catch (error) {
-      console.error('Error adding workday schedule:', error);
-      toast({
-        title: 'Error',
-        description: 'Non foi posible engadir a xornada',
-        variant: 'destructive',
-      });
     }
   };
 
@@ -326,7 +285,7 @@ const WorkdaySchedulesTab = () => {
     );
   };
 
-  const renderDialogForm = (onSubmit: (values: FormValues) => Promise<void>, dialogTitle: string, submitButtonText: string) => (
+  const renderDialogForm = (onSubmit: (values: FormValues) => Promise<void>) => (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
@@ -351,17 +310,13 @@ const WorkdaySchedulesTab = () => {
             variant="outline" 
             type="button" 
             onClick={() => {
-              if (dialogTitle.includes("Engadir")) {
-                setIsAddDialogOpen(false);
-              } else {
-                setIsEditDialogOpen(false);
-                setCurrentSchedule(null);
-              }
+              setIsEditDialogOpen(false);
+              setCurrentSchedule(null);
             }}
           >
             Cancelar
           </Button>
-          <Button type="submit">{submitButtonText}</Button>
+          <Button type="submit">Actualizar</Button>
         </DialogFooter>
       </form>
     </Form>
@@ -371,25 +326,6 @@ const WorkdaySchedulesTab = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-medium">Xornadas de traballo</h2>
-        
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex gap-1">
-              <Plus size={16} />
-              <span>Engadir Xornada</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Engadir nova xornada</DialogTitle>
-              <DialogDescription>
-                Introduce as datas de validez e horas de traballo para cada día da semana
-              </DialogDescription>
-            </DialogHeader>
-            
-            {renderDialogForm(handleAddSchedule, "Engadir nova xornada", "Gardar")}
-          </DialogContent>
-        </Dialog>
         
         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
           setIsEditDialogOpen(open);
@@ -403,7 +339,7 @@ const WorkdaySchedulesTab = () => {
               </DialogDescription>
             </DialogHeader>
             
-            {renderDialogForm(handleUpdateSchedule, "Editar xornada", "Actualizar")}
+            {renderDialogForm(handleUpdateSchedule)}
           </DialogContent>
         </Dialog>
       </div>
