@@ -1,14 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, eachDayOfInterval, isSameDay, addDays } from 'date-fns';
 import { gl } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { VacationDay, User } from '@/utils/types';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { VacationDay, User, VacationType } from '@/utils/types';
 import { toast } from '@/components/ui/use-toast';
-import { getVacationDays, getUsers } from '@/utils/dataService';
+import { getVacationDays, getUsers, addVacationDay, removeVacationDay } from '@/utils/dataService';
+import { eachYearOfInterval } from 'date-fns';
 
 // Define colors for different types of absences
 const absenceColors = {
@@ -18,14 +24,140 @@ const absenceColors = {
   sick_leave: '#ea384c' // Red
 };
 
+// Helper to translate vacation type to Spanish
+const vacationTypeToLabel = (type: VacationType): string => {
+  switch (type) {
+    case 'vacation': return 'Vacacións';
+    case 'personal': return 'Persoal';
+    case 'sick': return 'Enfermidade';
+    case 'sick_leave': return 'Baixa médica';
+    default: return type;
+  }
+};
+
 const AbsencesCalendar = () => {
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [absences, setAbsences] = useState<VacationDay[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // States for date range selection
+  const [rangeDialogOpen, setRangeDialogOpen] = useState(false);
+  const [selectedDateRange, setSelectedDateRange] = useState<Date[] | undefined>();
+  const [selectedAbsenceType, setSelectedAbsenceType] = useState<VacationType>('vacation');
+  const [absenceReason, setAbsenceReason] = useState<string>('');
+  const [applyToWeekends, setApplyToWeekends] = useState<boolean>(false);
 
   const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 3 + i).toString());
+
+  // Function to handle date range selection
+  const handleDateRangeSelect = (dates: Date[] | undefined) => {
+    setSelectedDateRange(dates);
+    
+    // If user has selected exactly two dates (a range), open the absence type dialog
+    if (dates && dates.length === 2 && dates[0] && dates[1]) {
+      setRangeDialogOpen(true);
+    }
+  };
+  
+  // Function to save the date range with the selected absence type
+  const handleSaveAbsence = async () => {
+    if (!selectedDateRange || !selectedDateRange[0] || !selectedDateRange[1] || !selectedUserId) {
+      toast({
+        title: 'Erro',
+        description: 'Debe seleccionar un rango de datas e un empregado',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const startDate = selectedDateRange[0];
+    const endDate = selectedDateRange[1];
+    const userId = parseInt(selectedUserId);
+    
+    // Generate all days in the selected range
+    const daysInRange = eachDayOfInterval({ start: startDate, end: endDate });
+    
+    // Filter out weekends if not applying to weekends
+    const daysToApply = applyToWeekends 
+      ? daysInRange 
+      : daysInRange.filter(date => date.getDay() !== 0 && date.getDay() !== 6);
+    
+    try {
+      setLoading(true);
+      
+      // Create a vacation day entry for each day in the range
+      for (const day of daysToApply) {
+        await addVacationDay({
+          userId,
+          date: format(day, 'yyyy-MM-dd'),
+          type: selectedAbsenceType,
+          reason: absenceReason || undefined
+        });
+      }
+      
+      // Reload absences
+      const absencesData = await getVacationDays(userId);
+      
+      // Filter absences for the selected year
+      const filteredAbsences = absencesData.filter(absence => {
+        const absenceYear = absence.date.substring(0, 4);
+        return absenceYear === selectedYear;
+      });
+      
+      setAbsences(filteredAbsences);
+      
+      toast({
+        title: 'Ausencias gardadas',
+        description: `${daysToApply.length} días de ausencia gardados para ${users.find(u => u.id === userId)?.name || 'o empregado'}`,
+      });
+      
+      // Reset states
+      setRangeDialogOpen(false);
+      setSelectedDateRange(undefined);
+      setAbsenceReason('');
+      
+    } catch (error) {
+      console.error('Error saving absences:', error);
+      toast({
+        title: 'Erro',
+        description: 'Non foi posible gardar as ausencias',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Function to handle absence deletion
+  const handleDeleteAbsence = async (absence: VacationDay) => {
+    if (!confirm(`¿Seguro que desea eliminar esta ausencia de ${format(parseISO(absence.date), 'dd/MM/yyyy', { locale: gl })}?`)) {
+      return;
+    }
+    
+    try {
+      await removeVacationDay(absence.userId, absence.date);
+      
+      // Remove from local state
+      setAbsences(absences.filter(a => 
+        !(a.userId === absence.userId && a.date === absence.date)
+      ));
+      
+      toast({
+        title: 'Ausencia eliminada',
+        description: 'A ausencia foi eliminada correctamente',
+      });
+      
+    } catch (error) {
+      console.error('Error deleting absence:', error);
+      toast({
+        title: 'Erro',
+        description: 'Non foi posible eliminar a ausencia',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Fetch users
   useEffect(() => {
@@ -146,6 +278,9 @@ const AbsencesCalendar = () => {
             <CardContent className="p-4">
               <div className="text-center mb-2 font-medium">
                 Calendario de Ausencias {selectedYear} - {selectedUser?.name || 'Empregado'}
+                <p className="text-sm text-muted-foreground mt-1">
+                  Seleccione un rango de datas co rato para engadir ausencias
+                </p>
               </div>
               
               {loading ? (
@@ -154,10 +289,13 @@ const AbsencesCalendar = () => {
                 <>
                   <div className="overflow-x-auto">
                     <Calendar
-                      mode="single"
+                      mode="range"
+                      selected={selectedDateRange}
+                      onSelect={handleDateRangeSelect}
                       month={new Date(parseInt(selectedYear), 0)}
-                      toMonth={new Date(parseInt(selectedYear), 11, 31)}
-                      initialFocus
+                      numberOfMonths={12}
+                      showOutsideDays={false}
+                      fixedWeeks
                       className="rounded-md border w-full"
                       locale={gl}
                       modifiers={{
@@ -230,12 +368,7 @@ const AbsencesCalendar = () => {
                       .sort((a, b) => a.date.localeCompare(b.date))
                       .map(absence => {
                         const absenceType = absence.type || 'vacation';
-                        const typeLabel = 
-                          absenceType === 'vacation' ? 'Vacacións' :
-                          absenceType === 'personal' ? 'Persoal' :
-                          absenceType === 'sick' ? 'Enfermidade' :
-                          absenceType === 'sick_leave' ? 'Baixa médica' :
-                          absenceType;
+                        const typeLabel = vacationTypeToLabel(absenceType);
                         
                         return (
                           <div 
@@ -251,8 +384,18 @@ const AbsencesCalendar = () => {
                                 <div className="text-sm opacity-80">{absence.reason}</div>
                               )}
                             </div>
-                            <div className="text-sm font-medium">
-                              {typeLabel}
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium">
+                                {typeLabel}
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                onClick={() => handleDeleteAbsence(absence)}
+                              >
+                                ×
+                              </Button>
                             </div>
                           </div>
                         );
@@ -268,6 +411,82 @@ const AbsencesCalendar = () => {
           </Card>
         </div>
       </div>
+      
+      {/* Dialog for adding absence details */}
+      <Dialog open={rangeDialogOpen} onOpenChange={setRangeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Engadir nova ausencia</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedDateRange && selectedDateRange[0] && selectedDateRange[1] && (
+              <div className="text-center text-sm">
+                <span className="font-medium">Datas seleccionadas: </span>
+                {format(selectedDateRange[0], 'dd/MM/yyyy', { locale: gl })} - {format(selectedDateRange[1], 'dd/MM/yyyy', { locale: gl })}
+                <p className="text-muted-foreground mt-1">Total: {
+                  eachDayOfInterval({
+                    start: selectedDateRange[0],
+                    end: selectedDateRange[1]
+                  }).length
+                } días</p>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="absence-type">Tipo de ausencia</Label>
+              <RadioGroup 
+                value={selectedAbsenceType} 
+                onValueChange={(value) => setSelectedAbsenceType(value as VacationType)}
+                className="grid grid-cols-2 gap-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="vacation" id="vacation" />
+                  <Label htmlFor="vacation">Vacacións</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="personal" id="personal" />
+                  <Label htmlFor="personal">Persoal</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="sick" id="sick" />
+                  <Label htmlFor="sick">Enfermidade</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="sick_leave" id="sick_leave" />
+                  <Label htmlFor="sick_leave">Baixa médica</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="absence-reason">Motivo (opcional)</Label>
+              <Input 
+                id="absence-reason" 
+                value={absenceReason} 
+                onChange={(e) => setAbsenceReason(e.target.value)} 
+                placeholder="Introduza o motivo da ausencia"
+              />
+            </div>
+            
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox 
+                id="apply-weekends" 
+                checked={applyToWeekends} 
+                onCheckedChange={(checked) => setApplyToWeekends(checked as boolean)}
+              />
+              <Label htmlFor="apply-weekends">Aplicar tamén a fins de semana</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRangeDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveAbsence} disabled={loading}>
+              {loading ? 'Gardando...' : 'Gardar ausencia'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

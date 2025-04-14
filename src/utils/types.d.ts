@@ -81,6 +81,10 @@ export interface VacationDay {
   userId: number;
   date: string;
   type: VacationType;
+  reason?: string;
+  // Support for date ranges
+  endDate?: string;
+  isRange?: boolean;
 }
 
 export interface WorkdaySchedule {
