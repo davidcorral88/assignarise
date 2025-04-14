@@ -15,6 +15,7 @@ import { VacationDay, User, VacationType } from '@/utils/types';
 import { toast } from '@/components/ui/use-toast';
 import { getVacationDays, getUsers, addVacationDay, removeVacationDay } from '@/utils/dataService';
 import { eachYearOfInterval } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 
 // Define colors for different types of absences
 const absenceColors = {
@@ -44,7 +45,7 @@ const AbsencesCalendar = () => {
   
   // States for date range selection
   const [rangeDialogOpen, setRangeDialogOpen] = useState(false);
-  const [selectedDateRange, setSelectedDateRange] = useState<Date[] | undefined>();
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>();
   const [selectedAbsenceType, setSelectedAbsenceType] = useState<VacationType>('vacation');
   const [absenceReason, setAbsenceReason] = useState<string>('');
   const [applyToWeekends, setApplyToWeekends] = useState<boolean>(false);
@@ -52,18 +53,18 @@ const AbsencesCalendar = () => {
   const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 3 + i).toString());
 
   // Function to handle date range selection
-  const handleDateRangeSelect = (dates: Date[] | undefined) => {
-    setSelectedDateRange(dates);
+  const handleDateRangeSelect = (range: DateRange | undefined) => {
+    setSelectedDateRange(range);
     
-    // If user has selected exactly two dates (a range), open the absence type dialog
-    if (dates && dates.length === 2 && dates[0] && dates[1]) {
+    // If user has selected a complete range (from and to dates), open the absence type dialog
+    if (range && range.from && range.to) {
       setRangeDialogOpen(true);
     }
   };
   
   // Function to save the date range with the selected absence type
   const handleSaveAbsence = async () => {
-    if (!selectedDateRange || !selectedDateRange[0] || !selectedDateRange[1] || !selectedUserId) {
+    if (!selectedDateRange || !selectedDateRange.from || !selectedDateRange.to || !selectedUserId) {
       toast({
         title: 'Erro',
         description: 'Debe seleccionar un rango de datas e un empregado',
@@ -72,8 +73,8 @@ const AbsencesCalendar = () => {
       return;
     }
     
-    const startDate = selectedDateRange[0];
-    const endDate = selectedDateRange[1];
+    const startDate = selectedDateRange.from;
+    const endDate = selectedDateRange.to;
     const userId = parseInt(selectedUserId);
     
     // Generate all days in the selected range
@@ -419,14 +420,14 @@ const AbsencesCalendar = () => {
             <DialogTitle>Engadir nova ausencia</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {selectedDateRange && selectedDateRange[0] && selectedDateRange[1] && (
+            {selectedDateRange && selectedDateRange.from && selectedDateRange.to && (
               <div className="text-center text-sm">
                 <span className="font-medium">Datas seleccionadas: </span>
-                {format(selectedDateRange[0], 'dd/MM/yyyy', { locale: gl })} - {format(selectedDateRange[1], 'dd/MM/yyyy', { locale: gl })}
+                {format(selectedDateRange.from, 'dd/MM/yyyy', { locale: gl })} - {format(selectedDateRange.to, 'dd/MM/yyyy', { locale: gl })}
                 <p className="text-muted-foreground mt-1">Total: {
                   eachDayOfInterval({
-                    start: selectedDateRange[0],
-                    end: selectedDateRange[1]
+                    start: selectedDateRange.from,
+                    end: selectedDateRange.to
                   }).length
                 } días</p>
               </div>
