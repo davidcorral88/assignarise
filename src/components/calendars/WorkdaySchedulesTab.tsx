@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -91,7 +90,6 @@ const WorkdaySchedulesTab = () => {
 
   const handleAddSchedule = async (values: z.infer<typeof formSchema>) => {
     try {
-      // Create days_of_week array based on checkboxes
       const days_of_week = [];
       if (values.monday) days_of_week.push(1);
       if (values.tuesday) days_of_week.push(2);
@@ -102,10 +100,9 @@ const WorkdaySchedulesTab = () => {
       if (values.sunday) days_of_week.push(7);
       
       const newSchedule: WorkdaySchedule = {
-        id: "", // Empty string to match the type
+        id: "",
         name: values.name,
         type: values.type || "Standard",
-        // Set both camelCase and snake_case properties to satisfy TypeScript
         startTime: values.startTime,
         start_time: values.startTime,
         endTime: values.endTime,
@@ -120,7 +117,6 @@ const WorkdaySchedulesTab = () => {
         saturday: values.saturday,
         sunday: values.sunday,
         days_of_week: days_of_week,
-        // Add the hours for each day
         mondayHours: values.mondayHours,
         tuesdayHours: values.tuesdayHours,
         wednesdayHours: values.wednesdayHours,
@@ -179,7 +175,6 @@ const WorkdaySchedulesTab = () => {
     if (!currentSchedule) return;
     
     try {
-      // Create days_of_week array based on checkboxes
       const days_of_week = [];
       if (values.monday) days_of_week.push(1);
       if (values.tuesday) days_of_week.push(2);
@@ -214,7 +209,7 @@ const WorkdaySchedulesTab = () => {
         fridayHours: values.fridayHours
       };
       
-      await updateWorkdaySchedule(updatedSchedule);
+      await updateWorkdaySchedule(currentSchedule.id, updatedSchedule);
       await fetchSchedules();
       
       toast({
@@ -234,7 +229,7 @@ const WorkdaySchedulesTab = () => {
     }
   };
 
-  const handleDeleteSchedule = async (id: string) => { // Using string type for id
+  const handleDeleteSchedule = async (id: string) => {
     try {
       await deleteWorkdaySchedule(id);
       await fetchSchedules();
@@ -253,14 +248,11 @@ const WorkdaySchedulesTab = () => {
     }
   };
 
-  // Helper function to determine if a day is included in the schedule
   const isDayIncluded = (schedule: WorkdaySchedule, dayIndex: number) => {
-    // Check days_of_week array first
     if (schedule.days_of_week && Array.isArray(schedule.days_of_week)) {
-      return schedule.days_of_week.includes(dayIndex + 1); // +1 because days_of_week is 1-7
+      return schedule.days_of_week.includes(dayIndex + 1);
     }
 
-    // Fall back to individual day properties
     const dayProps = [
       schedule.monday,
       schedule.tuesday,
@@ -274,38 +266,33 @@ const WorkdaySchedulesTab = () => {
     return dayProps[dayIndex] === true;
   };
 
-  // Helper function to get hours for a specific day
   const getHoursForDay = (schedule: WorkdaySchedule, dayIndex: number) => {
     if (!isDayIncluded(schedule, dayIndex)) return '-';
 
-    // Return specific hours if available based on day index
     switch (dayIndex) {
-      case 0: // Monday
+      case 0:
         if (schedule.mondayHours !== undefined) return schedule.mondayHours;
         break;
-      case 1: // Tuesday
+      case 1:
         if (schedule.tuesdayHours !== undefined) return schedule.tuesdayHours;
         break;
-      case 2: // Wednesday
+      case 2:
         if (schedule.wednesdayHours !== undefined) return schedule.wednesdayHours;
         break;
-      case 3: // Thursday
+      case 3:
         if (schedule.thursdayHours !== undefined) return schedule.thursdayHours;
         break;
-      case 4: // Friday
+      case 4:
         if (schedule.fridayHours !== undefined) return schedule.fridayHours;
         break;
     }
 
-    // Calculate hours from start/end times if specific hours not defined
     if (schedule.startTime && schedule.endTime) {
       const start = new Date(`1970-01-01T${schedule.startTime || schedule.start_time}`);
       const end = new Date(`1970-01-01T${schedule.endTime || schedule.end_time}`);
       
-      // Calculate hours difference
       let hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
       
-      // Subtract break time if available
       if (schedule.breakStart && schedule.breakEnd) {
         const breakStart = new Date(`1970-01-01T${schedule.breakStart}`);
         const breakEnd = new Date(`1970-01-01T${schedule.breakEnd}`);
@@ -316,10 +303,9 @@ const WorkdaySchedulesTab = () => {
       return hours.toFixed(1);
     }
 
-    return '8.0'; // Default full workday
+    return '8.0';
   };
 
-  // Render form fields for editing hours
   const renderHoursFields = () => {
     return (
       <div className="space-y-4 mt-4">
@@ -429,7 +415,6 @@ const WorkdaySchedulesTab = () => {
     );
   };
 
-  // Dialog form content for both add and edit
   const renderDialogForm = (onSubmit: (values: z.infer<typeof formSchema>) => Promise<void>, dialogTitle: string, submitButtonText: string) => (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -555,7 +540,6 @@ const WorkdaySchedulesTab = () => {
           </div>
         </div>
         
-        {/* Add hours inputs for each day */}
         {renderHoursFields()}
         
         <DialogFooter>
