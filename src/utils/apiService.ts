@@ -548,17 +548,18 @@ export const getWorkdayScheduleById = async (id: string): Promise<WorkdaySchedul
   }
 };
 
-export const addWorkdaySchedule = async (schedule: WorkdaySchedule): Promise<WorkdaySchedule> => {
+export const addWorkdaySchedule = async (schedule: Partial<WorkdaySchedule>): Promise<WorkdaySchedule> => {
   try {
     // Format the data for the API
     const scheduleToSend = {
-      name: schedule.name,
       type: schedule.type || 'Standard',
-      start_time: schedule.start_time || schedule.startTime,
-      end_time: schedule.end_time || schedule.endTime,
-      break_start: schedule.breakStart || null,
-      break_end: schedule.breakEnd || null,
-      days_of_week: schedule.days_of_week
+      startDate: schedule.startDate,
+      endDate: schedule.endDate,
+      mondayHours: schedule.mondayHours,
+      tuesdayHours: schedule.tuesdayHours,
+      wednesdayHours: schedule.wednesdayHours,
+      thursdayHours: schedule.thursdayHours,
+      fridayHours: schedule.fridayHours
     };
     
     console.log('Adding workday schedule:', scheduleToSend);
@@ -574,13 +575,14 @@ export const updateWorkdaySchedule = async (id: string, schedule: Partial<Workda
   try {
     // Format the data for the API
     const scheduleToSend = {
-      name: schedule.name,
       type: schedule.type || 'Standard',
-      start_time: schedule.start_time || schedule.startTime,
-      end_time: schedule.end_time || schedule.endTime,
-      break_start: schedule.breakStart || null,
-      break_end: schedule.breakEnd || null,
-      days_of_week: schedule.days_of_week
+      startDate: schedule.startDate,
+      endDate: schedule.endDate,
+      mondayHours: schedule.mondayHours,
+      tuesdayHours: schedule.tuesdayHours,
+      wednesdayHours: schedule.wednesdayHours,
+      thursdayHours: schedule.thursdayHours,
+      fridayHours: schedule.fridayHours
     };
     
     return await apiRequest<WorkdaySchedule>(`/workday_schedules/${id}`, 'PUT', scheduleToSend);
