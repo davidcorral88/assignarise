@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -127,12 +126,11 @@ router.post('/', async (req, res) => {
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
     // Ensure all values are properly parsed as floating-point numbers
-    // Use the exact values from the request without defaulting if they're provided
-    const monday = mondayHours !== undefined ? parseFloat(mondayHours) : 8;
-    const tuesday = tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
-    const wednesday = wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
-    const thursday = thursdayHours !== undefined ? parseFloat(thursdayHours) : 8;
-    const friday = fridayHours !== undefined ? parseFloat(fridayHours) : 7;
+    const monday = typeof mondayHours === 'number' ? mondayHours : mondayHours !== undefined ? parseFloat(mondayHours) : 8;
+    const tuesday = typeof tuesdayHours === 'number' ? tuesdayHours : tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
+    const wednesday = typeof wednesdayHours === 'number' ? wednesdayHours : wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
+    const thursday = typeof thursdayHours === 'number' ? thursdayHours : thursdayHours !== undefined ? parseFloat(thursdayHours) : 8;
+    const friday = typeof fridayHours === 'number' ? fridayHours : fridayHours !== undefined ? parseFloat(fridayHours) : 7;
     
     console.log('Processed hours values:', { monday, tuesday, wednesday, thursday, friday });
     
@@ -219,12 +217,11 @@ router.put('/:id', async (req, res) => {
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
     // Ensure all values are properly parsed as floating-point numbers
-    // Use the exact values from the request without defaulting if they're provided
-    const monday = mondayHours !== undefined ? parseFloat(mondayHours) : 8;
-    const tuesday = tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
-    const wednesday = wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
-    const thursday = thursdayHours !== undefined ? parseFloat(thursdayHours) : 8;
-    const friday = fridayHours !== undefined ? parseFloat(fridayHours) : 7;
+    const monday = typeof mondayHours === 'number' ? mondayHours : mondayHours !== undefined ? parseFloat(mondayHours) : 8;
+    const tuesday = typeof tuesdayHours === 'number' ? tuesdayHours : tuesdayHours !== undefined ? parseFloat(tuesdayHours) : 8;
+    const wednesday = typeof wednesdayHours === 'number' ? wednesdayHours : wednesdayHours !== undefined ? parseFloat(wednesdayHours) : 8;
+    const thursday = typeof thursdayHours === 'number' ? thursdayHours : thursdayHours !== undefined ? parseFloat(thursdayHours) : 8;
+    const friday = typeof fridayHours === 'number' ? fridayHours : fridayHours !== undefined ? parseFloat(fridayHours) : 7;
     
     console.log('Processed hours values for update:', { monday, tuesday, wednesday, thursday, friday });
     

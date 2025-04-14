@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { WorkdaySchedule } from '@/utils/types';
@@ -14,7 +13,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus } from 'lucide-react';
 import WorkdayScheduleTable from '../schedule/WorkdayScheduleTable';
 
-// Updated schema to properly handle number values
 const formSchema = z.object({
   type: z.string().min(1, "O tipo é obrigatorio"),
   startDate: z.string().optional(),
@@ -70,20 +68,19 @@ const WorkdaySchedulesTab = () => {
 
   const handleAddSchedule = async (values: z.infer<typeof formSchema>) => {
     try {
-      // Create schedule with the exact values from the form
       const newSchedule: WorkdaySchedule = {
         id: "",
         type: values.type,
         startDate: values.startDate,
         endDate: values.endDate,
-        start_time: "08:00", // Required by interface but not really used
-        end_time: "16:00",   // Required by interface but not really used
+        start_time: "08:00",
+        end_time: "16:00",
         days_of_week: [1, 2, 3, 4, 5],
-        mondayHours: values.mondayHours,
-        tuesdayHours: values.tuesdayHours,
-        wednesdayHours: values.wednesdayHours,
-        thursdayHours: values.thursdayHours,
-        fridayHours: values.fridayHours,
+        mondayHours: values.mondayHours !== undefined ? Number(values.mondayHours) : 8,
+        tuesdayHours: values.tuesdayHours !== undefined ? Number(values.tuesdayHours) : 8,
+        wednesdayHours: values.wednesdayHours !== undefined ? Number(values.wednesdayHours) : 8,
+        thursdayHours: values.thursdayHours !== undefined ? Number(values.thursdayHours) : 8,
+        fridayHours: values.fridayHours !== undefined ? Number(values.fridayHours) : 7,
       };
       
       console.log('Form values being submitted:', values);
@@ -112,7 +109,6 @@ const WorkdaySchedulesTab = () => {
   const handleEditSchedule = (schedule: WorkdaySchedule) => {
     setCurrentSchedule(schedule);
     
-    // Convert numeric values to strings for the form
     form.reset({
       type: schedule.type || "Standard",
       startDate: schedule.startDate || "",
@@ -131,17 +127,16 @@ const WorkdaySchedulesTab = () => {
     if (!currentSchedule) return;
     
     try {
-      // Update schedule with the exact values from the form
       const updatedSchedule: WorkdaySchedule = {
         ...currentSchedule,
         type: values.type,
         startDate: values.startDate,
         endDate: values.endDate,
-        mondayHours: values.mondayHours,
-        tuesdayHours: values.tuesdayHours,
-        wednesdayHours: values.wednesdayHours,
-        thursdayHours: values.thursdayHours,
-        fridayHours: values.fridayHours,
+        mondayHours: values.mondayHours !== undefined ? Number(values.mondayHours) : 8,
+        tuesdayHours: values.tuesdayHours !== undefined ? Number(values.tuesdayHours) : 8,
+        wednesdayHours: values.wednesdayHours !== undefined ? Number(values.wednesdayHours) : 8,
+        thursdayHours: values.thursdayHours !== undefined ? Number(values.thursdayHours) : 8,
+        fridayHours: values.fridayHours !== undefined ? Number(values.fridayHours) : 7,
       };
       
       console.log('Form values for update:', values);
