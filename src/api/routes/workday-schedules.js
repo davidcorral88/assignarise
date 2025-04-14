@@ -32,11 +32,11 @@ router.get('/', async (req, res) => {
         thursday_hours: schedule.thursday_hours || 8,
         friday_hours: schedule.friday_hours || 8,
         // For frontend compatibility
-        mondayHours: schedule.monday_hours || 8,
-        tuesdayHours: schedule.tuesday_hours || 8,
-        wednesdayHours: schedule.wednesday_hours || 8,
-        thursdayHours: schedule.thursday_hours || 8,
-        fridayHours: schedule.friday_hours || 8,
+        mondayHours: Number(schedule.monday_hours) || 8,
+        tuesdayHours: Number(schedule.tuesday_hours) || 8,
+        wednesdayHours: Number(schedule.wednesday_hours) || 8,
+        thursdayHours: Number(schedule.thursday_hours) || 8,
+        fridayHours: Number(schedule.friday_hours) || 8,
         // Required by interface but not used
         start_time: "08:00",
         end_time: "16:00",
@@ -82,11 +82,11 @@ router.get('/:id', async (req, res) => {
       thursday_hours: schedule.thursday_hours || 8,
       friday_hours: schedule.friday_hours || 8,
       // For frontend compatibility
-      mondayHours: schedule.monday_hours || 8,
-      tuesdayHours: schedule.tuesday_hours || 8,
-      wednesdayHours: schedule.wednesday_hours || 8,
-      thursdayHours: schedule.thursday_hours || 8,
-      fridayHours: schedule.friday_hours || 8,
+      mondayHours: Number(schedule.monday_hours) || 8,
+      tuesdayHours: Number(schedule.tuesday_hours) || 8,
+      wednesdayHours: Number(schedule.wednesday_hours) || 8,
+      thursdayHours: Number(schedule.thursday_hours) || 8,
+      fridayHours: Number(schedule.friday_hours) || 8,
       // Required by interface but not used
       start_time: "08:00",
       end_time: "16:00",
@@ -114,6 +114,8 @@ router.post('/', async (req, res) => {
       fridayHours
     } = req.body;
     
+    console.log('POST workday_schedules - Received data:', req.body);
+    
     // Validate required fields
     if (!type) {
       return res.status(400).json({ error: 'Type is required' });
@@ -123,6 +125,15 @@ router.post('/', async (req, res) => {
     const start_date = startDate || new Date().toISOString().split('T')[0];
     // Make sure end_date is never null by providing a default value (end of year)
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
+    
+    // Asegurarse de que todos los valores son números
+    const monday = Number(mondayHours) || 8;
+    const tuesday = Number(tuesdayHours) || 8;
+    const wednesday = Number(wednesdayHours) || 8;
+    const thursday = Number(thursdayHours) || 8;
+    const friday = Number(fridayHours) || 7;
+    
+    console.log('Processed hours values:', { monday, tuesday, wednesday, thursday, friday });
     
     // First get the next ID
     const idQuery = "SELECT MAX(id) as max_id FROM workday_schedules";
@@ -141,12 +152,14 @@ router.post('/', async (req, res) => {
       type,
       start_date,
       end_date,
-      mondayHours || 8,
-      tuesdayHours || 8,
-      wednesdayHours || 8,
-      thursdayHours || 8,
-      fridayHours || 7
+      monday,
+      tuesday,
+      wednesday,
+      thursday,
+      friday
     ];
+    
+    console.log('Executing query with values:', values);
     
     const result = await pool.query(query, values);
     const schedule = result.rows[0];
@@ -157,16 +170,18 @@ router.post('/', async (req, res) => {
       type: schedule.type,
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-      mondayHours: schedule.monday_hours || 8,
-      tuesdayHours: schedule.tuesday_hours || 8,
-      wednesdayHours: schedule.wednesday_hours || 8,
-      thursdayHours: schedule.thursday_hours || 8,
-      fridayHours: schedule.friday_hours || 7,
+      mondayHours: Number(schedule.monday_hours) || 8,
+      tuesdayHours: Number(schedule.tuesday_hours) || 8,
+      wednesdayHours: Number(schedule.wednesday_hours) || 8,
+      thursdayHours: Number(schedule.thursday_hours) || 8,
+      fridayHours: Number(schedule.friday_hours) || 7,
       // Required by interface but not used
       start_time: "08:00",
       end_time: "16:00",
       days_of_week: [1, 2, 3, 4, 5]
     };
+    
+    console.log('Returning formatted schedule:', formattedSchedule);
     
     res.status(201).json(formattedSchedule);
   } catch (error) {
@@ -190,6 +205,8 @@ router.put('/:id', async (req, res) => {
       fridayHours
     } = req.body;
     
+    console.log(`PUT workday_schedules/${id} - Received data:`, req.body);
+    
     // Validate required fields
     if (!type) {
       return res.status(400).json({ error: 'Type is required' });
@@ -199,6 +216,15 @@ router.put('/:id', async (req, res) => {
     const start_date = startDate || new Date().toISOString().split('T')[0];
     // Make sure end_date is never null by providing a default value (end of year)
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
+    
+    // Asegurarse de que todos los valores son números
+    const monday = Number(mondayHours) || 8;
+    const tuesday = Number(tuesdayHours) || 8;
+    const wednesday = Number(wednesdayHours) || 8;
+    const thursday = Number(thursdayHours) || 8;
+    const friday = Number(fridayHours) || 7;
+    
+    console.log('Processed hours values for update:', { monday, tuesday, wednesday, thursday, friday });
     
     const query = `
       UPDATE workday_schedules 
@@ -212,13 +238,15 @@ router.put('/:id', async (req, res) => {
       type,
       start_date,
       end_date,
-      mondayHours || 8,
-      tuesdayHours || 8,
-      wednesdayHours || 8,
-      thursdayHours || 8,
-      fridayHours || 7,
+      monday,
+      tuesday,
+      wednesday,
+      thursday,
+      friday,
       id
     ];
+    
+    console.log('Executing update query with values:', values);
     
     const result = await pool.query(query, values);
     
@@ -234,16 +262,18 @@ router.put('/:id', async (req, res) => {
       type: schedule.type,
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-      mondayHours: schedule.monday_hours || 8,
-      tuesdayHours: schedule.tuesday_hours || 8,
-      wednesdayHours: schedule.wednesday_hours || 8,
-      thursdayHours: schedule.thursday_hours || 8,
-      fridayHours: schedule.friday_hours || 7,
+      mondayHours: Number(schedule.monday_hours) || 8,
+      tuesdayHours: Number(schedule.tuesday_hours) || 8,
+      wednesdayHours: Number(schedule.wednesday_hours) || 8,
+      thursdayHours: Number(schedule.thursday_hours) || 8,
+      fridayHours: Number(schedule.friday_hours) || 7,
       // Required by interface but not used
       start_time: "08:00",
       end_time: "16:00",
       days_of_week: [1, 2, 3, 4, 5]
     };
+    
+    console.log('Returning updated formatted schedule:', formattedSchedule);
     
     res.json(formattedSchedule);
   } catch (error) {

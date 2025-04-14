@@ -18,11 +18,11 @@ const formSchema = z.object({
   type: z.string().min(1, "O tipo é obrigatorio"),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  mondayHours: z.number().min(0, "O valor debe ser positivo").optional(),
-  tuesdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
-  wednesdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
-  thursdayHours: z.number().min(0, "O valor debe ser positivo").optional(),
-  fridayHours: z.number().min(0, "O valor debe ser positivo").optional()
+  mondayHours: z.coerce.number().min(0, "O valor debe ser positivo").optional(),
+  tuesdayHours: z.coerce.number().min(0, "O valor debe ser positivo").optional(),
+  wednesdayHours: z.coerce.number().min(0, "O valor debe ser positivo").optional(),
+  thursdayHours: z.coerce.number().min(0, "O valor debe ser positivo").optional(),
+  fridayHours: z.coerce.number().min(0, "O valor debe ser positivo").optional()
 });
 
 const WorkdaySchedulesTab = () => {
@@ -69,6 +69,15 @@ const WorkdaySchedulesTab = () => {
 
   const handleAddSchedule = async (values: z.infer<typeof formSchema>) => {
     try {
+      console.log('Form values being submitted:', values);
+      
+      // Asegúrate de que todos los valores sean números
+      const mondayHours = typeof values.mondayHours === 'number' ? values.mondayHours : parseFloat(values.mondayHours as unknown as string) || 8;
+      const tuesdayHours = typeof values.tuesdayHours === 'number' ? values.tuesdayHours : parseFloat(values.tuesdayHours as unknown as string) || 8;
+      const wednesdayHours = typeof values.wednesdayHours === 'number' ? values.wednesdayHours : parseFloat(values.wednesdayHours as unknown as string) || 8;
+      const thursdayHours = typeof values.thursdayHours === 'number' ? values.thursdayHours : parseFloat(values.thursdayHours as unknown as string) || 8;
+      const fridayHours = typeof values.fridayHours === 'number' ? values.fridayHours : parseFloat(values.fridayHours as unknown as string) || 7;
+      
       const newSchedule: WorkdaySchedule = {
         id: "",
         type: values.type,
@@ -79,12 +88,14 @@ const WorkdaySchedulesTab = () => {
         end_time: "16:00", 
         days_of_week: [1, 2, 3, 4, 5],
         // Hours for each day
-        mondayHours: values.mondayHours,
-        tuesdayHours: values.tuesdayHours,
-        wednesdayHours: values.wednesdayHours,
-        thursdayHours: values.thursdayHours,
-        fridayHours: values.fridayHours
+        mondayHours: mondayHours,
+        tuesdayHours: tuesdayHours,
+        wednesdayHours: wednesdayHours,
+        thursdayHours: thursdayHours,
+        fridayHours: fridayHours,
       };
+      
+      console.log('Schedule being sent to API:', newSchedule);
       
       await addWorkdaySchedule(newSchedule);
       await fetchSchedules();
@@ -127,17 +138,28 @@ const WorkdaySchedulesTab = () => {
     if (!currentSchedule) return;
     
     try {
+      console.log('Form values for update:', values);
+      
+      // Asegúrate de que todos los valores sean números
+      const mondayHours = typeof values.mondayHours === 'number' ? values.mondayHours : parseFloat(values.mondayHours as unknown as string) || 8;
+      const tuesdayHours = typeof values.tuesdayHours === 'number' ? values.tuesdayHours : parseFloat(values.tuesdayHours as unknown as string) || 8;
+      const wednesdayHours = typeof values.wednesdayHours === 'number' ? values.wednesdayHours : parseFloat(values.wednesdayHours as unknown as string) || 8;
+      const thursdayHours = typeof values.thursdayHours === 'number' ? values.thursdayHours : parseFloat(values.thursdayHours as unknown as string) || 8;
+      const fridayHours = typeof values.fridayHours === 'number' ? values.fridayHours : parseFloat(values.fridayHours as unknown as string) || 7;
+      
       const updatedSchedule: WorkdaySchedule = {
         ...currentSchedule,
         type: values.type,
         startDate: values.startDate,
         endDate: values.endDate,
-        mondayHours: values.mondayHours,
-        tuesdayHours: values.tuesdayHours,
-        wednesdayHours: values.wednesdayHours,
-        thursdayHours: values.thursdayHours,
-        fridayHours: values.fridayHours
+        mondayHours: mondayHours,
+        tuesdayHours: tuesdayHours,
+        wednesdayHours: wednesdayHours,
+        thursdayHours: thursdayHours,
+        fridayHours: fridayHours,
       };
+      
+      console.log('Schedule being updated in API:', updatedSchedule);
       
       await updateWorkdaySchedule(currentSchedule.id, updatedSchedule);
       await fetchSchedules();
@@ -228,8 +250,11 @@ const WorkdaySchedulesTab = () => {
                     type="number" 
                     step="0.5" 
                     {...field}
-                    onChange={e => field.onChange(parseFloat(e.target.value))} 
-                    value={field.value || ''} 
+                    onChange={e => {
+                      console.log('Luns value change:', e.target.value);
+                      field.onChange(e.target.value ? parseFloat(e.target.value) : undefined);
+                    }} 
+                    value={field.value === undefined ? '' : field.value} 
                   />
                 </FormControl>
                 <FormMessage />
@@ -248,8 +273,11 @@ const WorkdaySchedulesTab = () => {
                     type="number" 
                     step="0.5" 
                     {...field}
-                    onChange={e => field.onChange(parseFloat(e.target.value))} 
-                    value={field.value || ''} 
+                    onChange={e => {
+                      console.log('Martes value change:', e.target.value);
+                      field.onChange(e.target.value ? parseFloat(e.target.value) : undefined);
+                    }} 
+                    value={field.value === undefined ? '' : field.value} 
                   />
                 </FormControl>
                 <FormMessage />
@@ -268,8 +296,11 @@ const WorkdaySchedulesTab = () => {
                     type="number" 
                     step="0.5" 
                     {...field}
-                    onChange={e => field.onChange(parseFloat(e.target.value))} 
-                    value={field.value || ''} 
+                    onChange={e => {
+                      console.log('Mércores value change:', e.target.value);
+                      field.onChange(e.target.value ? parseFloat(e.target.value) : undefined);
+                    }} 
+                    value={field.value === undefined ? '' : field.value} 
                   />
                 </FormControl>
                 <FormMessage />
@@ -288,8 +319,11 @@ const WorkdaySchedulesTab = () => {
                     type="number" 
                     step="0.5" 
                     {...field}
-                    onChange={e => field.onChange(parseFloat(e.target.value))} 
-                    value={field.value || ''} 
+                    onChange={e => {
+                      console.log('Xoves value change:', e.target.value);
+                      field.onChange(e.target.value ? parseFloat(e.target.value) : undefined);
+                    }} 
+                    value={field.value === undefined ? '' : field.value} 
                   />
                 </FormControl>
                 <FormMessage />
@@ -308,8 +342,11 @@ const WorkdaySchedulesTab = () => {
                     type="number" 
                     step="0.5" 
                     {...field}
-                    onChange={e => field.onChange(parseFloat(e.target.value))} 
-                    value={field.value || ''} 
+                    onChange={e => {
+                      console.log('Venres value change:', e.target.value);
+                      field.onChange(e.target.value ? parseFloat(e.target.value) : undefined);
+                    }} 
+                    value={field.value === undefined ? '' : field.value} 
                   />
                 </FormControl>
                 <FormMessage />
