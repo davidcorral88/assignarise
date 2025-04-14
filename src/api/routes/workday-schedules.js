@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -107,9 +108,22 @@ router.post('/', async (req, res) => {
     
     console.log('POST workday_schedules - Received data:', req.body);
     
-    if (!type || !startDate || !endDate) {
-      return res.status(400).json({ error: 'Type and dates are required' });
+    if (!type) {
+      return res.status(400).json({ error: 'Type is required' });
     }
+    
+    // Ensure all values are properly handled
+    const start_date = startDate || new Date().toISOString().split('T')[0];
+    const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
+    
+    // Parse number values and handle nulls
+    const monday = parseFloat(mondayHours) || null;
+    const tuesday = parseFloat(tuesdayHours) || null;
+    const wednesday = parseFloat(wednesdayHours) || null;
+    const thursday = parseFloat(thursdayHours) || null;
+    const friday = parseFloat(fridayHours) || null;
+    
+    console.log('Processed values for DB insert:', { type, start_date, end_date, monday, tuesday, wednesday, thursday, friday });
     
     const idQuery = "SELECT MAX(id) as max_id FROM workday_schedules";
     const idResult = await pool.query(idQuery);
@@ -125,13 +139,13 @@ router.post('/', async (req, res) => {
     const values = [
       nextId,
       type,
-      startDate,
-      endDate,
-      parseFloat(mondayHours),
-      parseFloat(tuesdayHours),
-      parseFloat(wednesdayHours),
-      parseFloat(thursdayHours),
-      parseFloat(fridayHours)
+      start_date,
+      end_date,
+      monday,
+      tuesday,
+      wednesday,
+      thursday,
+      friday
     ];
     
     console.log('Executing query with values:', values);
@@ -144,11 +158,11 @@ router.post('/', async (req, res) => {
       type: schedule.type,
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-      mondayHours: parseFloat(schedule.monday_hours),
-      tuesdayHours: parseFloat(schedule.tuesday_hours),
-      wednesdayHours: parseFloat(schedule.wednesday_hours),
-      thursdayHours: parseFloat(schedule.thursday_hours),
-      fridayHours: parseFloat(schedule.friday_hours)
+      mondayHours: parseFloat(schedule.monday_hours) || null,
+      tuesdayHours: parseFloat(schedule.tuesday_hours) || null,
+      wednesdayHours: parseFloat(schedule.wednesday_hours) || null,
+      thursdayHours: parseFloat(schedule.thursday_hours) || null,
+      fridayHours: parseFloat(schedule.friday_hours) || null
     };
     
     res.status(201).json(formattedSchedule);
@@ -182,11 +196,12 @@ router.put('/:id', async (req, res) => {
     const start_date = startDate || new Date().toISOString().split('T')[0];
     const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
     
-    const monday = parseFloat(mondayHours) || 8;
-    const tuesday = parseFloat(tuesdayHours) || 8;
-    const wednesday = parseFloat(wednesdayHours) || 8;
-    const thursday = parseFloat(thursdayHours) || 8;
-    const friday = parseFloat(fridayHours) || 7;
+    // Parse number values and handle nulls
+    const monday = parseFloat(mondayHours) || null;
+    const tuesday = parseFloat(tuesdayHours) || null;
+    const wednesday = parseFloat(wednesdayHours) || null;
+    const thursday = parseFloat(thursdayHours) || null;
+    const friday = parseFloat(fridayHours) || null;
     
     console.log('Processed hours values for update:', { monday, tuesday, wednesday, thursday, friday });
     
@@ -225,11 +240,11 @@ router.put('/:id', async (req, res) => {
       type: schedule.type,
       startDate: schedule.start_date ? new Date(schedule.start_date).toISOString().split('T')[0] : null,
       endDate: schedule.end_date ? new Date(schedule.end_date).toISOString().split('T')[0] : null,
-      mondayHours: parseFloat(schedule.monday_hours),
-      tuesdayHours: parseFloat(schedule.tuesday_hours),
-      wednesdayHours: parseFloat(schedule.wednesday_hours),
-      thursdayHours: parseFloat(schedule.thursday_hours),
-      fridayHours: parseFloat(schedule.friday_hours)
+      mondayHours: parseFloat(schedule.monday_hours) || null,
+      tuesdayHours: parseFloat(schedule.tuesday_hours) || null,
+      wednesdayHours: parseFloat(schedule.wednesday_hours) || null,
+      thursdayHours: parseFloat(schedule.thursday_hours) || null,
+      fridayHours: parseFloat(schedule.friday_hours) || null
     };
     
     res.json(formattedSchedule);

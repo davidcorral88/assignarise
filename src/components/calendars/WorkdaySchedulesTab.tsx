@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { WorkdaySchedule } from '@/utils/types';
@@ -89,7 +90,7 @@ const WorkdaySchedulesTab = () => {
     if (!currentSchedule) return;
     
     try {
-      const updatedSchedule: WorkdaySchedule = {
+      const updatedSchedule: Partial<WorkdaySchedule> = {
         ...currentSchedule,
         type: values.type,
         startDate: values.startDate,
@@ -104,7 +105,10 @@ const WorkdaySchedulesTab = () => {
       console.log('Form values for update:', values);
       console.log('Schedule being updated in API:', updatedSchedule);
       
-      await updateWorkdaySchedule(currentSchedule.id, updatedSchedule);
+      if (currentSchedule.id) {
+        await updateWorkdaySchedule(currentSchedule.id, updatedSchedule);
+      }
+      
       await fetchSchedules();
       
       toast({
@@ -136,6 +140,8 @@ const WorkdaySchedulesTab = () => {
         thursdayHours: values.thursdayHours,
         fridayHours: values.fridayHours,
       };
+      
+      console.log('Adding new schedule with values:', newSchedule);
       
       await addWorkdaySchedule(newSchedule);
       await fetchSchedules();
@@ -319,7 +325,7 @@ const WorkdaySchedulesTab = () => {
     );
   };
 
-  const renderDialogForm = (onSubmit: (values: FormValues) => Promise<void>) => (
+  const renderDialogForm = (onSubmit: (values: FormValues) => Promise<void>, isAdd: boolean = false) => (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
@@ -344,58 +350,78 @@ const WorkdaySchedulesTab = () => {
             variant="outline" 
             type="button" 
             onClick={() => {
-              setIsEditDialogOpen(false);
-              setCurrentSchedule(null);
+              if (isAdd) {
+                setIsAddDialogOpen(false);
+              } else {
+                setIsEditDialogOpen(false);
+                setCurrentSchedule(null);
+              }
+              form.reset();
             }}
           >
             Cancelar
           </Button>
-          <Button type="submit">Actualizar</Button>
+          <Button type="submit">{isAdd ? 'Engadir' : 'Actualizar'}</Button>
         </DialogFooter>
       </form>
     </Form>
   );
+
+  // Reset form when opening add dialog
+  const handleAddDialogOpen = () => {
+    form.reset({
+      type: "",
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0],
+      mondayHours: 0,
+      tuesdayHours: 0,
+      wednesdayHours: 0,
+      thursdayHours: 0,
+      fridayHours: 0
+    });
+    setIsAddDialogOpen(true);
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-medium">Xornadas de traballo</h2>
         
-        <Button onClick={() => setIsAddDialogOpen(true)}>
+        <Button onClick={handleAddDialogOpen}>
           <Plus className="w-4 h-4 mr-2" />
           Engadir Xornada
         </Button>
-
-        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-          setIsEditDialogOpen(open);
-          if (!open) setCurrentSchedule(null);
-        }}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Editar xornada</DialogTitle>
-              <DialogDescription>
-                Modifica as datas de validez e horas de traballo para cada día
-              </DialogDescription>
-            </DialogHeader>
-            {renderDialogForm(handleUpdateSchedule)}
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
-          setIsAddDialogOpen(open);
-          if (!open) form.reset();
-        }}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Engadir xornada</DialogTitle>
-              <DialogDescription>
-                Introduce os datos da nova xornada de traballo
-              </DialogDescription>
-            </DialogHeader>
-            {renderDialogForm(handleAddSchedule)}
-          </DialogContent>
-        </Dialog>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) setCurrentSchedule(null);
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar xornada</DialogTitle>
+            <DialogDescription>
+              Modifica as datas de validez e horas de traballo para cada día
+            </DialogDescription>
+          </DialogHeader>
+          {renderDialogForm(handleUpdateSchedule)}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+        setIsAddDialogOpen(open);
+        if (!open) form.reset();
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Engadir xornada</DialogTitle>
+            <DialogDescription>
+              Introduce os datos da nova xornada de traballo
+            </DialogDescription>
+          </DialogHeader>
+          {renderDialogForm(handleAddSchedule, true)}
+        </DialogContent>
+      </Dialog>
       
       <Card>
         <CardContent className="p-4 overflow-auto">

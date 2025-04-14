@@ -550,9 +550,11 @@ export const getWorkdayScheduleById = async (id: string): Promise<WorkdaySchedul
 
 export const addWorkdaySchedule = async (schedule: Partial<WorkdaySchedule>): Promise<WorkdaySchedule> => {
   try {
-    // Format the data for the API
-    const scheduleToSend = {
-      type: schedule.type || 'Standard',
+    console.log('Adding workday schedule:', schedule);
+    
+    // Format the data for the API with exactly the fields the server expects
+    return await apiRequest<WorkdaySchedule>('/workday_schedules', 'POST', {
+      type: schedule.type,
       startDate: schedule.startDate,
       endDate: schedule.endDate,
       mondayHours: schedule.mondayHours,
@@ -560,11 +562,7 @@ export const addWorkdaySchedule = async (schedule: Partial<WorkdaySchedule>): Pr
       wednesdayHours: schedule.wednesdayHours,
       thursdayHours: schedule.thursdayHours,
       fridayHours: schedule.fridayHours
-    };
-    
-    console.log('Adding workday schedule:', scheduleToSend);
-    
-    return await apiRequest<WorkdaySchedule>('/workday_schedules', 'POST', scheduleToSend);
+    });
   } catch (error) {
     handleFetchError(error, 'Error al crear horario de trabajo:');
     throw error;
@@ -574,8 +572,8 @@ export const addWorkdaySchedule = async (schedule: Partial<WorkdaySchedule>): Pr
 export const updateWorkdaySchedule = async (id: string, schedule: Partial<WorkdaySchedule>): Promise<WorkdaySchedule> => {
   try {
     // Format the data for the API
-    const scheduleToSend = {
-      type: schedule.type || 'Standard',
+    return await apiRequest<WorkdaySchedule>(`/workday_schedules/${id}`, 'PUT', {
+      type: schedule.type,
       startDate: schedule.startDate,
       endDate: schedule.endDate,
       mondayHours: schedule.mondayHours,
@@ -583,9 +581,7 @@ export const updateWorkdaySchedule = async (id: string, schedule: Partial<Workda
       wednesdayHours: schedule.wednesdayHours,
       thursdayHours: schedule.thursdayHours,
       fridayHours: schedule.fridayHours
-    };
-    
-    return await apiRequest<WorkdaySchedule>(`/workday_schedules/${id}`, 'PUT', scheduleToSend);
+    });
   } catch (error) {
     handleFetchError(error, `Error al actualizar horario de trabajo ${id}:`);
     throw error;

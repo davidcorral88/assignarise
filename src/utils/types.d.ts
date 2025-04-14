@@ -89,10 +89,11 @@ export interface VacationDay {
 
 export interface WorkdaySchedule {
   id?: string;
-  name?: string; // Make name optional since we're now using type
-  start_time: string;
-  end_time: string;
-  days_of_week: number[];
+  name?: string; 
+  type?: string;
+  start_time?: string;
+  end_time?: string;
+  days_of_week?: number[];
   monday?: boolean;
   tuesday?: boolean;
   wednesday?: boolean;
@@ -104,7 +105,6 @@ export interface WorkdaySchedule {
   endTime?: string;
   breakStart?: string;
   breakEnd?: string;
-  type?: string;
   startDate?: string;
   endDate?: string;
   mondayHours?: number;
