@@ -142,7 +142,13 @@ const AbsencesCalendar = () => {
     }
     
     try {
-      await removeVacationDay(absence.userId, absence.date);
+      const userId = typeof absence.userId === 'number' ? absence.userId : parseInt(absence.userId as unknown as string);
+      
+      const formattedDate = format(parseISO(absence.date), 'yyyy-MM-dd');
+      
+      console.log(`Attempting to delete absence for user ${userId} on date ${formattedDate}`);
+      
+      await removeVacationDay(userId, formattedDate);
       
       setAbsences(absences.filter(a => 
         !(a.userId === absence.userId && a.date === absence.date)
@@ -376,8 +382,8 @@ const AbsencesCalendar = () => {
                               <div className="font-medium">
                                 {format(parseISO(absence.date), 'dd/MM/yyyy', { locale: gl })}
                               </div>
-                              {absence.reason && (
-                                <div className="text-sm opacity-80">{absence.reason}</div>
+                              {absenceReason && (
+                                <div className="text-sm opacity-80">{absenceReason}</div>
                               )}
                             </div>
                             <div className="flex items-center gap-2">

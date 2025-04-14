@@ -69,8 +69,20 @@ router.delete('/:userId/:date', async (req, res) => {
   try {
     const { userId, date } = req.params;
     
+    // Validate that userId is provided and is a number
+    if (!userId || isNaN(parseInt(userId))) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+    
+    // Validate that date is provided
+    if (!date) {
+      return res.status(400).json({ error: 'Date is required' });
+    }
+    
+    console.log(`Attempting to delete vacation day for user ${userId} on date ${date}`);
+    
     const query = 'DELETE FROM vacation_days WHERE user_id = $1 AND date = $2 RETURNING *';
-    const values = [userId, date];
+    const values = [parseInt(userId), date];
     
     const result = await pool.query(query, values);
     

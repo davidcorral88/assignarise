@@ -503,7 +503,21 @@ export const addVacationDay = async (vacationDay: VacationDay): Promise<Vacation
 
 export const removeVacationDay = async (userId: number, date: string): Promise<void> => {
   try {
+    // Ensure userId is a number and properly validated
+    if (typeof userId !== 'number' || isNaN(userId)) {
+      throw new Error(`Invalid user ID: ${userId}`);
+    }
+    
+    // Ensure date is properly formatted
+    if (!date || date.trim() === '') {
+      throw new Error('Invalid date: Empty date string');
+    }
+    
+    // Ensure we're using just the date portion (YYYY-MM-DD)
     const formattedDate = date.includes('T') ? date.split('T')[0] : date;
+    
+    console.log(`Deleting vacation day for user ${userId} on date ${formattedDate}`);
+    
     await apiRequest<void>(`/vacation_days/${userId}/${formattedDate}`, 'DELETE');
   } catch (error) {
     handleFetchError(error, `Error al eliminar día de vacaciones para usuario ${userId} en fecha ${date}:`);
