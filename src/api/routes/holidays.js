@@ -91,15 +91,15 @@ router.delete('/:date', async (req, res) => {
       return res.status(400).json({ error: 'Invalid date format' });
     }
     
-    // IMPROVED: Use multiple possible methods to find the holiday
-    console.log('Trying multiple query methods to find holiday');
+    // First, verify if holiday exists with this date
+    console.log('Checking if holiday exists with date:', formattedDate);
     
     // Method 1: Direct date comparison
     const directQuery = "SELECT * FROM holidays WHERE date::date = $1::date";
     let result = await pool.query(directQuery, [formattedDate]);
-    console.log('Direct query result:', result.rows);
+    console.log('Holiday check result:', result.rows);
     
-    // Method 2: Text format comparison
+    // Method 2: Text format comparison if first method doesn't work
     if (result.rowCount === 0) {
       const textQuery = "SELECT * FROM holidays WHERE TO_CHAR(date, 'YYYY-MM-DD') = $1";
       result = await pool.query(textQuery, [formattedDate]);
@@ -129,22 +129,23 @@ router.delete('/:date', async (req, res) => {
       }
     }
     
-    // Method 4: Get all holidays and find close matches for debugging
+    // Get all holidays for debugging
     const allHolidays = await pool.query('SELECT * FROM holidays');
-    console.log('All holidays for debugging:', allHolidays.rows);
+    console.log('Debug query result:', allHolidays.rows);
     
     if (result.rowCount === 0) {
       console.log('No holiday found for date:', formattedDate);
       return res.status(404).json({ error: 'Holiday not found' });
     }
     
-    // Execute deletion using the found holiday's ID or date
+    // Use the found holiday for deletion
     const holidayToDelete = result.rows[0];
     console.log('Holiday found for deletion:', holidayToDelete);
     
-    // Delete using the exact date from the database record
-    const deleteQuery = 'DELETE FROM holidays WHERE id = $1 RETURNING *';
-    const deleteResult = await pool.query(deleteQuery, [holidayToDelete.id]);
+    // Delete using the date from the database record as it is the primary key
+    // NOT using id as it doesn't exist in the table
+    const deleteQuery = 'DELETE FROM holidays WHERE date = $1 RETURNING *';
+    const deleteResult = await pool.query(deleteQuery, [holidayToDelete.date]);
     
     console.log('Delete result:', deleteResult.rows);
     
@@ -179,7 +180,7 @@ router.put('/:date', async (req, res) => {
     
     console.log('Formatted dates:', { old: oldFormattedDate, new: newFormattedDate });
     
-    // FIXED: Use the same improved query format for checking
+    // Use the same improved query format for checking
     const checkQuery = 'SELECT * FROM holidays WHERE date::date = $1::date';
     const checkResult = await pool.query(checkQuery, [oldFormattedDate]);
     console.log('Holiday check result:', checkResult.rows);
@@ -193,8 +194,8 @@ router.put('/:date', async (req, res) => {
     await pool.query('BEGIN');
     
     // Delete the old holiday
-    const deleteQuery = 'DELETE FROM holidays WHERE date::date = $1::date';
-    const deleteResult = await pool.query(deleteQuery, [oldFormattedDate]);
+    const deleteQuery = 'DELETE FROM holidays WHERE date = $1';
+    const deleteResult = await pool.query(deleteQuery, [checkResult.rows[0].date]);
     
     console.log('Delete result in update:', deleteResult);
     
