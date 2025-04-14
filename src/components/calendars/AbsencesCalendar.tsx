@@ -88,18 +88,31 @@ const AbsencesCalendar = () => {
     try {
       setLoading(true);
       
-      // Create a vacation day entry for each day in the range
+      let successCount = 0;
+      const errors = [];
+      
+      // Create a vacation day entry for each day in the range - one by one
       for (const day of daysToApply) {
-        await addVacationDay({
-          userId,
-          date: format(day, 'yyyy-MM-dd'),
-          type: selectedAbsenceType,
-          reason: absenceReason || undefined
-        });
+        try {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          
+          // Only send the required fields to the API: userId, date, and type
+          await addVacationDay({
+            userId,
+            date: dateStr,
+            type: selectedAbsenceType,
+            reason: absenceReason || undefined
+          });
+          
+          successCount++;
+        } catch (err) {
+          console.error(`Error adding vacation day for date ${format(day, 'yyyy-MM-dd')}:`, err);
+          errors.push(format(day, 'dd/MM/yyyy'));
+        }
       }
       
       // Reload absences
-      const absencesData = await getVacationDays(userId);
+      const absencesData = await getVacationDays(parseInt(selectedUserId));
       
       // Filter absences for the selected year
       const filteredAbsences = absencesData.filter(absence => {
@@ -109,10 +122,18 @@ const AbsencesCalendar = () => {
       
       setAbsences(filteredAbsences);
       
-      toast({
-        title: 'Ausencias gardadas',
-        description: `${daysToApply.length} días de ausencia gardados para ${users.find(u => u.id === userId)?.name || 'o empregado'}`,
-      });
+      if (successCount > 0) {
+        toast({
+          title: 'Ausencias gardadas',
+          description: `${successCount} días de ausencia gardados para ${users.find(u => u.id === userId)?.name || 'o empregado'}${errors.length > 0 ? `. Fallaron ${errors.length} datas.` : ''}`,
+        });
+      } else {
+        toast({
+          title: 'Erro',
+          description: 'Non foi posible gardar as ausencias',
+          variant: 'destructive',
+        });
+      }
       
       // Reset states
       setRangeDialogOpen(false);

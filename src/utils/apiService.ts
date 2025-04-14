@@ -487,7 +487,15 @@ export const getVacationDays = async (userId?: number, year?: number): Promise<V
 
 export const addVacationDay = async (vacationDay: VacationDay): Promise<VacationDay> => {
   try {
-    return await apiRequest<VacationDay>('/vacation_days', 'POST', vacationDay);
+    // Ensure we're only sending the required fields to match the database schema
+    const payload = {
+      userId: vacationDay.userId,
+      date: vacationDay.date,
+      type: vacationDay.type || 'vacation',
+      reason: vacationDay.reason
+    };
+    
+    return await apiRequest<VacationDay>('/vacation_days', 'POST', payload);
   } catch (error) {
     handleFetchError(error, 'Error al crear día de vacaciones:');
     throw error;
@@ -496,7 +504,8 @@ export const addVacationDay = async (vacationDay: VacationDay): Promise<Vacation
 
 export const removeVacationDay = async (userId: number, date: string): Promise<void> => {
   try {
-    await apiRequest<void>(`/vacation_days/${userId}/${date}`, 'DELETE');
+    const formattedDate = date.includes('T') ? date.split('T')[0] : date;
+    await apiRequest<void>(`/vacation_days/${userId}/${formattedDate}`, 'DELETE');
   } catch (error) {
     handleFetchError(error, `Error al eliminar día de vacaciones para usuario ${userId} en fecha ${date}:`);
     throw error;

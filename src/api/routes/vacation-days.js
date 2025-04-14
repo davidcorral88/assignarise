@@ -36,4 +36,53 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Add a vacation day
+router.post('/', async (req, res) => {
+  try {
+    const { userId, date, type, reason } = req.body;
+    
+    // Validate required fields
+    if (!userId || !date || !type) {
+      return res.status(400).json({ error: 'Missing required fields: userId, date, and type are mandatory' });
+    }
+    
+    // Insert the vacation day
+    const query = 'INSERT INTO vacation_days (user_id, date, type, reason) VALUES ($1, $2, $3, $4) RETURNING *';
+    const values = [userId, date, type, reason || null];
+    
+    const result = await pool.query(query, values);
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error adding vacation day:', error);
+    
+    // Check for unique constraint violation
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'A vacation day already exists for this user on this date' });
+    }
+    
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete a vacation day
+router.delete('/:userId/:date', async (req, res) => {
+  try {
+    const { userId, date } = req.params;
+    
+    const query = 'DELETE FROM vacation_days WHERE user_id = $1 AND date = $2 RETURNING *';
+    const values = [userId, date];
+    
+    const result = await pool.query(query, values);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Vacation day not found' });
+    }
+    
+    res.json({ success: true, deleted: result.rows[0] });
+  } catch (error) {
+    console.error('Error deleting vacation day:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
