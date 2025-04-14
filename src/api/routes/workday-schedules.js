@@ -119,6 +119,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Type is required' });
     }
     
+    // Make sure start_date is never null by providing a default value (today's date)
+    const start_date = startDate || new Date().toISOString().split('T')[0];
+    // Make sure end_date is never null by providing a default value (end of year)
+    const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
+    
     // First get the next ID
     const idQuery = "SELECT MAX(id) as max_id FROM workday_schedules";
     const idResult = await pool.query(idQuery);
@@ -134,8 +139,8 @@ router.post('/', async (req, res) => {
     const values = [
       nextId,
       type,
-      startDate || null,
-      endDate || null,
+      start_date,
+      end_date,
       mondayHours || 8,
       tuesdayHours || 8,
       wednesdayHours || 8,
@@ -190,6 +195,11 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Type is required' });
     }
     
+    // Make sure start_date is never null by providing a default value (today's date)
+    const start_date = startDate || new Date().toISOString().split('T')[0];
+    // Make sure end_date is never null by providing a default value (end of year)
+    const end_date = endDate || new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
+    
     const query = `
       UPDATE workday_schedules 
       SET type = $1, start_date = $2, end_date = $3, monday_hours = $4, tuesday_hours = $5, 
@@ -200,8 +210,8 @@ router.put('/:id', async (req, res) => {
     
     const values = [
       type,
-      startDate || null,
-      endDate || null,
+      start_date,
+      end_date,
       mondayHours || 8,
       tuesdayHours || 8,
       wednesdayHours || 8,
