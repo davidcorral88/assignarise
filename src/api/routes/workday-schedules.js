@@ -33,7 +33,13 @@ router.get('/', async (req, res) => {
         thursday: days_of_week.includes(4),
         friday: days_of_week.includes(5),
         saturday: days_of_week.includes(6),
-        sunday: days_of_week.includes(7)
+        sunday: days_of_week.includes(7),
+        // Add hours for each day
+        mondayHours: schedule.monday_hours || null,
+        tuesdayHours: schedule.tuesday_hours || null,
+        wednesdayHours: schedule.wednesday_hours || null,
+        thursdayHours: schedule.thursday_hours || null,
+        fridayHours: schedule.friday_hours || null
       };
     });
     
@@ -80,7 +86,12 @@ router.get('/:id', async (req, res) => {
       thursday: days_of_week.includes(4),
       friday: days_of_week.includes(5),
       saturday: days_of_week.includes(6),
-      sunday: days_of_week.includes(7)
+      sunday: days_of_week.includes(7),
+      mondayHours: schedule.monday_hours || null,
+      tuesdayHours: schedule.tuesday_hours || null,
+      wednesdayHours: schedule.wednesday_hours || null,
+      thursdayHours: schedule.thursday_hours || null,
+      fridayHours: schedule.friday_hours || null
     };
     
     res.json(formattedSchedule);
@@ -100,7 +111,12 @@ router.post('/', async (req, res) => {
       end_time, 
       breakStart, 
       breakEnd, 
-      days_of_week 
+      days_of_week,
+      mondayHours,
+      tuesdayHours,
+      wednesdayHours,
+      thursdayHours,
+      fridayHours
     } = req.body;
     
     // Validate required fields
@@ -122,8 +138,9 @@ router.post('/', async (req, res) => {
     
     const query = `
       INSERT INTO workday_schedules 
-      (name, type, start_time, end_time, break_start, break_end, days_of_week) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      (name, type, start_time, end_time, break_start, break_end, days_of_week,
+       monday_hours, tuesday_hours, wednesday_hours, thursday_hours, friday_hours) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
       RETURNING *
     `;
     
@@ -134,7 +151,12 @@ router.post('/', async (req, res) => {
       end_time,
       breakStart || null,
       breakEnd || null,
-      JSON.stringify(days_of_week)
+      JSON.stringify(days_of_week),
+      mondayHours || null,
+      tuesdayHours || null,
+      wednesdayHours || null,
+      thursdayHours || null,
+      fridayHours || null
     ];
     
     const result = await pool.query(query, values);
@@ -163,7 +185,12 @@ router.post('/', async (req, res) => {
       thursday: parsedDays.includes(4),
       friday: parsedDays.includes(5),
       saturday: parsedDays.includes(6),
-      sunday: parsedDays.includes(7)
+      sunday: parsedDays.includes(7),
+      mondayHours: schedule.monday_hours || null,
+      tuesdayHours: schedule.tuesday_hours || null,
+      wednesdayHours: schedule.wednesday_hours || null,
+      thursdayHours: schedule.thursday_hours || null,
+      fridayHours: schedule.friday_hours || null
     };
     
     res.status(201).json(formattedSchedule);
@@ -184,7 +211,12 @@ router.put('/:id', async (req, res) => {
       end_time, 
       breakStart, 
       breakEnd, 
-      days_of_week 
+      days_of_week,
+      mondayHours,
+      tuesdayHours,
+      wednesdayHours,
+      thursdayHours,
+      fridayHours
     } = req.body;
     
     // Validate required fields
@@ -207,8 +239,10 @@ router.put('/:id', async (req, res) => {
     const query = `
       UPDATE workday_schedules 
       SET name = $1, type = $2, start_time = $3, end_time = $4, 
-          break_start = $5, break_end = $6, days_of_week = $7
-      WHERE id = $8
+          break_start = $5, break_end = $6, days_of_week = $7,
+          monday_hours = $8, tuesday_hours = $9, wednesday_hours = $10,
+          thursday_hours = $11, friday_hours = $12
+      WHERE id = $13
       RETURNING *
     `;
     
@@ -220,6 +254,11 @@ router.put('/:id', async (req, res) => {
       breakStart || null,
       breakEnd || null,
       JSON.stringify(days_of_week),
+      mondayHours || null,
+      tuesdayHours || null,
+      wednesdayHours || null,
+      thursdayHours || null,
+      fridayHours || null,
       id
     ];
     
@@ -254,7 +293,12 @@ router.put('/:id', async (req, res) => {
       thursday: parsedDays.includes(4),
       friday: parsedDays.includes(5),
       saturday: parsedDays.includes(6),
-      sunday: parsedDays.includes(7)
+      sunday: parsedDays.includes(7),
+      mondayHours: schedule.monday_hours || null,
+      tuesdayHours: schedule.tuesday_hours || null,
+      wednesdayHours: schedule.wednesday_hours || null,
+      thursdayHours: schedule.thursday_hours || null,
+      fridayHours: schedule.friday_hours || null
     };
     
     res.json(formattedSchedule);

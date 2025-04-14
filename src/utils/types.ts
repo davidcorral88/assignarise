@@ -1,3 +1,4 @@
+
 export interface User {
   id: number;
   name: string;
@@ -109,6 +110,7 @@ export interface WorkdaySchedule {
   type?: string;
   startDate?: string;
   endDate?: string;
+  // Add specific hours for each day
   mondayHours?: number;
   tuesdayHours?: number;
   wednesdayHours?: number;
