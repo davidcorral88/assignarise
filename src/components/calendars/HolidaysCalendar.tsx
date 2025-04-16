@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
-import { format, parseISO, getYear, addMonths, startOfYear } from 'date-fns';
-import { gl } from 'date-fns/locale';
+import { format, parseISO, getYear, addMonths, startOfYear, addDays } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -75,8 +76,12 @@ const HolidaysCalendar = () => {
     }
   };
 
+  // Este es el cambio principal: ajustamos las fechas para evitar el problema del día anterior
   const holidayDates = new Set(holidays.map(holiday => {
-    return holiday.date.split('T')[0];
+    // Usamos parseISO para parsear correctamente la fecha ISO
+    const holidayDate = parseISO(holiday.date);
+    // Formateamos la fecha en formato yyyy-MM-dd para comparar correctamente
+    return format(holidayDate, 'yyyy-MM-dd');
   }));
 
   const handleAddHoliday = async (values: z.infer<typeof formSchema>) => {
@@ -400,13 +405,13 @@ const HolidaysCalendar = () => {
             <Card key={index}>
               <CardContent className="p-4">
                 <div className="text-center mb-2 font-medium">
-                  {format(month, 'MMMM yyyy', { locale: gl })}
+                  {format(month, 'MMMM yyyy', { locale: es })}
                 </div>
                 <Calendar
                   mode="single"
                   month={month}
                   className="rounded-md border w-full"
-                  locale={gl}
+                  locale={es}
                   modifiers={{
                     holiday: (date) => {
                       const dateStr = format(date, 'yyyy-MM-dd');
@@ -449,7 +454,7 @@ const HolidaysCalendar = () => {
                       .map(holiday => (
                         <TableRow key={holiday.date}>
                           <TableCell>
-                            {format(parseISO(holiday.date), 'dd/MM/yyyy', { locale: gl })}
+                            {format(parseISO(holiday.date), 'dd/MM/yyyy', { locale: es })}
                           </TableCell>
                           <TableCell>{holiday.name}</TableCell>
                           <TableCell className="text-right">
