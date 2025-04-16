@@ -55,12 +55,12 @@ router.get('/:id', async (req, res) => {
 // Create user
 router.post('/', async (req, res) => {
   try {
-    const { id, name, email, role, avatar, active, password } = req.body;
+    const { id, name, email, role, avatar, active, password, phone, emailATSXPTPG, organization } = req.body;
     
     // Ensure id is treated as an integer
     const numericId = parseInt(id, 10);
     
-    console.log('Creating new user:', { id: numericId, name, email, role });
+    console.log('Creating new user:', { id: numericId, name, email, role, organization });
     
     // Start a transaction
     const client = await pool.connect();
@@ -69,8 +69,8 @@ router.post('/', async (req, res) => {
       
       // Insert the user
       const userResult = await client.query(
-        'INSERT INTO users (id, name, email, role, avatar, active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-        [numericId, name, email, role, avatar, active || true]
+        'INSERT INTO users (id, name, email, role, avatar, active, phone, "emailATSXPTPG", organization) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+        [numericId, name, email, role, avatar, active || true, phone || null, emailATSXPTPG || null, organization || null]
       );
       
       // If password is provided, hash it and store it in user_passwords table
@@ -107,7 +107,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, avatar, active } = req.body;
+    const { name, email, role, avatar, active, phone, emailATSXPTPG, organization } = req.body;
     
     // Ensure id is an integer
     const numericId = parseInt(id, 10);
@@ -116,11 +116,11 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid user ID' });
     }
     
-    console.log('Updating user:', { id: numericId, name, email, role });
+    console.log('Updating user:', { id: numericId, name, email, role, organization });
     
     const result = await pool.query(
-      'UPDATE users SET name = $1, email = $2, role = $3, avatar = $4, active = $5 WHERE id = $6 RETURNING *',
-      [name, email, role, avatar, active, numericId]
+      'UPDATE users SET name = $1, email = $2, role = $3, avatar = $4, active = $5, phone = $6, "emailATSXPTPG" = $7, organization = $8 WHERE id = $9 RETURNING *',
+      [name, email, role, avatar, active, phone || null, emailATSXPTPG || null, organization || null, numericId]
     );
     
     if (result.rows.length === 0) {
