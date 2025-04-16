@@ -135,12 +135,11 @@ const AbsencesCalendar = () => {
   };
 
   const handleDeleteAbsence = async (absence: VacationDay) => {
-    if (!confirm(`¿Seguro que desea eliminar esta ausencia de ${format(parseISO(absence.date), 'dd/MM/yyyy', { locale: gl })}?`)) {
+    if (!confirm(`¿Seguro que desea eliminar esta ausencia de ${format(parseISO(absence.date), 'dd/MM/yyyy', { locale: es })}?`)) {
       return;
     }
     
     try {
-      // Ensure we have a valid numerical userId - use Number() instead of parseInt for more reliable conversion
       let userId: number;
       
       if (typeof absence.userId === 'number') {
@@ -151,7 +150,6 @@ const AbsencesCalendar = () => {
           throw new Error(`Invalid user ID: ${absence.userId}`);
         }
       } else {
-        // If userId is undefined or another type
         userId = Number(selectedUserId);
         if (isNaN(userId)) {
           throw new Error('Invalid or missing user ID');
@@ -427,7 +425,7 @@ const AbsencesCalendar = () => {
             {selectedDateRange && selectedDateRange.from && selectedDateRange.to && (
               <div className="text-center text-sm">
                 <span className="font-medium">Datas seleccionadas: </span>
-                {format(selectedDateRange.from, 'dd/MM/yyyy', { locale: gl })} - {format(selectedDateRange.to, 'dd/MM/yyyy', { locale: gl })}
+                {format(selectedDateRange.from, 'dd/MM/yyyy', { locale: es })} - {format(selectedDateRange.to, 'dd/MM/yyyy', { locale: es })}
                 <p className="text-muted-foreground mt-1">Total: {
                   eachDayOfInterval({
                     start: selectedDateRange.from,
