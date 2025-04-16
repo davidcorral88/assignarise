@@ -6,7 +6,7 @@ import { getUserById, addUser, updateUser, getNextUserId } from '../utils/dataSe
 import { User, UserRole } from '../utils/types';
 import { toast } from '@/components/ui/use-toast';
 
-type OrganismType = 'Xunta' | 'iPlan' | undefined;
+type OrganizationType = 'Xunta' | 'iPlan' | undefined;
 
 const UserForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +24,7 @@ const UserForm = () => {
   const [avatar, setAvatar] = useState('');
   const [phone, setPhone] = useState('');
   const [emailATSXPTPG, setEmailATSXPTPG] = useState('');
-  const [organism, setOrganism] = useState<OrganismType>(undefined);
+  const [organization, setOrganization] = useState<OrganizationType>(undefined);
   
   // Load user data if in edit mode
   useEffect(() => {
@@ -43,8 +43,8 @@ const UserForm = () => {
             setAvatar(userData.avatar || '');
             setPhone(userData.phone || '');
             setEmailATSXPTPG(userData.emailATSXPTPG || '');
-            // Cast as OrganismType to ensure type safety
-            setOrganism(userData.organism as OrganismType);
+            // Use organization field from the database
+            setOrganization(userData.organization as OrganizationType || userData.organism as OrganizationType);
           }
         } catch (error) {
           console.error('Error loading user:', error);
@@ -107,7 +107,7 @@ const UserForm = () => {
       avatar: avatar || null,
       phone: phone || '',
       emailATSXPTPG: emailATSXPTPG || '',
-      organism: organism || undefined,
+      organization: organization || undefined,
     };
     
     try {
@@ -272,14 +272,14 @@ const UserForm = () => {
           </div>
           
           <div className="mb-4">
-            <label htmlFor="organism" className="block text-gray-700 text-sm font-bold mb-2">
+            <label htmlFor="organization" className="block text-gray-700 text-sm font-bold mb-2">
               Organismo:
             </label>
             <select
-              id="organism"
+              id="organization"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={organism || ''}
-              onChange={(e) => setOrganism(e.target.value as OrganismType)}
+              value={organization || ''}
+              onChange={(e) => setOrganization(e.target.value as OrganizationType)}
             >
               <option value="">Selecciona un organismo</option>
               <option value="Xunta">Xunta</option>

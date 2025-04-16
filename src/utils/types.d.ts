@@ -11,7 +11,8 @@ export interface User {
   avatar?: string | null;
   phone?: string;
   emailATSXPTPG?: string;
-  organism?: string;
+  organization?: string;
+  organism?: string; // Keep for backward compatibility
   email_notification?: boolean;
 }
 

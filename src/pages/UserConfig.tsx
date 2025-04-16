@@ -51,6 +51,10 @@ const UserConfig = () => {
                   <p>{currentUser?.role === 'admin' ? 'Administrador' : 
                       currentUser?.role === 'director' ? 'Director' : 'Traballador'}</p>
                 </div>
+                <div>
+                  <p className="font-medium">Organización:</p>
+                  <p>{currentUser?.organization || currentUser?.organism || 'Non especificado'}</p>
+                </div>
               </div>
             </div>
           </CardContent>

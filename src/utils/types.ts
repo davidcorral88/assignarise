@@ -14,7 +14,8 @@ export interface User {
   passwordResetExpires?: Date;
   phone?: string;
   emailATSXPTPG?: string;
-  organism?: string;
+  organization?: string;
+  organism?: string; // Keep for backward compatibility
   email_notification?: boolean;
 }
 
