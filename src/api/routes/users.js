@@ -67,11 +67,53 @@ router.post('/', async (req, res) => {
     try {
       await client.query('BEGIN');
       
+      // Check what columns exist in the users table
+      const columnsResult = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users'
+      `);
+      
+      const columns = columnsResult.rows.map(row => row.column_name);
+      const hasEmailATSXPTPG = columns.includes('emailATSXPTPG');
+      const hasOrganization = columns.includes('organization');
+      
+      console.log('Available columns:', columns);
+      console.log('Has emailATSXPTPG column:', hasEmailATSXPTPG);
+      console.log('Has organization column:', hasOrganization);
+      
+      // Build dynamic query based on available columns
+      let fields = ['id', 'name', 'email', 'role', 'avatar', 'active', 'phone'];
+      let placeholders = ['$1', '$2', '$3', '$4', '$5', '$6', '$7'];
+      let values = [numericId, name, email, role, avatar, active || true, phone || null];
+      
+      let paramCounter = 8;
+      
+      if (hasEmailATSXPTPG) {
+        fields.push('"emailATSXPTPG"');
+        placeholders.push(`$${paramCounter}`);
+        values.push(emailATSXPTPG || null);
+        paramCounter++;
+      }
+      
+      if (hasOrganization) {
+        fields.push('organization');
+        placeholders.push(`$${paramCounter}`);
+        values.push(organization || null);
+        paramCounter++;
+      }
+      
+      const insertQuery = `
+        INSERT INTO users (${fields.join(', ')}) 
+        VALUES (${placeholders.join(', ')}) 
+        RETURNING *
+      `;
+      
+      console.log('Insert query:', insertQuery);
+      console.log('Values:', values);
+      
       // Insert the user
-      const userResult = await client.query(
-        'INSERT INTO users (id, name, email, role, avatar, active, phone, "emailATSXPTPG", organization) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
-        [numericId, name, email, role, avatar, active || true, phone || null, emailATSXPTPG || null, organization || null]
-      );
+      const userResult = await client.query(insertQuery, values);
       
       // If password is provided, hash it and store it in user_passwords table
       if (password) {
@@ -120,31 +162,56 @@ router.put('/:id', async (req, res) => {
     
     // Debug the organization value to ensure it's reaching the server correctly
     console.log('Organization value received:', organization);
+    console.log('EmailATSXPTPG value received:', emailATSXPTPG);
     
     try {
-      // First check if the column exists
-      const checkColumnResult = await pool.query(`
+      // Check what columns exist in the users table
+      const columnsResult = await pool.query(`
         SELECT column_name 
         FROM information_schema.columns 
-        WHERE table_name = 'users' AND column_name = 'organization'
+        WHERE table_name = 'users'
       `);
       
-      const organizationColumnExists = checkColumnResult.rows.length > 0;
-      console.log('Organization column exists:', organizationColumnExists);
+      const columns = columnsResult.rows.map(row => row.column_name);
+      const hasEmailATSXPTPG = columns.includes('emailATSXPTPG');
+      const hasOrganization = columns.includes('organization');
       
-      let result;
-      if (organizationColumnExists) {
-        result = await pool.query(
-          'UPDATE users SET name = $1, email = $2, role = $3, avatar = $4, active = $5, phone = $6, "emailATSXPTPG" = $7, organization = $8 WHERE id = $9 RETURNING *',
-          [name, email, role, avatar, active, phone || null, emailATSXPTPG || null, organization, numericId]
-        );
-      } else {
-        // If organization column doesn't exist, use the old query
-        result = await pool.query(
-          'UPDATE users SET name = $1, email = $2, role = $3, avatar = $4, active = $5, phone = $6, "emailATSXPTPG" = $7 WHERE id = $8 RETURNING *',
-          [name, email, role, avatar, active, phone || null, emailATSXPTPG || null, numericId]
-        );
+      console.log('Available columns:', columns);
+      console.log('Has emailATSXPTPG column:', hasEmailATSXPTPG);
+      console.log('Has organization column:', hasOrganization);
+      
+      // Build dynamic SET part of the query based on available columns
+      let setFields = ['name = $1', 'email = $2', 'role = $3', 'avatar = $4', 'active = $5', 'phone = $6'];
+      let values = [name, email, role, avatar, active, phone || null];
+      
+      let paramCounter = 7;
+      
+      if (hasEmailATSXPTPG) {
+        setFields.push(`"emailATSXPTPG" = $${paramCounter}`);
+        values.push(emailATSXPTPG || null);
+        paramCounter++;
       }
+      
+      if (hasOrganization) {
+        setFields.push(`organization = $${paramCounter}`);
+        values.push(organization || null);
+        paramCounter++;
+      }
+      
+      // Add user ID as the last parameter
+      values.push(numericId);
+      
+      const updateQuery = `
+        UPDATE users 
+        SET ${setFields.join(', ')} 
+        WHERE id = $${paramCounter}
+        RETURNING *
+      `;
+      
+      console.log('Update query:', updateQuery);
+      console.log('Values:', values);
+      
+      const result = await pool.query(updateQuery, values);
       
       if (result.rows.length === 0) {
         return res.status(404).json({ error: 'User not found' });
