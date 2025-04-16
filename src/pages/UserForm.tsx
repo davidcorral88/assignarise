@@ -45,6 +45,10 @@ const UserForm = () => {
             setEmailATSXPTPG(userData.emailATSXPTPG || '');
             // Use organization field from the database
             setOrganization(userData.organization as OrganizationType || userData.organism as OrganizationType);
+            
+            // Debug statement to verify that organization data is being loaded
+            console.log('User data loaded:', userData);
+            console.log('Organization value:', userData.organization || userData.organism);
           }
         } catch (error) {
           console.error('Error loading user:', error);
@@ -109,6 +113,9 @@ const UserForm = () => {
       emailATSXPTPG: emailATSXPTPG || '',
       organization: organization || undefined,
     };
+    
+    // Log the data being submitted
+    console.log('Submitting user data:', userData);
     
     try {
       if (isEditMode) {
@@ -273,7 +280,7 @@ const UserForm = () => {
           
           <div className="mb-4">
             <label htmlFor="organization" className="block text-gray-700 text-sm font-bold mb-2">
-              Organismo:
+              Organización:
             </label>
             <select
               id="organization"
@@ -281,7 +288,7 @@ const UserForm = () => {
               value={organization || ''}
               onChange={(e) => setOrganization(e.target.value as OrganizationType)}
             >
-              <option value="">Selecciona un organismo</option>
+              <option value="">Selecciona unha organización</option>
               <option value="Xunta">Xunta</option>
               <option value="iPlan">iPlan</option>
             </select>
