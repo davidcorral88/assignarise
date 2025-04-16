@@ -43,12 +43,14 @@ const UserForm = () => {
             setAvatar(userData.avatar || '');
             setPhone(userData.phone || '');
             setEmailATSXPTPG(userData.emailATSXPTPG || '');
-            // Use organization field from the database
-            setOrganization(userData.organization as OrganizationType || userData.organism as OrganizationType);
+            
+            // Properly handle organization value - try multiple possible field names
+            const orgValue = userData.organization || userData.organism;
+            setOrganization(orgValue as OrganizationType);
             
             // Debug statement to verify that organization data is being loaded
             console.log('User data loaded:', userData);
-            console.log('Organization value:', userData.organization || userData.organism);
+            console.log('Organization value:', orgValue);
           }
         } catch (error) {
           console.error('Error loading user:', error);
@@ -142,6 +144,11 @@ const UserForm = () => {
       });
     }
   };
+  
+  // Debug organization field
+  useEffect(() => {
+    console.log('Organization state value:', organization);
+  }, [organization]);
   
   return (
     <Layout>
@@ -286,7 +293,7 @@ const UserForm = () => {
               id="organization"
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               value={organization || ''}
-              onChange={(e) => setOrganization(e.target.value as OrganizationType)}
+              onChange={(e) => setOrganization(e.target.value === '' ? undefined : e.target.value as OrganizationType)}
             >
               <option value="">Selecciona unha organización</option>
               <option value="Xunta">Xunta</option>
