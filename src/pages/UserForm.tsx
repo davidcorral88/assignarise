@@ -44,13 +44,23 @@ const UserForm = () => {
             setPhone(userData.phone || '');
             setEmailATSXPTPG(userData.emailATSXPTPG || '');
             
-            // Properly handle organization value - try multiple possible field names
+            // Debug the raw userData to see what we're getting
+            console.log('Raw user data from API:', userData);
+            
+            // Correctly handle organization field, looking at both possible fields
+            // and ensure we properly cast it as OrganizationType
             const orgValue = userData.organization || userData.organism;
-            setOrganization(orgValue as OrganizationType);
+            console.log('Organization value from API data:', orgValue);
+            
+            if (orgValue === 'Xunta' || orgValue === 'iPlan') {
+              setOrganization(orgValue);
+            } else {
+              setOrganization(undefined);
+            }
             
             // Debug statement to verify that organization data is being loaded
             console.log('User data loaded:', userData);
-            console.log('Organization value:', orgValue);
+            console.log('Organization state after setting:', orgValue);
           }
         } catch (error) {
           console.error('Error loading user:', error);
