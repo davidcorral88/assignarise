@@ -15,6 +15,7 @@ export interface User {
   phone?: string;
   emailATSXPTPG?: string;
   organism?: string;
+  email_notification?: boolean;
 }
 
 export type UserRole = 'admin' | 'director' | 'worker';

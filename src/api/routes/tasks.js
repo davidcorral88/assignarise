@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -174,9 +175,10 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
         continue;
       }
       
-      // Send notification email
+      // Send notification email - Using direct fetch to ensure the request is made
       try {
-        await fetch(`http://localhost:3000/api/email/send-task-assignment`, {
+        console.log(`Sending email notification for task ${taskId} to user ${userId} with ${hours} hours`);
+        const response = await fetch('http://localhost:3000/api/email/send-task-assignment', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -189,7 +191,14 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
           })
         });
         
-        console.log(`Notification sent for task ${taskId} to user ${userId}`);
+        const result = await response.json();
+        console.log(`Email notification result:`, result);
+        
+        if (response.ok) {
+          console.log(`Notification sent for task ${taskId} to user ${userId}`);
+        } else {
+          console.error(`Failed to send notification for task ${taskId} to user ${userId}:`, result.error);
+        }
       } catch (error) {
         console.error(`Failed to send notification for task ${taskId} to user ${userId}:`, error);
       }
@@ -373,8 +382,34 @@ router.put('/:id', async (req, res) => {
       }
     }
     
-    // Find new assignments (not in current assignments)
+    // Find new or modified assignments
     const newAssignments = [];
+    
+    if (assignments && assignments.length > 0) {
+      // Collect new and modified assignments before deleting the old ones
+      for (const assignment of assignments) {
+        // Extract userId and ensure it's a number
+        const userIdInput = assignment.user_id || assignment.userId;
+        const userId = typeof userIdInput === 'string' ? parseInt(userIdInput, 10) : userIdInput;
+        
+        // Extract allocatedHours
+        const hours = assignment.allocatedHours || assignment.allocated_hours;
+        
+        if (userId === undefined || userId === null) {
+          console.error('Missing user ID in assignment:', assignment);
+          continue;
+        }
+        
+        // Check if this is a new assignment or modified hours
+        const existingAssignment = currentAssignments.find(a => a.user_id === userId);
+        if (!existingAssignment || existingAssignment.allocatedHours !== hours) {
+          newAssignments.push({
+            user_id: userId,
+            allocatedHours: hours
+          });
+        }
+      }
+    }
     
     // Update assignments (delete and insert)
     await client.query('DELETE FROM task_assignments WHERE task_id = $1', [taskId]);
@@ -399,15 +434,6 @@ router.put('/:id', async (req, res) => {
           'INSERT INTO task_assignments (task_id, user_id, allocated_hours) VALUES ($1, $2, $3)',
           [taskId, userId, hours]
         );
-        
-        // Check if this is a new assignment or modified hours
-        const existingAssignment = currentAssignments.find(a => a.user_id === userId);
-        if (!existingAssignment || existingAssignment.allocatedHours !== hours) {
-          newAssignments.push({
-            user_id: userId,
-            allocatedHours: hours
-          });
-        }
       }
     }
     
@@ -426,9 +452,11 @@ router.put('/:id', async (req, res) => {
     task.startDate = task.start_date;
     task.dueDate = task.due_date;
     
+    console.log('New assignments to notify:', newAssignments.length, newAssignments);
+    
     // Send email notifications for new assignments after successful commit
     if (newAssignments.length > 0) {
-      sendAssignmentNotifications(taskId, newAssignments);
+      await sendAssignmentNotifications(taskId, newAssignments);
     }
     
     console.log('Task updated successfully:', task);
