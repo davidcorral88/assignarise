@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, eachDayOfInterval, isSameDay, addDays } from 'date-fns';
-import { gl } from 'date-fns/locale';
+import { es } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -236,7 +236,8 @@ const AbsencesCalendar = () => {
 
   const absenceMap = new Map<string, string>();
   absences.forEach(absence => {
-    const dateStr = absence.date.split('T')[0];
+    const absenceDate = parseISO(absence.date);
+    const dateStr = format(absenceDate, 'yyyy-MM-dd');
     absenceMap.set(dateStr, absence.type || 'vacacions');
   });
 
@@ -312,7 +313,7 @@ const AbsencesCalendar = () => {
                       showOutsideDays={false}
                       fixedWeeks
                       className="rounded-md border w-full"
-                      locale={gl}
+                      locale={es}
                       modifiers={{
                         vacacions: (date) => {
                           const dateStr = format(date, 'yyyy-MM-dd');
@@ -383,7 +384,7 @@ const AbsencesCalendar = () => {
                           >
                             <div>
                               <div className="font-medium">
-                                {format(parseISO(absence.date), 'dd/MM/yyyy', { locale: gl })}
+                                {format(parseISO(absence.date), 'dd/MM/yyyy', { locale: es })}
                               </div>
                               {absenceReason && (
                                 <div className="text-sm opacity-80">{absenceReason}</div>
