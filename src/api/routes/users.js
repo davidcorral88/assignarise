@@ -118,17 +118,44 @@ router.put('/:id', async (req, res) => {
     
     console.log('Updating user:', { id: numericId, name, email, role, organization });
     
-    const result = await pool.query(
-      'UPDATE users SET name = $1, email = $2, role = $3, avatar = $4, active = $5, phone = $6, "emailATSXPTPG" = $7, organization = $8 WHERE id = $9 RETURNING *',
-      [name, email, role, avatar, active, phone || null, emailATSXPTPG || null, organization || null, numericId]
-    );
+    // Debug the organization value to ensure it's reaching the server correctly
+    console.log('Organization value received:', organization);
     
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+    try {
+      // First check if the column exists
+      const checkColumnResult = await pool.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'organization'
+      `);
+      
+      const organizationColumnExists = checkColumnResult.rows.length > 0;
+      console.log('Organization column exists:', organizationColumnExists);
+      
+      let result;
+      if (organizationColumnExists) {
+        result = await pool.query(
+          'UPDATE users SET name = $1, email = $2, role = $3, avatar = $4, active = $5, phone = $6, "emailATSXPTPG" = $7, organization = $8 WHERE id = $9 RETURNING *',
+          [name, email, role, avatar, active, phone || null, emailATSXPTPG || null, organization, numericId]
+        );
+      } else {
+        // If organization column doesn't exist, use the old query
+        result = await pool.query(
+          'UPDATE users SET name = $1, email = $2, role = $3, avatar = $4, active = $5, phone = $6, "emailATSXPTPG" = $7 WHERE id = $8 RETURNING *',
+          [name, email, role, avatar, active, phone || null, emailATSXPTPG || null, numericId]
+        );
+      }
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      console.log('User updated successfully:', result.rows[0]);
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Database error during update:', error);
+      throw error;
     }
-    
-    console.log('User updated successfully:', result.rows[0]);
-    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ error: 'Internal server error' });
