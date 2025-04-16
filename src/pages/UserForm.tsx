@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -25,6 +24,7 @@ const UserForm = () => {
   const [phone, setPhone] = useState('');
   const [emailATSXPTPG, setEmailATSXPTPG] = useState('');
   const [organization, setOrganization] = useState<OrganizationType>(undefined);
+  const [emailNotification, setEmailNotification] = useState<'S' | 'N'>('N');
   
   // Load user data if in edit mode
   useEffect(() => {
@@ -61,6 +61,11 @@ const UserForm = () => {
             // Debug statement to verify that organization data is being loaded
             console.log('User data loaded:', userData);
             console.log('Organization state after setting:', orgValue);
+            
+            // Debug email notification value
+            console.log('Email notification value from API:', userData.email_notification);
+            
+            setEmailNotification(userData.email_notification === true ? 'S' : 'N');
           }
         } catch (error) {
           console.error('Error loading user:', error);
@@ -124,6 +129,7 @@ const UserForm = () => {
       phone: phone || '',
       emailATSXPTPG: emailATSXPTPG || '',
       organization: organization || undefined,
+      email_notification: emailNotification === 'S'
     };
     
     // Log the data being submitted
@@ -308,6 +314,21 @@ const UserForm = () => {
               <option value="">Selecciona unha organización</option>
               <option value="Xunta">Xunta</option>
               <option value="iPlan">iPlan</option>
+            </select>
+          </div>
+          
+          <div className="mb-4">
+            <label htmlFor="email_notification" className="block text-gray-700 text-sm font-bold mb-2">
+              Notificacións por email:
+            </label>
+            <select
+              id="email_notification"
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              value={emailNotification}
+              onChange={(e) => setEmailNotification(e.target.value as 'S' | 'N')}
+            >
+              <option value="S">Si</option>
+              <option value="N">Non</option>
             </select>
           </div>
           
