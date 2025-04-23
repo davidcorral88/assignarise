@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
@@ -12,8 +13,8 @@ interface WorkdayScheduleTableProps {
 }
 
 const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, onEdit, onDelete }) => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
 
   // Helper function to format day hours display
   const formatHours = (hours: number | undefined) => {

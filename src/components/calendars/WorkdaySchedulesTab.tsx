@@ -28,8 +28,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const WorkdaySchedulesTab = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
   
   const [schedules, setSchedules] = useState<WorkdaySchedule[]>([]);
   const [loading, setLoading] = useState(true);

@@ -27,8 +27,8 @@ const formSchema = z.object({
 });
 
 const HolidaysCalendar = () => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
   
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [holidays, setHolidays] = useState<Holiday[]>([]);
