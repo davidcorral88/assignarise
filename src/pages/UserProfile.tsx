@@ -129,81 +129,95 @@ const UserProfile = () => {
           )}
         </div>
         
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader className="pb-2">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={user.avatar || undefined} alt={user.name} />
-                  <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle className="text-2xl">{user.name}</CardTitle>
-                  <Badge variant="outline" className={getRoleBadgeClass(user.role)}>
-                    {user.role === 'admin' ? (
-                      <Shield className="mr-1 h-3 w-3" />
-                    ) : user.role === 'director' ? (
-                      <Shield className="mr-1 h-3 w-3" />
-                    ) : (
-                      <UserIcon className="mr-1 h-3 w-3" />
-                    )}
-                    {getRoleDisplayName(user.role)}
-                  </Badge>
-                  {user.active === false && (
-                    <Badge variant="outline" className="ml-2 bg-red-50 text-red-800 border-red-100">
-                      Inactivo
+        <div className="grid gap-6 max-w-4xl mx-auto">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={user.avatar || undefined} alt={user.name} />
+                    <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-2xl">{user.name}</CardTitle>
+                    <Badge variant="outline" className={getRoleBadgeClass(user.role)}>
+                      {user.role === 'admin' ? (
+                        <Shield className="mr-1 h-3 w-3" />
+                      ) : user.role === 'director' ? (
+                        <Shield className="mr-1 h-3 w-3" />
+                      ) : (
+                        <UserIcon className="mr-1 h-3 w-3" />
+                      )}
+                      {getRoleDisplayName(user.role)}
                     </Badge>
+                    {user.active === false && (
+                      <Badge variant="outline" className="ml-2 bg-red-50 text-red-800 border-red-100">
+                        Inactivo
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                {user.organization && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-100 flex items-center">
+                    <Building className="mr-1 h-3 w-3" />
+                    {user.organization}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            
+            <Separator />
+            
+            <CardContent className="pt-6">
+              <div className="grid gap-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Email</h3>
+                    <div className="flex items-start gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <p>{user.email}</p>
+                    </div>
+                  </div>
+                  
+                  {user.emailATSXPTPG && (
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Email ATSXPTPG</h3>
+                      <div className="flex items-start gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <p>{user.emailATSXPTPG}</p>
+                      </div>
+                    </div>
                   )}
-                </div>
-              </div>
-              {user.organization && (
-                <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-100 flex items-center">
-                  <Building className="mr-1 h-3 w-3" />
-                  {user.organization}
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          
-          <Separator />
-          
-          <CardContent className="pt-6">
-            <div className="grid md:grid-cols-2 gap-y-6 gap-x-8">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Email</h3>
-                <div className="flex items-start gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <p>{user.email}</p>
-                </div>
-              </div>
-              
-              {user.emailATSXPTPG && (
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Email ATSXPTPG</h3>
-                  <div className="flex items-start gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <p>{user.emailATSXPTPG}</p>
+                  
+                  {user.phone && (
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Teléfono</h3>
+                      <div className="flex items-start gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <p>{user.phone}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Estado</h3>
+                    <p>{user.active ? 'Activo' : 'Inactivo'}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Organización</h3>
+                    <p>{user.organization || 'Non especificada'}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-1">Notificacións por email</h3>
+                    <p>{user.email_notification ? 'Activadas' : 'Desactivadas'}</p>
                   </div>
                 </div>
-              )}
-              
-              {user.phone && (
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Teléfono</h3>
-                  <div className="flex items-start gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <p>{user.phone}</p>
-                  </div>
-                </div>
-              )}
-              
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Notificacións por email</h3>
-                <p>{user.email_notification ? 'Activadas' : 'Desactivadas'}</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );
