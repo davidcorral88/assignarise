@@ -7,13 +7,15 @@ import { Label } from '@/components/ui/label';
 import { TimePicker } from '@/components/ui/time-picker';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { Clock, Mail } from 'lucide-react';
+import { Clock, Mail, Play } from 'lucide-react';
+import { API_URL } from '@/utils/dbConfig';
 
 export const DailyReview = () => {
   const [enabled, setEnabled] = useState(false);
   const [reviewTime, setReviewTime] = useState('09:00');
   const [notificationEmails, setNotificationEmails] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export const DailyReview = () => {
 
   const fetchConfig = async () => {
     try {
-      const response = await fetch('/api/review_config');
+      const response = await fetch(`${API_URL}/review_config`);
       if (response.ok) {
         const data = await response.json();
         if (data.config) {
@@ -40,7 +42,7 @@ export const DailyReview = () => {
   const saveConfig = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/review_config', {
+      const response = await fetch(`${API_URL}/review_config`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,6 +71,44 @@ export const DailyReview = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const runDailyReview = async () => {
+    setIsRunning(true);
+    try {
+      // Ejecutar revisión manualmente
+      const response = await fetch(`${API_URL}/daily_review/run`, {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al ejecutar la revisión');
+      }
+      
+      const data = await response.json();
+      
+      if (data.executed) {
+        toast({
+          title: 'Revisión ejecutada',
+          description: `Se enviaron ${data.alertsSent} alertas de un total de ${data.totalUsers} usuarios revisados.`,
+        });
+      } else {
+        toast({
+          title: 'Revisión no ejecutada',
+          description: `Motivo: ${data.reason === 'disabled' ? 'La revisión está desactivada' : 'El día anterior no era laborable'}`,
+          variant: 'default',
+        });
+      }
+    } catch (error) {
+      console.error('Error al ejecutar la revisión:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo ejecutar la revisión. Revisa la consola para más detalles.',
+      });
+    } finally {
+      setIsRunning(false);
     }
   };
 
@@ -123,13 +163,32 @@ export const DailyReview = () => {
           </p>
         </div>
         
-        <Button 
-          onClick={saveConfig} 
-          disabled={isLoading}
-          className="mt-4"
-        >
-          {isLoading ? 'Gardando...' : 'Gardar configuración'}
-        </Button>
+        <div className="flex flex-wrap gap-2 mt-4">
+          <Button 
+            onClick={saveConfig} 
+            disabled={isLoading}
+          >
+            {isLoading ? 'Gardando...' : 'Gardar configuración'}
+          </Button>
+          
+          <Button 
+            onClick={runDailyReview} 
+            disabled={isRunning || !enabled}
+            variant="outline"
+            className="ml-auto"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            {isRunning ? 'Executando...' : 'Executar agora'}
+          </Button>
+        </div>
+        
+        {enabled && (
+          <div className="mt-2 text-sm text-muted-foreground">
+            <p>
+              La revisión diaria comprobará las horas imputadas del día anterior y enviará alertas a los usuarios con horas incompletas.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
