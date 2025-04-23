@@ -11,12 +11,14 @@ interface TaskDetailHeaderProps {
   task: Task;
   currentUserId?: number;
   canEdit?: boolean;
+  userRole?: string;
 }
 
 export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
   task,
   currentUserId,
-  canEdit = true // Por defecto todos pueden editar
+  canEdit = true,
+  userRole = 'worker'
 }) => {
   const navigate = useNavigate();
   
@@ -34,7 +36,7 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
       <div className="flex-1">
         <div className="flex items-center">
           <TaskStatusIcon status={task.status} className="mr-2 h-5 w-5" />
-          <h1 className="text-2xl font-bold">{task.title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{task.title}</h1>
         </div>
         
         <div className="flex items-center space-x-2 mt-1">
@@ -61,7 +63,7 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
           Volver a tarefas
         </Button>
         
-        {canEdit && (
+        {canEdit && userRole !== 'worker' && (
           <Button onClick={() => navigate(`/tasks/${task.id}/edit`)}>
             <Edit className="mr-2 h-4 w-4" />
             Editar tarefa
