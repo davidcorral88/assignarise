@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DatabaseBackup } from '@/components/settings/DatabaseBackup';
 import { DatabaseImport } from '@/components/settings/DatabaseImport';
 import { StorageUsage } from '@/components/settings/StorageUsage';
+import { DailyReview } from '@/components/settings/DailyReview';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Shield, Database } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
@@ -34,6 +35,10 @@ const Settings = () => {
             Axusta a configuración da aplicación
           </p>
         </div>
+        
+        {/* Sección de revisión diaria de tareas */}
+        <DailyReview />
+        
         <Card>
           <CardHeader className="pb-4">
             <CardTitle>Configuración</CardTitle>
