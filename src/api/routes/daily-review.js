@@ -173,10 +173,9 @@ async function sendAlert(user, date, workedHours, requiredHours, notificationEma
   // Correos que recibirán la notificación
   let recipients = [];
   
-  // Email principal del usuario (preferir el de ATSXPTPG si existe)
-  const userEmail = user.email_atsxptpg || user.emailatsxptpg || user.email;
-  if (userEmail) {
-    recipients.push(userEmail);
+  // Email principal del usuario
+  if (user.email) {
+    recipients.push(user.email);
   }
   
   // Emails de notificación en copia
@@ -269,78 +268,108 @@ async function runDailyReview() {
     return { executed: false, reason: 'not_working_day' };
   }
   
-  // Obtener todos los usuarios activos de iPlan con notificación por email
-  const usersQuery = `
-    SELECT * FROM users 
-    WHERE active = true 
-      AND (organization = 'iPlan' OR organization ILIKE 'iplan%')
-      AND (email_notification IS NULL OR email_notification = true)
-  `;
-  
-  const usersResult = await pool.query(usersQuery);
-  const users = usersResult.rows;
-  
-  console.log(`Encontrados ${users.length} usuarios para revisar`);
-  
-  // Resultados de la revisión
-  const results = {
-    executed: true,
-    date: yesterday.toISOString().split('T')[0],
-    totalUsers: users.length,
-    alertsSent: 0,
-    usersWithMissingHours: []
-  };
-  
-  // Iterar sobre cada usuario
-  for (const user of users) {
-    console.log(`Revisando horas para usuario: ${user.name} (${user.id})`);
+  try {
+    // Primero, verifica si la columna email_notification es tipo boolean o varchar
+    const columnsResult = await pool.query(`
+      SELECT data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' 
+      AND column_name = 'email_notification'
+    `);
     
-    // Obtener las horas requeridas para ese día según la jornada
-    const requiredHours = await getRequiredHours(user.id, yesterday);
-    
-    // Si no se requieren horas (ej: puede ser un día libre específico), continuamos
-    if (requiredHours <= 0) {
-      console.log(`No se requieren horas para ${user.name} en la fecha ${yesterday.toISOString().split('T')[0]}`);
-      continue;
+    let emailNotificationType = 'boolean';
+    if (columnsResult.rows.length > 0) {
+      emailNotificationType = columnsResult.rows[0].data_type;
+      console.log(`Tipo de dato para email_notification: ${emailNotificationType}`);
     }
     
-    // Obtener las horas trabajadas
-    const workedHours = await getWorkedHours(user.id, yesterday);
+    // Construir la consulta dinámica basada en el tipo de datos
+    let usersQuery;
+    if (emailNotificationType === 'boolean') {
+      usersQuery = `
+        SELECT * FROM users 
+        WHERE active = true 
+          AND (organization = 'iPlan' OR organization ILIKE 'iplan%')
+          AND (email_notification IS NULL OR email_notification = true)
+      `;
+    } else {
+      // Asumiendo que es character varying y usa 'S'/'N' como en otras partes del código
+      usersQuery = `
+        SELECT * FROM users 
+        WHERE active = true 
+          AND (organization = 'iPlan' OR organization ILIKE 'iplan%')
+          AND (email_notification IS NULL OR email_notification = 'S')
+      `;
+    }
     
-    // Comprobar si hay déficit de horas
-    if (workedHours < requiredHours) {
-      console.log(`¡Alerta! ${user.name} tiene déficit de horas: ${workedHours} / ${requiredHours}`);
+    const usersResult = await pool.query(usersQuery);
+    const users = usersResult.rows;
+    
+    console.log(`Encontrados ${users.length} usuarios para revisar`);
+    
+    // Resultados de la revisión
+    const results = {
+      executed: true,
+      date: yesterday.toISOString().split('T')[0],
+      totalUsers: users.length,
+      alertsSent: 0,
+      usersWithMissingHours: []
+    };
+    
+    // Iterar sobre cada usuario
+    for (const user of users) {
+      console.log(`Revisando horas para usuario: ${user.name} (${user.id})`);
       
-      // Enviar alerta por email
-      const alertSent = await sendAlert(
-        user, 
-        yesterday, 
-        workedHours, 
-        requiredHours, 
-        config.notificationEmails
-      );
+      // Obtener las horas requeridas para ese día según la jornada
+      const requiredHours = await getRequiredHours(user.id, yesterday);
       
-      if (alertSent) {
-        results.alertsSent++;
+      // Si no se requieren horas (ej: puede ser un día libre específico), continuamos
+      if (requiredHours <= 0) {
+        console.log(`No se requieren horas para ${user.name} en la fecha ${yesterday.toISOString().split('T')[0]}`);
+        continue;
       }
       
-      // Registrar usuario con horas faltantes
-      results.usersWithMissingHours.push({
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        workedHours,
-        requiredHours,
-        missingHours: requiredHours - workedHours,
-        alertSent
-      });
-    } else {
-      console.log(`${user.name} cumple con las horas requeridas: ${workedHours} / ${requiredHours}`);
+      // Obtener las horas trabajadas
+      const workedHours = await getWorkedHours(user.id, yesterday);
+      
+      // Comprobar si hay déficit de horas
+      if (workedHours < requiredHours) {
+        console.log(`¡Alerta! ${user.name} tiene déficit de horas: ${workedHours} / ${requiredHours}`);
+        
+        // Enviar alerta por email
+        const alertSent = await sendAlert(
+          user, 
+          yesterday, 
+          workedHours, 
+          requiredHours, 
+          config.notificationEmails
+        );
+        
+        if (alertSent) {
+          results.alertsSent++;
+        }
+        
+        // Registrar usuario con horas faltantes
+        results.usersWithMissingHours.push({
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          workedHours,
+          requiredHours,
+          missingHours: requiredHours - workedHours,
+          alertSent
+        });
+      } else {
+        console.log(`${user.name} cumple con las horas requeridas: ${workedHours} / ${requiredHours}`);
+      }
     }
+    
+    console.log(`Revisión completada. Alertas enviadas: ${results.alertsSent}`);
+    return results;
+  } catch (error) {
+    console.error('Error en el proceso de revisión diaria:', error);
+    throw error;
   }
-  
-  console.log(`Revisión completada. Alertas enviadas: ${results.alertsSent}`);
-  return results;
 }
 
 // Programar la ejecución diaria según la configuración
@@ -388,3 +417,4 @@ async function scheduleReview() {
 scheduleReview();
 
 module.exports = router;
+
