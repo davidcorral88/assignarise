@@ -68,6 +68,7 @@ const UserList = () => {
   const isAdmin = currentUser?.role === 'admin';
   const canDeleteUsers = isAdmin;
   const canResetPassword = isAdmin;
+  const canManageUsers = isAdmin;
   
   const loadUsers = async () => {
     try {
@@ -185,15 +186,17 @@ const UserList = () => {
               Xestiona os usuarios do sistema
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
-            <ImportUsersButton onImportComplete={loadUsers} />
-            <Button 
-              onClick={() => navigate('/users/new')}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Novo usuario
-            </Button>
-          </div>
+          {canManageUsers && (
+            <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
+              <ImportUsersButton onImportComplete={loadUsers} />
+              <Button 
+                onClick={() => navigate('/users/new')}
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Novo usuario
+              </Button>
+            </div>
+          )}
         </div>
         
         <div className="flex space-x-3">
