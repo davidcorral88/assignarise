@@ -374,47 +374,66 @@ async function runDailyReview() {
 
 // Programar la ejecución diaria según la configuración
 async function scheduleReview() {
-  // Obtener la configuración actual
-  const config = await getReviewConfig();
-  
-  if (!config || config.enabled !== 'S') {
-    console.log('Revisión diaria desactivada, no se programa');
-    return;
-  }
-  
-  // Calcular el tiempo hasta la próxima ejecución
-  const now = new Date();
-  const [hours, minutes] = config.reviewTime.split(':').map(Number);
-  
-  const executionTime = new Date();
-  executionTime.setHours(hours, minutes, 0, 0);
-  
-  // Si la hora ya pasó hoy, programar para mañana
-  if (executionTime <= now) {
-    executionTime.setDate(executionTime.getDate() + 1);
-  }
-  
-  const timeUntilExecution = executionTime.getTime() - now.getTime();
-  
-  console.log(`Próxima revisión programada para: ${executionTime.toLocaleString()}`);
-  console.log(`Tiempo hasta ejecución: ${Math.floor(timeUntilExecution / 60000)} minutos`);
-  
-  // Programar la ejecución
-  setTimeout(async () => {
-    try {
-      console.log('Ejecutando revisión diaria programada');
-      await runDailyReview();
-    } catch (error) {
-      console.error('Error al ejecutar revisión diaria programada:', error);
-    } finally {
-      // Volver a programar para el día siguiente
-      scheduleReview();
+  try {
+    // Obtener la configuración actual
+    const config = await getReviewConfig();
+    
+    if (!config || config.enabled !== 'S') {
+      console.log('Revisión diaria desactivada, no se programa');
+      return;
     }
-  }, timeUntilExecution);
+    
+    // Calcular el tiempo hasta la próxima ejecución
+    const now = new Date();
+    const [hours, minutes] = config.reviewTime.split(':').map(Number);
+    
+    const executionTime = new Date();
+    executionTime.setHours(hours, minutes, 0, 0);
+    
+    // Si la hora ya pasó hoy, programar para mañana
+    if (executionTime <= now) {
+      executionTime.setDate(executionTime.getDate() + 1);
+    }
+    
+    const timeUntilExecution = executionTime.getTime() - now.getTime();
+    
+    console.log(`Próxima revisión programada para: ${executionTime.toLocaleString()}`);
+    console.log(`Tiempo hasta ejecución: ${Math.floor(timeUntilExecution / 60000)} minutos`);
+    
+    // Programar la ejecución con safe setTimeout (max 2147483647 ms ≈ 24.8 días)
+    const maxTimeout = 2147483647;
+    
+    if (timeUntilExecution > maxTimeout) {
+      // Si el tiempo es mayor que el máximo permitido, programar para el máximo
+      // y luego reprogramar
+      setTimeout(() => {
+        scheduleReview(); // Volver a programar después del timeout máximo
+      }, maxTimeout);
+    } else {
+      // Programar normalmente si está dentro del límite
+      setTimeout(async () => {
+        try {
+          console.log('Ejecutando revisión diaria programada');
+          await runDailyReview();
+        } catch (error) {
+          console.error('Error al ejecutar revisión diaria programada:', error);
+        } finally {
+          // Volver a programar para el día siguiente
+          scheduleReview();
+        }
+      }, timeUntilExecution);
+    }
+  } catch (error) {
+    console.error('Error al programar revisión diaria:', error);
+    // Reintentar en 1 hora en caso de error
+    setTimeout(scheduleReview, 3600000);
+  }
 }
 
-// Iniciar la programación al arrancar el servidor
-scheduleReview();
+// Iniciar la programación en un proceso separado para no bloquear el inicio del servidor
+setTimeout(() => {
+  scheduleReview()
+    .catch(error => console.error('Error en la programación inicial:', error));
+}, 10000); // Esperar 10 segundos después del inicio del servidor
 
 module.exports = router;
-
