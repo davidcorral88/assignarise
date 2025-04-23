@@ -63,7 +63,7 @@ export const TaskDetailHeader: React.FC<TaskDetailHeaderProps> = ({
           Volver a tarefas
         </Button>
         
-        {canEdit && userRole !== 'worker' && (
+        {canEdit && userRole === 'admin' && (
           <Button onClick={() => navigate(`/tasks/${task.id}/edit`)}>
             <Edit className="mr-2 h-4 w-4" />
             Editar tarefa
