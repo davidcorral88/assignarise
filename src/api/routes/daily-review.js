@@ -17,12 +17,19 @@ const transporter = nodemailer.createTransport({
 
 // Endpoint para ejecutar manualmente la revisión (para pruebas)
 router.post('/run', async (req, res) => {
+  console.log('Iniciando ejecución manual del proceso de revisión diaria');
   try {
     const result = await runDailyReview();
+    console.log('Resultado de la revisión:', result);
     res.json(result);
   } catch (error) {
     console.error('Error al ejecutar la revisión diaria:', error);
-    res.status(500).json({ error: 'Error al ejecutar la revisión diaria', details: error.message });
+    // Devolver detalles adicionales para depuración
+    res.status(500).json({ 
+      error: 'Error al ejecutar la revisión diaria', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'production' ? undefined : error.stack 
+    });
   }
 });
 
@@ -47,51 +54,91 @@ router.get('/next-execution', async (req, res) => {
 
 // Función para obtener la configuración de revisión
 async function getReviewConfig() {
-  const result = await pool.query('SELECT * FROM review_config ORDER BY id DESC LIMIT 1');
-  
-  if (result.rows.length > 0) {
-    return {
-      enabled: result.rows[0].enabled,
-      reviewTime: result.rows[0].review_time,
-      notificationEmails: result.rows[0].notification_emails
-    };
+  try {
+    const result = await pool.query('SELECT * FROM review_config ORDER BY id DESC LIMIT 1');
+    
+    if (result.rows.length > 0) {
+      return {
+        enabled: result.rows[0].enabled,
+        reviewTime: result.rows[0].review_time,
+        notificationEmails: result.rows[0].notification_emails
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error al obtener configuración de revisión:', error);
+    throw error;
   }
-  
-  return null;
 }
 
 // Función para verificar si un día es laborable
 async function isWorkingDay(date) {
-  // Formato de la fecha para consulta SQL: YYYY-MM-DD
-  const formattedDate = date.toISOString().split('T')[0];
-  
-  // Verificar si es fin de semana (0 = domingo, 6 = sábado)
-  const dayOfWeek = date.getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    console.log(`La fecha ${formattedDate} es fin de semana (${dayOfWeek === 0 ? 'domingo' : 'sábado'})`);
-    return false;
+  try {
+    // Formato de la fecha para consulta SQL: YYYY-MM-DD
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    // Verificar si es fin de semana (0 = domingo, 6 = sábado)
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      console.log(`La fecha ${formattedDate} es fin de semana (${dayOfWeek === 0 ? 'domingo' : 'sábado'})`);
+      return false;
+    }
+    
+    // Verificar si es un día festivo
+    const holidayQuery = `SELECT * FROM holidays WHERE date::date = $1::date`;
+    const holidayResult = await pool.query(holidayQuery, [formattedDate]);
+    
+    if (holidayResult.rows.length > 0) {
+      console.log(`La fecha ${formattedDate} es festivo: ${holidayResult.rows[0].name}`);
+      return false;
+    }
+    
+    // Si no es fin de semana ni festivo, es día laborable
+    console.log(`La fecha ${formattedDate} es día laborable`);
+    return true;
+  } catch (error) {
+    console.error(`Error al verificar si el día es laborable:`, error);
+    throw error;
   }
-  
-  // Verificar si es un día festivo
-  const holidayQuery = `SELECT * FROM holidays WHERE date::date = $1::date`;
-  const holidayResult = await pool.query(holidayQuery, [formattedDate]);
-  
-  if (holidayResult.rows.length > 0) {
-    console.log(`La fecha ${formattedDate} es festivo: ${holidayResult.rows[0].name}`);
-    return false;
-  }
-  
-  // Si no es fin de semana ni festivo, es día laborable
-  console.log(`La fecha ${formattedDate} es día laborable`);
-  return true;
 }
 
 // Función para obtener las horas de trabajo requeridas para un día específico según la jornada del usuario
 async function getRequiredHours(userId, date) {
-  // Formato de la fecha para consulta SQL: YYYY-MM-DD
-  const formattedDate = date.toISOString().split('T')[0];
-  
   try {
+    // Formato de la fecha para consulta SQL: YYYY-MM-DD
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    // Verificar primero si la tabla work_schedule existe
+    const tableCheckQuery = `
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'work_schedule'
+      );
+    `;
+    const tableExists = await pool.query(tableCheckQuery);
+    
+    if (!tableExists.rows[0].exists) {
+      console.log('La tabla work_schedule no existe, devolviendo valor por defecto');
+      return 8; // Valor por defecto si la tabla no existe
+    }
+    
+    // Verificar si la tabla workday_schedules existe
+    const wdsTableCheckQuery = `
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'workday_schedules'
+      );
+    `;
+    const wdsTableExists = await pool.query(wdsTableCheckQuery);
+    
+    if (!wdsTableExists.rows[0].exists) {
+      console.log('La tabla workday_schedules no existe, devolviendo valor por defecto');
+      return 8; // Valor por defecto si la tabla no existe
+    }
+    
     // Obtener la jornada del usuario para la fecha
     const scheduleQuery = `
       SELECT ws.*, wds.* 
@@ -117,7 +164,9 @@ async function getRequiredHours(userId, date) {
     let requiredHours = 8; // Valor por defecto
     
     const schedule = scheduleResult.rows[0];
+    console.log('Jornada encontrada:', schedule);
     
+    // Intentar obtener las horas utilizando diferentes nombres de columnas posibles
     switch(dayOfWeek) {
       case 1: // Lunes
         requiredHours = schedule.mondayhours || schedule.monday_hours || 8;
@@ -141,97 +190,114 @@ async function getRequiredHours(userId, date) {
     console.log(`Horas requeridas para usuario ${userId} en ${formattedDate} (${dayOfWeek}): ${requiredHours}`);
     return requiredHours;
   } catch (error) {
-    console.error(`Error al obtener horas requeridas para usuario ${userId} en ${formattedDate}:`, error);
+    console.error(`Error al obtener horas requeridas para usuario ${userId} en ${date.toISOString().split('T')[0]}:`, error);
     return 8; // Valor por defecto en caso de error
   }
 }
 
 // Función para obtener las horas trabajadas por un usuario en una fecha específica
 async function getWorkedHours(userId, date) {
-  // Formato de la fecha para consulta SQL: YYYY-MM-DD
-  const formattedDate = date.toISOString().split('T')[0];
-  
-  const query = `
-    SELECT SUM(hours) as total_hours
-    FROM time_entries
-    WHERE user_id = $1 AND date = $2
-  `;
-  
-  const result = await pool.query(query, [userId, formattedDate]);
-  const totalHours = parseFloat(result.rows[0].total_hours || 0);
-  
-  console.log(`Horas trabajadas por usuario ${userId} en ${formattedDate}: ${totalHours}`);
-  return totalHours;
+  try {
+    // Formato de la fecha para consulta SQL: YYYY-MM-DD
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    const query = `
+      SELECT SUM(hours) as total_hours
+      FROM time_entries
+      WHERE user_id = $1 AND date = $2
+    `;
+    
+    const result = await pool.query(query, [userId, formattedDate]);
+    const totalHours = parseFloat(result.rows[0].total_hours || 0);
+    
+    console.log(`Horas trabajadas por usuario ${userId} en ${formattedDate}: ${totalHours}`);
+    return totalHours;
+  } catch (error) {
+    console.error(`Error al obtener horas trabajadas para usuario ${userId}:`, error);
+    throw error;
+  }
 }
 
 // Función para enviar alertas de horas no imputadas
 async function sendAlert(user, date, workedHours, requiredHours, notificationEmails) {
-  const formattedDate = date.toISOString().split('T')[0];
-  const dateForDisplay = new Date(date).toLocaleDateString('es-ES');
-  const horasFaltantes = requiredHours - workedHours;
-  
-  // Correos que recibirán la notificación
-  let recipients = [];
-  
-  // Email principal del usuario (preferir el de ATSXPTPG si existe)
-  const userEmail = user.email_atsxptpg || user.emailatsxptpg || user.email;
-  if (userEmail) {
-    recipients.push(userEmail);
-  }
-  
-  // Emails de notificación en copia
-  if (notificationEmails) {
-    // Dividir los emails y limpiar espacios en blanco
-    const notificationList = notificationEmails.split(',')
-      .map(email => email.trim())
-      .filter(email => email.length > 0);
-      
-    recipients = [...recipients, ...notificationList];
-  }
-  
-  // Si no hay destinatarios, no enviamos email
-  if (recipients.length === 0) {
-    console.log(`No hay destinatarios para la alerta de ${user.name}`);
-    return false;
-  }
-  
-  console.log(`Enviando alerta a: ${recipients.join(', ')}`);
-  
-  // Crear el contenido del email
-  const mailOptions = {
-    from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
-    to: recipients.join(', '),
-    subject: `Alerta: Horas non imputadas - ${dateForDisplay}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-        <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">Alerta de horas non imputadas</h2>
-        <p>Ola ${user.name},</p>
-        <p>Detectouse que non imputou todas as horas de traballo correspondentes ao día <strong>${dateForDisplay}</strong>.</p>
-        
-        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="margin-top: 0; color: #333;">Información de horas</h3>
-          <p><strong>Horas imputadas:</strong> ${workedHours.toFixed(2)}</p>
-          <p><strong>Horas requeridas:</strong> ${requiredHours.toFixed(2)}</p>
-          <p><strong style="color: #e63946;">Horas faltantes:</strong> ${horasFaltantes.toFixed(2)}</p>
-        </div>
-        
-        <p>Por favor, imputar as horas faltantes o antes posible a través do sistema de control de tarefas.</p>
-        <p style="text-align: center;">
-          <a href="${process.env.FRONTEND_URL || 'https://rexistrodetarefas.iplanmovilidad.com'}/time-tracking" 
-             style="display: inline-block; background-color: #2c7be5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
-            Acceder ao rexistro de horas
-          </a>
-        </p>
-        
-        <p style="color: #777; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
-          Esta é unha mensaxe automática do sistema de xestión de tarefas. Por favor, non responda a este correo electrónico.
-        </p>
-      </div>
-    `
-  };
-  
-  // Enviar el email
   try {
+    const formattedDate = date.toISOString().split('T')[0];
+    const dateForDisplay = new Date(date).toLocaleDateString('es-ES');
+    const horasFaltantes = requiredHours - workedHours;
+    
+    // Correos que recibirán la notificación
+    let recipients = [];
+    
+    // Email principal del usuario (preferir el de ATSXPTPG si existe)
+    let userEmail;
+    
+    // Verificar diferentes nombres de columnas posibles para el campo email_atsxptpg
+    if (user.email_atsxptpg) {
+      userEmail = user.email_atsxptpg;
+    } else if (user.emailatsxptpg) {
+      userEmail = user.emailatsxptpg;
+    } else if (user.emailATSXPTPG) {
+      userEmail = user.emailATSXPTPG;
+    } else {
+      userEmail = user.email;
+    }
+    
+    if (userEmail) {
+      recipients.push(userEmail);
+    }
+    
+    // Emails de notificación en copia
+    if (notificationEmails) {
+      // Dividir los emails y limpiar espacios en blanco
+      const notificationList = notificationEmails.split(',')
+        .map(email => email.trim())
+        .filter(email => email.length > 0);
+        
+      recipients = [...recipients, ...notificationList];
+    }
+    
+    // Si no hay destinatarios, no enviamos email
+    if (recipients.length === 0) {
+      console.log(`No hay destinatarios para la alerta de ${user.name}`);
+      return false;
+    }
+    
+    console.log(`Enviando alerta a: ${recipients.join(', ')}`);
+    
+    // Crear el contenido del email
+    const mailOptions = {
+      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
+      to: recipients.join(', '),
+      subject: `Alerta: Horas non imputadas - ${dateForDisplay}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+          <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">Alerta de horas non imputadas</h2>
+          <p>Ola ${user.name},</p>
+          <p>Detectouse que non imputou todas as horas de traballo correspondentes ao día <strong>${dateForDisplay}</strong>.</p>
+          
+          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Información de horas</h3>
+            <p><strong>Horas imputadas:</strong> ${workedHours.toFixed(2)}</p>
+            <p><strong>Horas requeridas:</strong> ${requiredHours.toFixed(2)}</p>
+            <p><strong style="color: #e63946;">Horas faltantes:</strong> ${horasFaltantes.toFixed(2)}</p>
+          </div>
+          
+          <p>Por favor, imputar as horas faltantes o antes posible a través do sistema de control de tarefas.</p>
+          <p style="text-align: center;">
+            <a href="${process.env.FRONTEND_URL || 'https://rexistrodetarefas.iplanmovilidad.com'}/time-tracking" 
+               style="display: inline-block; background-color: #2c7be5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
+              Acceder ao rexistro de horas
+            </a>
+          </p>
+          
+          <p style="color: #777; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
+            Esta é unha mensaxe automática do sistema de xestión de tarefas. Por favor, non responda a este correo electrónico.
+          </p>
+        </div>
+      `
+    };
+    
+    // Enviar el email
     const info = await transporter.sendMail(mailOptions);
     console.log(`Alerta enviada a ${user.name}: ${info.messageId}`);
     return true;
@@ -245,146 +311,179 @@ async function sendAlert(user, date, workedHours, requiredHours, notificationEma
 async function runDailyReview() {
   console.log('Iniciando proceso de revisión diaria de horas');
   
-  // Obtener configuración de revisión
-  const config = await getReviewConfig();
-  
-  if (!config || config.enabled !== 'S') {
-    console.log('La revisión diaria está desactivada');
-    return { executed: false, reason: 'disabled' };
-  }
-  
-  // Fecha actual y fecha a revisar (día anterior)
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  
-  console.log(`Fecha actual: ${today.toISOString().split('T')[0]}`);
-  console.log(`Día a revisar: ${yesterday.toISOString().split('T')[0]}`);
-  
-  // Verificar si el día anterior fue laborable
-  const wasWorkingDay = await isWorkingDay(yesterday);
-  
-  if (!wasWorkingDay) {
-    console.log('El día anterior no fue laborable, no se realiza revisión');
-    return { executed: false, reason: 'not_working_day' };
-  }
-  
-  // Obtener todos los usuarios activos de iPlan con notificación por email
-  const usersQuery = `
-    SELECT * FROM users 
-    WHERE active = true 
-      AND (organization = 'iPlan' OR organization ILIKE 'iplan%')
-      AND (email_notification IS NULL OR email_notification = true)
-  `;
-  
-  const usersResult = await pool.query(usersQuery);
-  const users = usersResult.rows;
-  
-  console.log(`Encontrados ${users.length} usuarios para revisar`);
-  
-  // Resultados de la revisión
-  const results = {
-    executed: true,
-    date: yesterday.toISOString().split('T')[0],
-    totalUsers: users.length,
-    alertsSent: 0,
-    usersWithMissingHours: []
-  };
-  
-  // Iterar sobre cada usuario
-  for (const user of users) {
-    console.log(`Revisando horas para usuario: ${user.name} (${user.id})`);
+  try {
+    // Obtener configuración de revisión
+    const config = await getReviewConfig();
     
-    // Obtener las horas requeridas para ese día según la jornada
-    const requiredHours = await getRequiredHours(user.id, yesterday);
-    
-    // Si no se requieren horas (ej: puede ser un día libre específico), continuamos
-    if (requiredHours <= 0) {
-      console.log(`No se requieren horas para ${user.name} en la fecha ${yesterday.toISOString().split('T')[0]}`);
-      continue;
+    if (!config || config.enabled !== 'S') {
+      console.log('La revisión diaria está desactivada');
+      return { executed: false, reason: 'disabled' };
     }
     
-    // Obtener las horas trabajadas
-    const workedHours = await getWorkedHours(user.id, yesterday);
+    // Fecha actual y fecha a revisar (día anterior)
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
     
-    // Comprobar si hay déficit de horas
-    if (workedHours < requiredHours) {
-      console.log(`¡Alerta! ${user.name} tiene déficit de horas: ${workedHours} / ${requiredHours}`);
+    console.log(`Fecha actual: ${today.toISOString().split('T')[0]}`);
+    console.log(`Día a revisar: ${yesterday.toISOString().split('T')[0]}`);
+    
+    // Verificar si el día anterior fue laborable
+    const wasWorkingDay = await isWorkingDay(yesterday);
+    
+    if (!wasWorkingDay) {
+      console.log('El día anterior no fue laborable, no se realiza revisión');
+      return { executed: false, reason: 'not_working_day' };
+    }
+    
+    // Obtener todos los usuarios activos de iPlan con notificación por email
+    // Asegurar que esta consulta funciona correctamente verificando los nombres de columnas
+    const checkColumnsQuery = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users'
+    `;
+    const columnsResult = await pool.query(checkColumnsQuery);
+    const columns = columnsResult.rows.map(row => row.column_name);
+    console.log('Columnas disponibles en la tabla users:', columns);
+    
+    // Construir la consulta en función de las columnas disponibles
+    let usersQuery = `SELECT * FROM users WHERE active = true`;
+    
+    // Verificar si existe la columna 'organization'
+    if (columns.includes('organization')) {
+      usersQuery += ` AND (organization = 'iPlan' OR organization ILIKE 'iplan%')`;
+    }
+    
+    // Verificar si existe la columna 'email_notification'
+    if (columns.includes('email_notification')) {
+      usersQuery += ` AND (email_notification IS NULL OR email_notification = true)`;
+    }
+    
+    console.log('Consulta SQL para obtener usuarios:', usersQuery);
+    const usersResult = await pool.query(usersQuery);
+    const users = usersResult.rows;
+    
+    console.log(`Encontrados ${users.length} usuarios para revisar`);
+    
+    // Resultados de la revisión
+    const results = {
+      executed: true,
+      date: yesterday.toISOString().split('T')[0],
+      totalUsers: users.length,
+      alertsSent: 0,
+      usersWithMissingHours: []
+    };
+    
+    // Iterar sobre cada usuario
+    for (const user of users) {
+      console.log(`Revisando horas para usuario: ${user.name} (${user.id})`);
       
-      // Enviar alerta por email
-      const alertSent = await sendAlert(
-        user, 
-        yesterday, 
-        workedHours, 
-        requiredHours, 
-        config.notificationEmails
-      );
+      // Obtener las horas requeridas para ese día según la jornada
+      const requiredHours = await getRequiredHours(user.id, yesterday);
       
-      if (alertSent) {
-        results.alertsSent++;
+      // Si no se requieren horas (ej: puede ser un día libre específico), continuamos
+      if (requiredHours <= 0) {
+        console.log(`No se requieren horas para ${user.name} en la fecha ${yesterday.toISOString().split('T')[0]}`);
+        continue;
       }
       
-      // Registrar usuario con horas faltantes
-      results.usersWithMissingHours.push({
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        workedHours,
-        requiredHours,
-        missingHours: requiredHours - workedHours,
-        alertSent
-      });
-    } else {
-      console.log(`${user.name} cumple con las horas requeridas: ${workedHours} / ${requiredHours}`);
+      // Obtener las horas trabajadas
+      const workedHours = await getWorkedHours(user.id, yesterday);
+      
+      // Comprobar si hay déficit de horas
+      if (workedHours < requiredHours) {
+        console.log(`¡Alerta! ${user.name} tiene déficit de horas: ${workedHours} / ${requiredHours}`);
+        
+        // Enviar alerta por email
+        const alertSent = await sendAlert(
+          user, 
+          yesterday, 
+          workedHours, 
+          requiredHours, 
+          config.notificationEmails
+        );
+        
+        if (alertSent) {
+          results.alertsSent++;
+        }
+        
+        // Registrar usuario con horas faltantes
+        results.usersWithMissingHours.push({
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          workedHours,
+          requiredHours,
+          missingHours: requiredHours - workedHours,
+          alertSent
+        });
+      } else {
+        console.log(`${user.name} cumple con las horas requeridas: ${workedHours} / ${requiredHours}`);
+      }
     }
+    
+    console.log(`Revisión completada. Alertas enviadas: ${results.alertsSent}`);
+    return results;
+  } catch (error) {
+    console.error('Error en runDailyReview:', error);
+    throw error; // Propagar el error para que sea capturado en el endpoint
   }
-  
-  console.log(`Revisión completada. Alertas enviadas: ${results.alertsSent}`);
-  return results;
 }
 
 // Programar la ejecución diaria según la configuración
 async function scheduleReview() {
-  // Obtener la configuración actual
-  const config = await getReviewConfig();
-  
-  if (!config || config.enabled !== 'S') {
-    console.log('Revisión diaria desactivada, no se programa');
-    return;
-  }
-  
-  // Calcular el tiempo hasta la próxima ejecución
-  const now = new Date();
-  const [hours, minutes] = config.reviewTime.split(':').map(Number);
-  
-  const executionTime = new Date();
-  executionTime.setHours(hours, minutes, 0, 0);
-  
-  // Si la hora ya pasó hoy, programar para mañana
-  if (executionTime <= now) {
-    executionTime.setDate(executionTime.getDate() + 1);
-  }
-  
-  const timeUntilExecution = executionTime.getTime() - now.getTime();
-  
-  console.log(`Próxima revisión programada para: ${executionTime.toLocaleString()}`);
-  console.log(`Tiempo hasta ejecución: ${Math.floor(timeUntilExecution / 60000)} minutos`);
-  
-  // Programar la ejecución
-  setTimeout(async () => {
-    try {
-      console.log('Ejecutando revisión diaria programada');
-      await runDailyReview();
-    } catch (error) {
-      console.error('Error al ejecutar revisión diaria programada:', error);
-    } finally {
-      // Volver a programar para el día siguiente
-      scheduleReview();
+  try {
+    // Obtener la configuración actual
+    const config = await getReviewConfig();
+    
+    if (!config || config.enabled !== 'S') {
+      console.log('Revisión diaria desactivada, no se programa');
+      return;
     }
-  }, timeUntilExecution);
+    
+    // Calcular el tiempo hasta la próxima ejecución
+    const now = new Date();
+    const [hours, minutes] = config.reviewTime.split(':').map(Number);
+    
+    const executionTime = new Date();
+    executionTime.setHours(hours, minutes, 0, 0);
+    
+    // Si la hora ya pasó hoy, programar para mañana
+    if (executionTime <= now) {
+      executionTime.setDate(executionTime.getDate() + 1);
+    }
+    
+    const timeUntilExecution = executionTime.getTime() - now.getTime();
+    
+    console.log(`Próxima revisión programada para: ${executionTime.toLocaleString()}`);
+    console.log(`Tiempo hasta ejecución: ${Math.floor(timeUntilExecution / 60000)} minutos`);
+    
+    // Programar la ejecución
+    setTimeout(async () => {
+      try {
+        console.log('Ejecutando revisión diaria programada');
+        await runDailyReview();
+      } catch (error) {
+        console.error('Error al ejecutar revisión diaria programada:', error);
+      } finally {
+        // Volver a programar para el día siguiente
+        scheduleReview();
+      }
+    }, timeUntilExecution);
+  } catch (error) {
+    console.error('Error al programar la revisión diaria:', error);
+    // Intentar reprogramar tras un error
+    setTimeout(scheduleReview, 60000); // Intentar de nuevo en 1 minuto
+  }
 }
 
 // Iniciar la programación al arrancar el servidor
-scheduleReview();
+try {
+  scheduleReview();
+  console.log('Programador de revisión diaria iniciado');
+} catch (error) {
+  console.error('Error al iniciar el programador de revisión diaria:', error);
+}
 
 module.exports = router;

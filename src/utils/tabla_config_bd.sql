@@ -30,6 +30,18 @@ BEGIN
     END IF;
 END $$;
 
+-- Crear índice para el ID como primary key si no existe
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'review_config_pkey'
+    ) THEN
+        ALTER TABLE review_config ADD PRIMARY KEY (id);
+    END IF;
+END $$;
+
 -- Añadir también una ruta en la API para manejar esta configuración
 -- Esto requerirá crear un nuevo archivo en src/api/routes/review-config.js
 -- Y registrarlo en src/api/server.js
