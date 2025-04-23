@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -18,6 +17,7 @@ import {
   X,
   KeyRound,
   Eye,
+  FileJson,
 } from 'lucide-react';
 import { 
   Table, 
@@ -72,14 +72,11 @@ const UserList = () => {
   const canResetPassword = isAdmin;
   const canManageUsers = isAdmin;
   
-  // Function to check if current user can edit a specific user
   const canEditUser = (userId: number): boolean => {
     if (!currentUser) return false;
     
-    // Admins can edit anyone
     if (currentUser.role === 'admin') return true;
     
-    // Directors and workers can only edit themselves
     return currentUser.id === userId;
   };
   
@@ -202,6 +199,32 @@ const UserList = () => {
           {canManageUsers && (
             <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
               <ImportUsersButton onImportComplete={loadUsers} />
+              {isAdmin && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    const jsonStr = JSON.stringify(users, null, 2);
+                    const blob = new Blob([jsonStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const date = new Date().toISOString().split('T')[0];
+                    a.href = url;
+                    a.download = `users-${date}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    toast({
+                      title: "Usuarios exportados",
+                      description: "O arquivo JSON foi descargado correctamente",
+                    });
+                  }}
+                >
+                  <FileJson className="mr-2 h-4 w-4" />
+                  Descargar JSON
+                </Button>
+              )}
               <Button 
                 onClick={() => navigate('/users/new')}
               >
@@ -320,13 +343,11 @@ const UserList = () => {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Accións</DropdownMenuLabel>
                           
-                          {/* View profile option available to everyone */}
                           <DropdownMenuItem onClick={() => navigate(`/users/${user.id}`)}>
                             <Eye className="mr-2 h-4 w-4" />
                             Ver perfil
                           </DropdownMenuItem>
                           
-                          {/* Only show Edit option if user can edit this profile */}
                           {canEditUser(user.id) && (
                             <DropdownMenuItem onClick={() => navigate(`/users/${user.id}/edit`)}>
                               <Pencil className="mr-2 h-4 w-4" />
@@ -334,7 +355,6 @@ const UserList = () => {
                             </DropdownMenuItem>
                           )}
                           
-                          {/* Admin-only options */}
                           {canResetPassword && (
                             <DropdownMenuItem 
                               onClick={() => handleResetPassword(user)}
