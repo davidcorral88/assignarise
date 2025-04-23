@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
 import { WorkdaySchedule } from '@/utils/types';
+import { useAuth } from '@/components/auth/useAuth';
 
 interface WorkdayScheduleTableProps {
   schedules: WorkdaySchedule[];
@@ -12,6 +12,9 @@ interface WorkdayScheduleTableProps {
 }
 
 const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, onEdit, onDelete }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   // Helper function to format day hours display
   const formatHours = (hours: number | undefined) => {
     if (hours === undefined) return '-';
@@ -36,7 +39,7 @@ const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, 
           <TableHead className="text-center">Mércores</TableHead>
           <TableHead className="text-center">Xoves</TableHead>
           <TableHead className="text-center">Venres</TableHead>
-          <TableHead className="text-right">Accións</TableHead>
+          {isAdmin && <TableHead className="text-right">Accións</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -51,23 +54,25 @@ const WorkdayScheduleTable: React.FC<WorkdayScheduleTableProps> = ({ schedules, 
               <TableCell className="text-center">{formatHours(schedule.wednesdayHours)}</TableCell>
               <TableCell className="text-center">{formatHours(schedule.thursdayHours)}</TableCell>
               <TableCell className="text-center">{formatHours(schedule.fridayHours)}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => onEdit(schedule)}>
-                    <Edit size={16} />
-                    <span className="sr-only">Editar</span>
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onDelete(schedule.id)}>
-                    <Trash2 size={16} />
-                    <span className="sr-only">Eliminar</span>
-                  </Button>
-                </div>
-              </TableCell>
+              {isAdmin && (
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => onEdit(schedule)}>
+                      <Edit size={16} />
+                      <span className="sr-only">Editar</span>
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => onDelete(schedule.id)}>
+                      <Trash2 size={16} />
+                      <span className="sr-only">Eliminar</span>
+                    </Button>
+                  </div>
+                </TableCell>
+              )}
             </TableRow>
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={9} className="text-center py-4">
+            <TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-4">
               Non hai xornadas configuradas
             </TableCell>
           </TableRow>

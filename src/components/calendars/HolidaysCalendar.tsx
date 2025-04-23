@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, getYear, addMonths, startOfYear, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -18,6 +17,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X, Edit, Plus, Trash2, Calendar as CalendarIcon } from 'lucide-react';
+import { useAuth } from '@/components/auth/useAuth';
 
 const formSchema = z.object({
   date: z.date({
@@ -27,6 +27,9 @@ const formSchema = z.object({
 });
 
 const HolidaysCalendar = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(false);
@@ -76,11 +79,8 @@ const HolidaysCalendar = () => {
     }
   };
 
-  // Este es el cambio principal: ajustamos las fechas para evitar el problema del día anterior
   const holidayDates = new Set(holidays.map(holiday => {
-    // Usamos parseISO para parsear correctamente la fecha ISO
     const holidayDate = parseISO(holiday.date);
-    // Formateamos la fecha en formato yyyy-MM-dd para comparar correctamente
     return format(holidayDate, 'yyyy-MM-dd');
   }));
 
@@ -283,121 +283,68 @@ const HolidaysCalendar = () => {
             </Select>
           </div>
 
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex gap-1">
-                <Plus size={16} />
-                <span>Engadir Festivo</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Engadir novo festivo</DialogTitle>
-                <DialogDescription>
-                  Introduce a data e nome do festivo
-                </DialogDescription>
-              </DialogHeader>
-              
-              <Form {...addForm}>
-                <form onSubmit={addForm.handleSubmit(handleAddHoliday)} className="space-y-4">
-                  <FormField
-                    control={addForm.control}
-                    name="date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4 opacity-50" />
-                            <Input
-                              type="date"
-                              value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
-                              onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={addForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Nome do festivo" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <DialogFooter>
-                    <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-                    <Button type="submit">Gardar</Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Editar festivo</DialogTitle>
-                <DialogDescription>
-                  Modifica a data ou nome do festivo
-                </DialogDescription>
-              </DialogHeader>
-              
-              <Form {...editForm}>
-                <form onSubmit={editForm.handleSubmit(handleEditHoliday)} className="space-y-4">
-                  <FormField
-                    control={editForm.control}
-                    name="date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4 opacity-50" />
-                            <Input
-                              type="date"
-                              value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
-                              onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={editForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Nome do festivo" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <DialogFooter>
-                    <Button variant="outline" type="button" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-                    <Button type="submit">Actualizar</Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+          {isAdmin && (
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex gap-1">
+                  <Plus size={16} />
+                  <span>Engadir Festivo</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Engadir novo festivo</DialogTitle>
+                  <DialogDescription>
+                    Introduce a data e nome do festivo
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <Form {...addForm}>
+                  <form onSubmit={addForm.handleSubmit(handleAddHoliday)} className="space-y-4">
+                    <FormField
+                      control={addForm.control}
+                      name="date"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data</FormLabel>
+                          <FormControl>
+                            <div className="flex items-center gap-2">
+                              <CalendarIcon className="h-4 w-4 opacity-50" />
+                              <Input
+                                type="date"
+                                value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
+                                onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={addForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Nome do festivo" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <DialogFooter>
+                      <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
+                      <Button type="submit">Gardar</Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -444,7 +391,7 @@ const HolidaysCalendar = () => {
                   <TableRow>
                     <TableHead>Data</TableHead>
                     <TableHead>Nome</TableHead>
-                    <TableHead className="text-right">Accións</TableHead>
+                    {isAdmin && <TableHead className="text-right">Accións</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -457,28 +404,30 @@ const HolidaysCalendar = () => {
                             {format(parseISO(holiday.date), 'dd/MM/yyyy', { locale: es })}
                           </TableCell>
                           <TableCell>{holiday.name}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => openEditDialog(holiday)}>
-                                <Edit size={16} />
-                                <span className="sr-only">Editar</span>
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleDeleteHoliday(holiday)}
-                                disabled={isDeleting}
-                              >
-                                <Trash2 size={16} />
-                                <span className="sr-only">Eliminar</span>
-                              </Button>
-                            </div>
-                          </TableCell>
+                          {isAdmin && (
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => openEditDialog(holiday)}>
+                                  <Edit size={16} />
+                                  <span className="sr-only">Editar</span>
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleDeleteHoliday(holiday)}
+                                  disabled={isDeleting}
+                                >
+                                  <Trash2 size={16} />
+                                  <span className="sr-only">Eliminar</span>
+                                </Button>
+                              </div>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4">
+                      <TableCell colSpan={isAdmin ? 3 : 2} className="text-center py-4">
                         Non hai festivos rexistrados para este ano
                       </TableCell>
                     </TableRow>

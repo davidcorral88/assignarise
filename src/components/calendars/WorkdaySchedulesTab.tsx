@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { WorkdaySchedule } from '@/utils/types';
@@ -13,6 +12,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import WorkdayScheduleTable from '../schedule/WorkdayScheduleTable';
 import { Plus } from 'lucide-react';
+import { useAuth } from '@/components/auth/useAuth';
 
 const formSchema = z.object({
   type: z.string().min(1, "O tipo é obrigatorio"),
@@ -28,6 +28,9 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const WorkdaySchedulesTab = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [schedules, setSchedules] = useState<WorkdaySchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -367,7 +370,6 @@ const WorkdaySchedulesTab = () => {
     </Form>
   );
 
-  // Reset form when opening add dialog
   const handleAddDialogOpen = () => {
     form.reset({
       type: "",
@@ -387,10 +389,12 @@ const WorkdaySchedulesTab = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-medium">Xornadas de traballo</h2>
         
-        <Button onClick={handleAddDialogOpen}>
-          <Plus className="w-4 h-4 mr-2" />
-          Engadir Xornada
-        </Button>
+        {isAdmin && (
+          <Button onClick={handleAddDialogOpen}>
+            <Plus className="w-4 h-4 mr-2" />
+            Engadir Xornada
+          </Button>
+        )}
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
