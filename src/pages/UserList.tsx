@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -16,6 +17,7 @@ import {
   Check,
   X,
   KeyRound,
+  Eye,
 } from 'lucide-react';
 import { 
   Table, 
@@ -69,6 +71,17 @@ const UserList = () => {
   const canDeleteUsers = isAdmin;
   const canResetPassword = isAdmin;
   const canManageUsers = isAdmin;
+  
+  // Function to check if current user can edit a specific user
+  const canEditUser = (userId: number): boolean => {
+    if (!currentUser) return false;
+    
+    // Admins can edit anyone
+    if (currentUser.role === 'admin') return true;
+    
+    // Directors and workers can only edit themselves
+    return currentUser.id === userId;
+  };
   
   const loadUsers = async () => {
     try {
@@ -287,6 +300,7 @@ const UserList = () => {
                           checked={user.active !== false}
                           onCheckedChange={() => handleToggleActive(user.id, user.active)}
                           aria-label={user.active !== false ? "Usuario activo" : "Usuario inactivo"}
+                          disabled={!isAdmin}
                         />
                         {user.active !== false ? (
                           <span className="ml-2 text-xs text-green-600">Activo</span>
@@ -305,11 +319,22 @@ const UserList = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Accións</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => navigate(`/users/${user.id}/edit`)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Editar
+                          
+                          {/* View profile option available to everyone */}
+                          <DropdownMenuItem onClick={() => navigate(`/users/${user.id}`)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver perfil
                           </DropdownMenuItem>
                           
+                          {/* Only show Edit option if user can edit this profile */}
+                          {canEditUser(user.id) && (
+                            <DropdownMenuItem onClick={() => navigate(`/users/${user.id}/edit`)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {/* Admin-only options */}
                           {canResetPassword && (
                             <DropdownMenuItem 
                               onClick={() => handleResetPassword(user)}
@@ -319,24 +344,26 @@ const UserList = () => {
                             </DropdownMenuItem>
                           )}
                           
-                          <DropdownMenuSeparator />
-                          
                           {isAdmin && (
-                            <DropdownMenuItem 
-                              onClick={() => handleToggleActive(user.id, user.active)}
-                            >
-                              {user.active !== false ? (
-                                <>
-                                  <X className="mr-2 h-4 w-4 text-red-500" />
-                                  <span className="text-red-500">Desactivar</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Check className="mr-2 h-4 w-4 text-green-500" />
-                                  <span className="text-green-500">Activar</span>
-                                </>
-                              )}
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuSeparator />
+                              
+                              <DropdownMenuItem 
+                                onClick={() => handleToggleActive(user.id, user.active)}
+                              >
+                                {user.active !== false ? (
+                                  <>
+                                    <X className="mr-2 h-4 w-4 text-red-500" />
+                                    <span className="text-red-500">Desactivar</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check className="mr-2 h-4 w-4 text-green-500" />
+                                    <span className="text-green-500">Activar</span>
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                            </>
                           )}
                           
                           {canDeleteUsers && (
