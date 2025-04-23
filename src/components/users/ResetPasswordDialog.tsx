@@ -15,7 +15,6 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { User } from '@/utils/types';
 import { resetUserPassword } from '@/utils/apiService';
-import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
 
 interface ResetPasswordDialogProps {
   user: User;
@@ -42,7 +41,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
         
         toast({
           title: "Contrasinal resetado",
-          description: `A contrasinal foi resetada á predeterminada. Informa ó usuario para que a cambie no seguinte inicio de sesión.`,
+          description: `Enviouse un correo electrónico a ${user.email} co novo contrasinal.`,
         });
         
         // Close the dialog after a time
@@ -73,7 +72,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
             Resetear contrasinal
           </DialogTitle>
           <DialogDescription>
-            Resetear a contrasinal de <strong>{user.email}</strong> á predeterminada.
+            Resetear a contrasinal de <strong>{user.email}</strong>.
           </DialogDescription>
         </DialogHeader>
         
@@ -82,7 +81,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
             <Alert className="bg-green-50 border-green-200">
               <Check className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-700">
-                A contrasinal do usuario foi reseteada á predeterminada.
+                Enviouse un correo electrónico co novo contrasinal.
               </AlertDescription>
             </Alert>
           </div>
@@ -99,14 +98,14 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
             <Alert className="bg-blue-50 border-blue-200">
               <Info className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-700">
-                A contrasinal será reseteada á predeterminada do sistema
+                Xerarase un novo contrasinal aleatorio e enviarase por correo electrónico ao usuario.
               </AlertDescription>
             </Alert>
             
             <Alert className="bg-amber-50 border-amber-200">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-700">
-                Debes informar ao usuario da nova contrasinal predeterminada.
+                O usuario recibirá un correo electrónico co seu novo contrasinal.
               </AlertDescription>
             </Alert>
           </div>
