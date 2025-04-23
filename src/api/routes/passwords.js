@@ -44,14 +44,14 @@ router.post('/verify', async (req, res) => {
     }
 
     // Check in user_passwords table
-    const result = await pool.query('SELECT password FROM user_passwords WHERE user_id = $1', [userId]);
+    const result = await pool.query('SELECT password_hash FROM user_passwords WHERE user_id = $1', [userId]);
     
     if (result.rows.length === 0) {
       // If no password set, default password is valid
       return res.json({ isValid: password === DEFAULT_PASSWORD });
     }
     
-    const isValid = result.rows[0].password === password;
+    const isValid = result.rows[0].password_hash === password;
     res.json({ isValid });
   } catch (error) {
     console.error('Error verifying password:', error);
@@ -78,9 +78,9 @@ router.post('/change', async (req, res) => {
         isCurrentPasswordValid = true;
       } else {
         // Check in user_passwords table
-        const result = await pool.query('SELECT password FROM user_passwords WHERE user_id = $1', [userId]);
+        const result = await pool.query('SELECT password_hash FROM user_passwords WHERE user_id = $1', [userId]);
         if (result.rows.length > 0) {
-          isCurrentPasswordValid = result.rows[0].password === currentPassword;
+          isCurrentPasswordValid = result.rows[0].password_hash === currentPassword;
         }
       }
 
@@ -94,10 +94,10 @@ router.post('/change', async (req, res) => {
     
     if (checkResult.rows.length > 0) {
       // Update existing password
-      await pool.query('UPDATE user_passwords SET password = $1 WHERE user_id = $2', [newPassword, userId]);
+      await pool.query('UPDATE user_passwords SET password_hash = $1 WHERE user_id = $2', [newPassword, userId]);
     } else {
       // Insert new password
-      await pool.query('INSERT INTO user_passwords (user_id, password) VALUES ($1, $2)', [userId, newPassword]);
+      await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
     }
 
     res.json({ success: true });
@@ -130,7 +130,7 @@ router.post('/reset', async (req, res) => {
 
     // Update password in database
     await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
-    await pool.query('INSERT INTO user_passwords (user_id, password) VALUES ($1, $2)', [userId, newPassword]);
+    await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
 
     // Send email with new password
     const mailOptions = {
