@@ -117,13 +117,13 @@ router.post('/reset', async (req, res) => {
     }
 
     // Check if user exists and get their email
-    const userCheck = await pool.query('SELECT email, name, email_atsxptpg FROM users WHERE id = $1', [userId]);
+    const userCheck = await pool.query('SELECT email, name FROM users WHERE id = $1', [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const user = userCheck.rows[0];
-    const recipientEmail = user.email_atsxptpg || user.email;
+    const recipientEmail = user.email;
 
     // Generate new random password
     const newPassword = generateRandomPassword();
