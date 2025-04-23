@@ -13,6 +13,7 @@ import TaskDetail from "./pages/TaskDetail";
 import TaskForm from "./pages/TaskForm";
 import UserList from "./pages/UserList";
 import UserForm from "./pages/UserForm";
+import UserProfile from "./pages/UserProfile";
 import TimeTracking from "./pages/TimeTracking";
 import UserConfig from "./pages/UserConfig";
 import Settings from "./pages/Settings";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/tasks/:id/edit" element={<TaskForm />} />
             <Route path="/users" element={<UserList />} />
             <Route path="/users/new" element={<UserForm />} />
+            <Route path="/users/:id" element={<UserProfile />} />
             <Route path="/users/:id/edit" element={<UserForm />} />
             <Route path="/time-tracking" element={<TimeTracking />} />
             <Route path="/config" element={<UserConfig />} />
