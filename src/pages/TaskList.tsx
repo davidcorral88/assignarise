@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -92,7 +91,8 @@ const TaskList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState<Record<number, User>>({});
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -159,8 +159,6 @@ const TaskList = () => {
         const query = searchQuery.toLowerCase().trim();
         result = result.filter(
           task => {
-            // Fix the search functionality by properly handling potential undefined/null values
-            // and ensuring string comparison for IDs
             const titleMatch = task.title ? task.title.toLowerCase().includes(query) : false;
             const descriptionMatch = task.description ? task.description.toLowerCase().includes(query) : false;
             const idMatch = task.id ? String(task.id).toLowerCase().includes(query) : false;
@@ -177,6 +175,14 @@ const TaskList = () => {
 
       if (priorityFilter) {
         result = result.filter(task => task.priority === priorityFilter);
+      }
+
+      if (tagFilter) {
+        result = result.filter(task => 
+          task.tags && task.tags.some(tag => 
+            tag.toLowerCase() === tagFilter.toLowerCase()
+          )
+        );
       }
 
       if (creatorFilter) {
@@ -270,7 +276,7 @@ const TaskList = () => {
       console.error('Error filtering tasks:', error);
       setFilteredTasks(tasks);
     }
-  }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, assignedToFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
+  }, [tasks, searchQuery, statusFilter, priorityFilter, tagFilter, creatorFilter, assignedToFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
   
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -321,6 +327,7 @@ const TaskList = () => {
     setDueDateStartFilter(undefined);
     setDueDateEndFilter(undefined);
     setSearchQuery('');
+    setTagFilter(null);
   };
 
   const getActiveFiltersCount = () => {
@@ -331,6 +338,7 @@ const TaskList = () => {
     if (assignedToFilter) count++;
     if (startDateFilter || endDateFilter) count++;
     if (dueDateStartFilter || dueDateEndFilter) count++;
+    if (tagFilter) count++;
     return count;
   };
 
@@ -424,6 +432,16 @@ const TaskList = () => {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Search submitted with query:", searchQuery);
+  };
+
+  const getAllTags = () => {
+    const tagsSet = new Set<string>();
+    tasks.forEach(task => {
+      if (task.tags && Array.isArray(task.tags)) {
+        task.tags.forEach(tag => tagsSet.add(tag));
+      }
+    });
+    return Array.from(tagsSet).sort();
   };
 
   return (
@@ -529,6 +547,33 @@ const TaskList = () => {
                       <Badge variant="outline" className="mr-2 bg-green-100 text-green-800 border-green-200">Baixa</Badge>
                       Baixa prioridade
                     </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuGroup>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Hash className="mr-2 h-4 w-4" />
+                    <span>Etiquetas</span>
+                    {tagFilter && (
+                      <Badge variant="outline" className="ml-auto">
+                        {tagFilter}
+                      </Badge>
+                    )}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => setTagFilter(null)}>
+                      Todas as etiquetas
+                    </DropdownMenuItem>
+                    {getAllTags().map(tag => (
+                      <DropdownMenuItem key={tag} onClick={() => setTagFilter(tag)}>
+                        <Hash className="mr-2 h-4 w-4" />
+                        {tag}
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
               </DropdownMenuGroup>
