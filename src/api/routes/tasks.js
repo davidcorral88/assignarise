@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -348,21 +347,6 @@ router.put('/:id', async (req, res) => {
       assignments: assignments?.length
     });
     
-    // Log assignments data for debugging
-    if (assignments && assignments.length > 0) {
-      console.log('Assignments to update:', JSON.stringify(assignments));
-    }
-    
-    // Get current assignments to determine changes
-    const currentAssignmentsResult = await client.query(
-      'SELECT user_id, allocated_hours FROM task_assignments WHERE task_id = $1',
-      [taskId]
-    );
-    const currentAssignments = currentAssignmentsResult.rows.map(row => ({
-      user_id: parseInt(row.user_id, 10),
-      allocatedHours: parseFloat(row.allocated_hours)
-    }));
-    
     // Convert camelCase to snake_case for database
     const start_date = startDate;
     const due_date = dueDate;
@@ -391,35 +375,6 @@ router.put('/:id', async (req, res) => {
           'INSERT INTO task_tags (task_id, tag) VALUES ($1, $2)',
           [taskId, tag]
         );
-      }
-    }
-    
-    // Find new or modified assignments
-    const newAssignments = [];
-    
-    if (assignments && assignments.length > 0) {
-      // Collect new and modified assignments before deleting the old ones
-      for (const assignment of assignments) {
-        // Extract userId and ensure it's a number
-        const userIdInput = assignment.user_id || assignment.userId;
-        const userId = typeof userIdInput === 'string' ? parseInt(userIdInput, 10) : userIdInput;
-        
-        // Extract allocatedHours
-        const hours = assignment.allocatedHours || assignment.allocated_hours;
-        
-        if (userId === undefined || userId === null) {
-          console.error('Missing user ID in assignment:', assignment);
-          continue;
-        }
-        
-        // Check if this is a new assignment or modified hours
-        const existingAssignment = currentAssignments.find(a => a.user_id === userId);
-        if (!existingAssignment || existingAssignment.allocatedHours !== hours) {
-          newAssignments.push({
-            user_id: userId,
-            allocatedHours: hours
-          });
-        }
       }
     }
     
@@ -463,14 +418,6 @@ router.put('/:id', async (req, res) => {
     task.createdAt = task.created_at;
     task.startDate = task.start_date;
     task.dueDate = task.due_date;
-    
-    console.log('New assignments to notify:', newAssignments.length, newAssignments);
-    
-    // Send email notifications for new assignments - but don't wait for it to complete
-    // This ensures the task update response is sent immediately
-    if (newAssignments.length > 0) {
-      sendAssignmentNotifications(taskId, newAssignments);
-    }
     
     console.log('Task updated successfully:', task);
     res.json(task);
