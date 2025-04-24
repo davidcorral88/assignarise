@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -152,6 +151,20 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Helper function to determine API URL based on environment
+const getApiUrl = () => {
+  // Check if process.env.API_URL is defined
+  if (process.env.API_URL) {
+    return process.env.API_URL;
+  }
+  
+  // Use default value based on environment
+  const isProduction = process.env.NODE_ENV === 'production';
+  return isProduction 
+    ? 'https://rexistrodetarefas.iplanmovilidad.com/api'
+    : 'http://localhost:3000/api';
+};
+
 // Helper function to send email notifications for task assignments
 const sendAssignmentNotifications = async (taskId, assignments, isNewTask = false) => {
   try {
@@ -179,7 +192,13 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
       try {
         console.log(`Sending email notification for task ${taskId} to user ${userId} with ${hours} hours`);
         
-        const response = await fetch('http://localhost:3000/api/email/send-task-assignment', {
+        // Get the API URL for the current environment
+        const apiUrl = getApiUrl();
+        const emailEndpoint = `${apiUrl}/email/send-task-assignment`;
+        
+        console.log(`Using email endpoint: ${emailEndpoint}`);
+        
+        const response = await fetch(emailEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
