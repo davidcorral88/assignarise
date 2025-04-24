@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -66,10 +67,16 @@ const UserForm = () => {
             console.log('Email notification value from API:', userData.email_notification);
             
             // Fix: Convert boolean or string values to 'S'/'N' format correctly
-            // Convert the value to a boolean first, then to 'S'/'N'
-            const emailNotificationValue = typeof userData.email_notification === 'string' 
-              ? userData.email_notification.toLowerCase() === 'true' || userData.email_notification === 'S'
-              : !!userData.email_notification;
+            // Check the type before attempting to use toLowerCase()
+            let emailNotificationValue: boolean;
+            
+            if (typeof userData.email_notification === 'string') {
+              const value = userData.email_notification as string;
+              emailNotificationValue = value.toLowerCase() === 'true' || value === 'S';
+            } else {
+              // Handle as boolean or undefined
+              emailNotificationValue = !!userData.email_notification;
+            }
             
             setEmailNotification(emailNotificationValue ? 'S' : 'N');
           }
