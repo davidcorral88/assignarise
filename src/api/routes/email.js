@@ -4,63 +4,25 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 
-// Determine API URL based on environment
-const getApiUrl = () => {
-  // Check if process.env.API_URL is defined
-  if (process.env.API_URL) {
-    return process.env.API_URL;
-  }
-  
-  // Use default value based on environment
-  return process.env.NODE_ENV === 'production' 
-    ? 'https://rexistrodetarefas.iplanmovilidad.com/api'
-    : 'http://localhost:3000/api';
-};
-
-// Configure email transporter with robust error handling
-const createTransporter = () => {
-  try {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com', 
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: (process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
-      auth: {
-        user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-        pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
-      },
-      // Add error handling options
-      tls: {
-        // Do not fail on invalid certs
-        rejectUnauthorized: false
-      },
-      // Add connection timeout and retry options
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000,   // 10 seconds
-    });
-  } catch (error) {
-    console.error('Failed to create email transporter:', error);
-    return null;
-  }
-};
-
-const transporter = createTransporter();
+// Configure email transporter
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com', // Replace with your SMTP server
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com', // Replace with actual email in production
+    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy', // Replace with actual password in production
+  },
+});
 
 // Test email configuration
 router.get('/test', async (req, res) => {
   try {
-    if (!transporter) {
-      throw new Error('Email transporter not initialized properly');
-    }
-    
     await transporter.verify();
     res.json({ status: 'Email server connection successful' });
   } catch (error) {
     console.error('Email server connection error:', error);
-    res.status(500).json({ 
-      error: 'Email server connection failed', 
-      details: error.message,
-      code: error.code || 'UNKNOWN_ERROR'
-    });
+    res.status(500).json({ error: 'Email server connection failed', details: error.message });
   }
 });
 
@@ -74,15 +36,6 @@ router.post('/send-task-assignment', async (req, res) => {
     }
     
     console.log(`Preparing to send task assignment email for task ${taskId} to user ${userId} with ${allocatedHours} hours`);
-    
-    // Check if email transporter is available
-    if (!transporter) {
-      console.error('Email transporter not available. Cannot send email notification.');
-      return res.status(500).json({ 
-        error: 'Email service unavailable',
-        details: 'Email configuration is not properly set up'
-      });
-    }
     
     // Get task details
     const taskResult = await pool.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
@@ -141,9 +94,6 @@ router.post('/send-task-assignment', async (req, res) => {
       ? `Asignóusevos unha nova tarefa no sistema de xestión.`
       : `Actualizouse a vosa asignación dunha tarefa no sistema de xestión.`;
     
-    // Get the base URL for links
-    const baseUrl = process.env.FRONTEND_URL || 'https://rexistrodetarefas.iplanmovilidad.com';
-    
     // Create email content
     const mailOptions = {
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
@@ -171,7 +121,7 @@ router.post('/send-task-assignment', async (req, res) => {
           
           <p>Pode acceder á tarefa no sistema de xestión facendo clic no seguinte enlace:</p>
           <p style="text-align: center;">
-            <a href="${baseUrl}/tasks/${taskId}" 
+            <a href="${process.env.FRONTEND_URL || 'https://rexistrodetarefas.iplanmovilidad.com'}/tasks/${taskId}" 
                style="display: inline-block; background-color: #2c7be5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
               Ver detalles da tarefa
             </a>
@@ -184,31 +134,18 @@ router.post('/send-task-assignment', async (req, res) => {
       `
     };
     
-    // Send the email with better error handling
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', info.messageId);
-      
-      res.json({ 
-        message: 'Task assignment email sent successfully',
-        to: recipientEmail,
-        messageId: info.messageId
-      });
-    } catch (emailError) {
-      console.error('Error sending email:', emailError);
-      res.status(500).json({ 
-        error: 'Failed to send email', 
-        details: emailError.message,
-        code: emailError.code || 'UNKNOWN_ERROR'
-      });
-    }
-  } catch (error) {
-    console.error('Error handling task assignment email request:', error);
-    res.status(500).json({ 
-      error: 'Failed to process email request', 
-      details: error.message,
-      code: error.code || 'UNKNOWN_ERROR'
+    // Send the email
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId);
+    
+    res.json({ 
+      message: 'Task assignment email sent successfully',
+      to: recipientEmail,
+      messageId: info.messageId
     });
+  } catch (error) {
+    console.error('Error sending task assignment email:', error);
+    res.status(500).json({ error: 'Failed to send email', details: error.message });
   }
 });
 
