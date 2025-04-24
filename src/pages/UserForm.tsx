@@ -65,13 +65,13 @@ const UserForm = () => {
             // Debug email notification value
             console.log('Email notification value from API:', userData.email_notification);
             
-            // Update the email notification state correctly
-            // Convert boolean or string to 'S'/'N' format
-            if (userData.email_notification === true || userData.email_notification === 'true' || userData.email_notification === 'S') {
-              setEmailNotification('S');
-            } else {
-              setEmailNotification('N');
-            }
+            // Fix: Convert boolean or string values to 'S'/'N' format correctly
+            // Convert the value to a boolean first, then to 'S'/'N'
+            const emailNotificationValue = typeof userData.email_notification === 'string' 
+              ? userData.email_notification.toLowerCase() === 'true' || userData.email_notification === 'S'
+              : !!userData.email_notification;
+            
+            setEmailNotification(emailNotificationValue ? 'S' : 'N');
           }
         } catch (error) {
           console.error('Error loading user:', error);
