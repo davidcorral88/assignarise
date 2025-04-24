@@ -72,9 +72,13 @@ router.get('/conassignments/', async (req, res) => {
               'allocated_hours', ta.allocated_hours
             )
           ) FILTER (WHERE ta.task_id IS NOT NULL), '[]'
-        ) AS assignments
+        ) AS assignments,
+        COALESCE(
+          json_agg(DISTINCT tt.tag) FILTER (WHERE tt.tag IS NOT NULL), '[]'
+        ) AS tags
       FROM tasks t
       LEFT JOIN task_assignments ta ON t.id = ta.task_id
+      LEFT JOIN task_tags tt ON t.id = tt.task_id
       GROUP BY t.id
       ORDER BY t.created_at DESC
     `;

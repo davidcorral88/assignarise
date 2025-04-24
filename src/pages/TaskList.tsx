@@ -107,17 +107,19 @@ const TaskList = () => {
       
       const normalizedTasks = tasksData.map(task => ({
         ...task,
-        assignments: task.assignments || []
+        assignments: task.assignments || [],
+        tags: task.tags || []
       }));
 
       const normalizedTasks2 = tasksDataAssignments.map(task => ({
         ...task,
         assignments: task.assignments || [],
+        tags: task.tags || [],
         createdAt: task.createdAt || task.created_at,
         dueDate: task.dueDate || task.due_date
       }));
 
-      console.log("Normalized tasks with date fields:", normalizedTasks2);
+      console.log("Normalized tasks with date fields and tags:", normalizedTasks2);
       
       setTasks(normalizedTasks2);
       setFilteredTasks(normalizedTasks2);
@@ -139,7 +141,7 @@ const TaskList = () => {
       console.error('Error loading tasks:', error);
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar las tareas desde PostgreSQL',
+        description: 'Non se puideron cargar as tarefas',
         variant: 'destructive',
       });
     } finally {
