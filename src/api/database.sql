@@ -1,4 +1,3 @@
-
 -- This file is a reference for the database schema
 -- You can use it to recreate the database if needed
 
@@ -24,7 +23,8 @@ CREATE TABLE users (
   organization VARCHAR(50),
   phone VARCHAR(50),
   email_notification VARCHAR(255),
-  active BOOLEAN DEFAULT true
+  active BOOLEAN DEFAULT true,
+  emailATSXPTPG VARCHAR(255)
 );
 
 -- Create tasks table

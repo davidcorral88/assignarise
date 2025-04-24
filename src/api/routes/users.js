@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -48,6 +47,30 @@ router.get('/:id', async (req, res) => {
     res.json(result2.rows[0]);
   } catch (error) {
     console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add emailATSXPTPG column if it doesn't exist
+router.post('/add-emailatsxptpg-column', async (req, res) => {
+  try {
+    const columnExists = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'emailatsxptpg'
+    `);
+
+    if (columnExists.rows.length === 0) {
+      await pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN emailATSXPTPG VARCHAR(255)
+      `);
+      console.log('Added emailATSXPTPG column to users table');
+    }
+    
+    res.json({ message: 'Column checked/added successfully' });
+  } catch (error) {
+    console.error('Error adding emailATSXPTPG column:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
