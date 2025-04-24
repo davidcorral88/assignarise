@@ -178,6 +178,7 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
       // Send notification email - Using direct fetch to ensure the request is made
       try {
         console.log(`Sending email notification for task ${taskId} to user ${userId} with ${hours} hours`);
+        
         const response = await fetch('http://localhost:3000/api/email/send-task-assignment', {
           method: 'POST',
           headers: {
@@ -190,6 +191,12 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
             isNewTask
           })
         });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Email notification API returned error: Status ${response.status}, Body: ${errorText}`);
+          throw new Error(`Email API returned status: ${response.status}`);
+        }
         
         const result = await response.json();
         console.log(`Email notification result:`, result);
