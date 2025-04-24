@@ -158,9 +158,9 @@ const TaskList = () => {
         const query = searchQuery.toLowerCase().trim();
         result = result.filter(
           task => {
-            const titleMatch = task.title ? task.title.toLowerCase().includes(query) : false;
-            const descriptionMatch = task.description ? task.description.toLowerCase().includes(query) : false;
-            const idMatch = task.id ? task.id.toLowerCase().includes(query) : false;
+            const titleMatch = task.title && task.title.toLowerCase().includes(query);
+            const descriptionMatch = task.description && task.description.toLowerCase().includes(query);
+            const idMatch = task.id && task.id.toLowerCase().includes(query);
             
             console.log(`Filtering task ${task.id}: title=${titleMatch}, desc=${descriptionMatch}, id=${idMatch}`);
             return titleMatch || descriptionMatch || idMatch;
