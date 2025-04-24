@@ -30,6 +30,10 @@ router.get('/:id', async (req, res) => {
       const result = await pool.query('SELECT * FROM users WHERE id = $1', [numericId]);
       if (result.rows.length > 0) {
         console.log(`User found by ID: ${numericId}`);
+        
+        // Log email_notification value to debug
+        console.log(`User email_notification value: ${result.rows[0].email_notification}`);
+        
         return res.json(result.rows[0]);
       }
       console.log(`No user found with ID: ${numericId}, trying email lookup`);
@@ -44,9 +48,35 @@ router.get('/:id', async (req, res) => {
     }
     
     console.log(`User found by email: ${id}`);
+    console.log(`User email_notification value: ${result2.rows[0].email_notification}`);
+    
     res.json(result2.rows[0]);
   } catch (error) {
     console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add email_notification column if it doesn't exist
+router.post('/add-email-notification-column', async (req, res) => {
+  try {
+    const columnExists = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'email_notification'
+    `);
+
+    if (columnExists.rows.length === 0) {
+      await pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN email_notification BOOLEAN DEFAULT TRUE
+      `);
+      console.log('Added email_notification column to users table');
+    }
+    
+    res.json({ message: 'Column checked/added successfully' });
+  } catch (error) {
+    console.error('Error adding email_notification column:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -57,7 +87,7 @@ router.post('/add-emailatsxptpg-column', async (req, res) => {
     const columnExists = await pool.query(`
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'users' AND column_name = 'emailatsxptpg'
+      WHERE table_name = 'users' AND column_name = 'emailATSXPTPG'
     `);
 
     if (columnExists.rows.length === 0) {
@@ -78,12 +108,12 @@ router.post('/add-emailatsxptpg-column', async (req, res) => {
 // Create user
 router.post('/', async (req, res) => {
   try {
-    const { id, name, email, role, avatar, active, password, phone, emailATSXPTPG, organization } = req.body;
+    const { id, name, email, role, avatar, active, password, phone, emailATSXPTPG, organization, email_notification } = req.body;
     
     // Ensure id is treated as an integer
     const numericId = parseInt(id, 10);
     
-    console.log('Creating new user:', { id: numericId, name, email, role, organization });
+    console.log('Creating new user:', { id: numericId, name, email, role, organization, email_notification });
     
     // Start a transaction
     const client = await pool.connect();
@@ -100,10 +130,12 @@ router.post('/', async (req, res) => {
       const columns = columnsResult.rows.map(row => row.column_name);
       const hasEmailATSXPTPG = columns.includes('emailATSXPTPG');
       const hasOrganization = columns.includes('organization');
+      const hasEmailNotification = columns.includes('email_notification');
       
       console.log('Available columns:', columns);
       console.log('Has emailATSXPTPG column:', hasEmailATSXPTPG);
       console.log('Has organization column:', hasOrganization);
+      console.log('Has email_notification column:', hasEmailNotification);
       
       // Build dynamic query based on available columns
       let fields = ['id', 'name', 'email', 'role', 'avatar', 'active', 'phone'];
@@ -123,6 +155,15 @@ router.post('/', async (req, res) => {
         fields.push('organization');
         placeholders.push(`$${paramCounter}`);
         values.push(organization || null);
+        paramCounter++;
+      }
+      
+      if (hasEmailNotification) {
+        fields.push('email_notification');
+        placeholders.push(`$${paramCounter}`);
+        // Convert 'S'/'N' to boolean
+        const emailNotificationBoolean = email_notification === 'S' || email_notification === true;
+        values.push(emailNotificationBoolean);
         paramCounter++;
       }
       
@@ -172,7 +213,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, avatar, active, phone, emailATSXPTPG, organization } = req.body;
+    const { name, email, role, avatar, active, phone, emailATSXPTPG, organization, email_notification } = req.body;
     
     // Ensure id is an integer
     const numericId = parseInt(id, 10);
@@ -182,6 +223,7 @@ router.put('/:id', async (req, res) => {
     }
     
     console.log('Updating user:', { id: numericId, name, email, role, organization });
+    console.log('Email notification value received:', email_notification);
     
     // Debug the organization value to ensure it's reaching the server correctly
     console.log('Organization value received:', organization);
@@ -198,10 +240,12 @@ router.put('/:id', async (req, res) => {
       const columns = columnsResult.rows.map(row => row.column_name);
       const hasEmailATSXPTPG = columns.includes('emailATSXPTPG');
       const hasOrganization = columns.includes('organization');
+      const hasEmailNotification = columns.includes('email_notification');
       
       console.log('Available columns:', columns);
       console.log('Has emailATSXPTPG column:', hasEmailATSXPTPG);
       console.log('Has organization column:', hasOrganization);
+      console.log('Has email_notification column:', hasEmailNotification);
       
       // Build dynamic SET part of the query based on available columns
       let setFields = ['name = $1', 'email = $2', 'role = $3', 'avatar = $4', 'active = $5', 'phone = $6'];
@@ -218,6 +262,15 @@ router.put('/:id', async (req, res) => {
       if (hasOrganization) {
         setFields.push(`organization = $${paramCounter}`);
         values.push(organization || null);
+        paramCounter++;
+      }
+      
+      if (hasEmailNotification) {
+        setFields.push(`email_notification = $${paramCounter}`);
+        // Convert 'S'/'N' to boolean
+        const emailNotificationBoolean = email_notification === 'S' || email_notification === true;
+        console.log('Setting email_notification to:', emailNotificationBoolean);
+        values.push(emailNotificationBoolean);
         paramCounter++;
       }
       

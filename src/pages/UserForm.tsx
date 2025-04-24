@@ -65,7 +65,13 @@ const UserForm = () => {
             // Debug email notification value
             console.log('Email notification value from API:', userData.email_notification);
             
-            setEmailNotification(userData.email_notification === true ? 'S' : 'N');
+            // Update the email notification state correctly
+            // Convert boolean or string to 'S'/'N' format
+            if (userData.email_notification === true || userData.email_notification === 'true' || userData.email_notification === 'S') {
+              setEmailNotification('S');
+            } else {
+              setEmailNotification('N');
+            }
           }
         } catch (error) {
           console.error('Error loading user:', error);
@@ -165,6 +171,11 @@ const UserForm = () => {
   useEffect(() => {
     console.log('Organization state value:', organization);
   }, [organization]);
+  
+  // Add debug for email notification state
+  useEffect(() => {
+    console.log('Email notification state value:', emailNotification);
+  }, [emailNotification]);
   
   return (
     <Layout>
