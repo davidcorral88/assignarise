@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -152,7 +151,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Helper function to send email notifications for task assignments
+// Helper function to send email notifications for task assignments without blocking
 const sendAssignmentNotifications = async (taskId, assignments, isNewTask = false) => {
   try {
     // Skip if no assignments
@@ -161,9 +160,10 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
       return;
     }
     
-    console.log(`Sending notifications for ${assignments.length} task assignments`);
+    console.log(`Scheduling notifications for ${assignments.length} task assignments`);
     
-    for (const assignment of assignments) {
+    // Process notifications asynchronously without waiting
+    assignments.forEach(assignment => {
       // Extract user_id and ensure it's a number
       const userId = typeof assignment.user_id === 'string' ? parseInt(assignment.user_id, 10) : assignment.user_id;
       
@@ -172,13 +172,12 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
       
       if (userId === undefined || userId === null) {
         console.error('Missing user ID in assignment:', assignment);
-        continue;
+        return;
       }
       
-      // Send notification email - Using direct fetch to ensure the request is made
-      try {
-        console.log(`Sending email notification for task ${taskId} to user ${userId} with ${hours} hours`);
-        const response = await fetch('http://localhost:3000/api/email/send-task-assignment', {
+      // Send notification email asynchronously (fire and forget)
+      setTimeout(() => {
+        fetch('http://localhost:3000/api/email/send-task-assignment', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -189,22 +188,22 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
             allocatedHours: hours,
             isNewTask
           })
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log(`Email notification scheduled for task ${taskId} to user ${userId}:`, result);
+        })
+        .catch(error => {
+          console.error(`Failed to schedule notification for task ${taskId} to user ${userId}:`, error);
+          // We log the error but don't throw it since this is non-blocking
         });
-        
-        const result = await response.json();
-        console.log(`Email notification result:`, result);
-        
-        if (response.ok) {
-          console.log(`Notification sent for task ${taskId} to user ${userId}`);
-        } else {
-          console.error(`Failed to send notification for task ${taskId} to user ${userId}:`, result.error);
-        }
-      } catch (error) {
-        console.error(`Failed to send notification for task ${taskId} to user ${userId}:`, error);
-      }
-    }
+      }, 100); // Small delay to avoid overwhelming the server
+    });
+    
+    console.log(`All notifications scheduled asynchronously`);
   } catch (error) {
-    console.error('Error sending assignment notifications:', error);
+    console.error('Error scheduling assignment notifications:', error);
+    // We log the error but we don't throw it since this is a background process
   }
 };
 
@@ -452,11 +451,12 @@ router.put('/:id', async (req, res) => {
     task.startDate = task.start_date;
     task.dueDate = task.due_date;
     
-    console.log('New assignments to notify:', newAssignments.length, newAssignments);
+    console.log('New assignments to notify:', newAssignments.length);
     
-    // Send email notifications for new assignments after successful commit
+    // Schedule email notifications for new assignments asynchronously after commit
+    // This does not block the response
     if (newAssignments.length > 0) {
-      await sendAssignmentNotifications(taskId, newAssignments);
+      sendAssignmentNotifications(taskId, newAssignments);
     }
     
     console.log('Task updated successfully:', task);

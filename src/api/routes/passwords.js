@@ -7,7 +7,7 @@ const nodemailer = require('nodemailer');
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
 
-// Configure email transporter
+// Configure email transporter with longer timeouts
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
@@ -16,6 +16,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
     pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
   },
+  connectionTimeout: 60000, // 1 minute connection timeout
+  greetingTimeout: 30000, // 30 seconds for SMTP greeting
+  socketTimeout: 60000,   // 1 minute socket timeout
 });
 
 // Helper function to generate random password
@@ -132,8 +135,8 @@ router.post('/reset', async (req, res) => {
     await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
     await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
 
-    // Send email with new password
-    const mailOptions = {
+    // Send email with new password, handled as a promise to avoid blocking
+    const sendEmailPromise = transporter.sendMail({
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
       to: recipientEmail,
       subject: 'Reseteo de contrasinal - Sistema de Tarefas',
@@ -162,14 +165,21 @@ router.post('/reset', async (req, res) => {
           </p>
         </div>
       `
-    };
+    }).catch(error => {
+      console.error('Error sending password reset email:', error);
+      // We catch but don't rethrow to prevent the main function from failing
+      return { error: error.message, sent: false };
+    });
 
-    await transporter.sendMail(mailOptions);
-
+    // Return success immediately without waiting for email to complete sending
     res.json({ 
       success: true,
-      message: 'Password reset successful and email sent'
+      message: 'Password reset successful and email sending in progress'
     });
+    
+    // Let the email sending continue in the background
+    await sendEmailPromise;
+    
   } catch (error) {
     console.error('Error resetting password:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
