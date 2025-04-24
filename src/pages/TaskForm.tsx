@@ -377,6 +377,7 @@ const TaskForm = () => {
   }
   
   const canEdit = true;
+  const canDelete = currentUser?.role === 'admin';
   
   const isTaskCompleted = status === 'completed';
   
@@ -398,7 +399,7 @@ const TaskForm = () => {
           </Button>
           
           <div className="flex space-x-2">
-            {isEditMode && (
+            {isEditMode && canDelete && (
               <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive">
