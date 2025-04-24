@@ -7,15 +7,18 @@ const nodemailer = require('nodemailer');
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
 
-// Configure email transporter
+// Configure email transporter with corporate SMTP settings
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
+  host: 'mail.iplanmovilidad.com',
+  port: 465,
+  secure: true, // true for port 465
   auth: {
-    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
+    user: 'dcorral@iplanmovilidad.com',
+    pass: 'dc0rralIplan!!!',
   },
+  connectionTimeout: 10000, // 10 seconds timeout for connection
+  greetingTimeout: 5000,    // 5 seconds for greeting
+  socketTimeout: 10000,     // 10 seconds for socket operations
 });
 
 // Helper function to generate random password
@@ -134,7 +137,7 @@ router.post('/reset', async (req, res) => {
 
     // Send email with new password
     const mailOptions = {
-      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
+      from: '"Sistema de Tarefas" <dcorral@iplanmovilidad.com>',
       to: recipientEmail,
       subject: 'Reseteo de contrasinal - Sistema de Tarefas',
       html: `
@@ -164,12 +167,23 @@ router.post('/reset', async (req, res) => {
       `
     };
 
-    await transporter.sendMail(mailOptions);
-
-    res.json({ 
-      success: true,
-      message: 'Password reset successful and email sent'
-    });
+    try {
+      await transporter.sendMail(mailOptions);
+      
+      res.json({ 
+        success: true,
+        message: 'Password reset successful and email sent'
+      });
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      
+      // Return success even if email fails - password was reset in database
+      res.json({ 
+        success: true,
+        message: 'Password reset successful but email could not be sent',
+        emailError: emailError.message
+      });
+    }
   } catch (error) {
     console.error('Error resetting password:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
