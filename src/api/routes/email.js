@@ -4,15 +4,19 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 
-// Configure email transporter
+// Configure email transporter with better timeout settings
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com', // Replace with your SMTP server
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT || '587', 10),
+  secure: process.env.EMAIL_SECURE === 'true' ? true : false,
   auth: {
-    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com', // Replace with actual email in production
-    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy', // Replace with actual password in production
+    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
   },
+  connectionTimeout: 10000, // 10 seconds timeout for connection
+  greetingTimeout: 5000,    // 5 seconds for greeting
+  socketTimeout: 10000,     // 10 seconds for socket operations
+  logger: process.env.NODE_ENV !== 'production' // Enable logging in development
 });
 
 // Test email configuration
@@ -26,7 +30,7 @@ router.get('/test', async (req, res) => {
   }
 });
 
-// Send task assignment notification
+// Send task assignment notification - optimized for performance
 router.post('/send-task-assignment', async (req, res) => {
   try {
     const { taskId, userId, allocatedHours, isNewTask } = req.body;
@@ -37,18 +41,28 @@ router.post('/send-task-assignment', async (req, res) => {
     
     console.log(`Preparing to send task assignment email for task ${taskId} to user ${userId} with ${allocatedHours} hours`);
     
-    // Get task details
-    const taskResult = await pool.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+    // Get task details - with reduced fields for efficiency
+    const taskResult = await pool.query(
+      'SELECT id, title, description, status, priority, start_date, due_date, category, project FROM tasks WHERE id = $1', 
+      [taskId]
+    );
+    
     if (taskResult.rows.length === 0) {
       return res.status(404).json({ error: 'Task not found' });
     }
+    
     const task = taskResult.rows[0];
     
-    // Get user details
-    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    // Get user details - with reduced fields for efficiency
+    const userResult = await pool.query(
+      'SELECT id, name, email, email_atsxptpg, email_notification FROM users WHERE id = $1',
+      [userId]
+    );
+    
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
+    
     const user = userResult.rows[0];
     
     console.log(`Found user for notification:`, {
@@ -80,8 +94,8 @@ router.post('/send-task-assignment', async (req, res) => {
     const startDate = task.start_date ? new Date(task.start_date).toLocaleDateString('es-ES') : 'Non definida';
     const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString('es-ES') : 'Non definida';
     
-    // Get task tags
-    const tagsResult = await pool.query('SELECT tag FROM task_tags WHERE task_id = $1', [taskId]);
+    // Get task tags - use simpler query
+    const tagsResult = await pool.query('SELECT tag FROM task_tags WHERE task_id = $1 LIMIT 10', [taskId]);
     const tags = tagsResult.rows.map(row => row.tag).join(', ') || 'Ningunha';
     
     // Different subject for new task vs updated task assignment
@@ -94,7 +108,7 @@ router.post('/send-task-assignment', async (req, res) => {
       ? `Asignóusevos unha nova tarefa no sistema de xestión.`
       : `Actualizouse a vosa asignación dunha tarefa no sistema de xestión.`;
     
-    // Create email content
+    // Create email content - simplified HTML for faster processing
     const mailOptions = {
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
       to: recipientEmail,
@@ -108,14 +122,11 @@ router.post('/send-task-assignment', async (req, res) => {
           <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3 style="margin-top: 0; color: #333;">Detalles da tarefa</h3>
             <p><strong>Título:</strong> ${task.title}</p>
-            <p><strong>Descrición:</strong> ${task.description || 'Non dispoñible'}</p>
             <p><strong>Estado:</strong> ${task.status}</p>
             <p><strong>Prioridade:</strong> ${task.priority}</p>
             <p><strong>Data de inicio:</strong> ${startDate}</p>
             <p><strong>Data de vencemento:</strong> ${dueDate}</p>
             <p><strong>Etiquetas:</strong> ${tags}</p>
-            <p><strong>Categoría:</strong> ${task.category || 'Non definida'}</p>
-            <p><strong>Proxecto:</strong> ${task.project || 'Non definido'}</p>
             <p><strong style="color: #2c7be5;">Horas asignadas:</strong> ${allocatedHours} horas</p>
           </div>
           
@@ -126,26 +137,54 @@ router.post('/send-task-assignment', async (req, res) => {
               Ver detalles da tarefa
             </a>
           </p>
-          
-          <p style="color: #777; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
-            Esta é unha mensaxe automática do sistema de xestión de tarefas. Por favor, non responda a este correo electrónico.
-          </p>
         </div>
       `
     };
     
-    // Send the email
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info.messageId);
+    // Set a promise with timeout for email sending
+    const sendEmailWithTimeout = () => {
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Email sending timeout - operation took too long'));
+        }, 8000); // 8 second timeout
+        
+        transporter.sendMail(mailOptions)
+          .then((info) => {
+            clearTimeout(timeout);
+            resolve(info);
+          })
+          .catch((error) => {
+            clearTimeout(timeout);
+            reject(error);
+          });
+      });
+    };
     
-    res.json({ 
-      message: 'Task assignment email sent successfully',
-      to: recipientEmail,
-      messageId: info.messageId
-    });
+    // Send the email with timeout protection
+    try {
+      const info = await sendEmailWithTimeout();
+      console.log('Email sent successfully:', info.messageId);
+      
+      res.json({ 
+        message: 'Task assignment email sent successfully',
+        to: recipientEmail,
+        messageId: info.messageId
+      });
+    } catch (error) {
+      console.error('Error sending task assignment email:', error);
+      res.status(500).json({ 
+        error: 'Failed to send email', 
+        details: error.message,
+        status: 'Email attempt failed but task was updated'
+      });
+    }
   } catch (error) {
-    console.error('Error sending task assignment email:', error);
-    res.status(500).json({ error: 'Failed to send email', details: error.message });
+    console.error('Error processing email request:', error);
+    res.status(500).json({ 
+      error: 'Failed to process email request', 
+      details: error.message,
+      status: 'Email attempt failed but task was updated'
+    });
   }
 });
 
