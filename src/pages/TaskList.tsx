@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -158,9 +159,11 @@ const TaskList = () => {
         const query = searchQuery.toLowerCase().trim();
         result = result.filter(
           task => {
+            // Fix the search functionality by properly handling potential undefined/null values
+            // and ensuring string comparison for IDs
             const titleMatch = task.title ? task.title.toLowerCase().includes(query) : false;
             const descriptionMatch = task.description ? task.description.toLowerCase().includes(query) : false;
-            const idMatch = task.id ? task.id.toLowerCase().includes(query) : false;
+            const idMatch = task.id ? String(task.id).toLowerCase().includes(query) : false;
             
             console.log(`Filtering task ${task.id}: title=${titleMatch}, desc=${descriptionMatch}, id=${idMatch}`);
             return titleMatch || descriptionMatch || idMatch;
