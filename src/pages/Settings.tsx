@@ -4,7 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DatabaseBackup } from '@/components/settings/DatabaseBackup';
 import { DatabaseImport } from '@/components/settings/DatabaseImport';
-import { PostgreSQLMigration } from '@/components/settings/PostgreSQLMigration';
+import PostgreSQLMigration from '@/components/settings/PostgreSQLMigration';
 import { DailyReview } from '@/components/settings/DailyReview';
 import { StorageUsage } from '@/components/settings/StorageUsage';
 import { PowerBITab } from '@/components/PowerBI/PowerBITab';
