@@ -211,9 +211,20 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
   }
 };
 
-// Helper function to send email notifications for task modifications
+// Modify the email sending logic to check preferences
 const sendTaskModificationNotifications = async (task, isNewTask = false) => {
   try {
+    // Check email preferences from settings
+    const emailPreferences = JSON.parse(
+      localStorage.getItem('emailPreferences') || '{}'
+    );
+
+    // Skip if task modification email notifications are disabled
+    if (!emailPreferences.taskModificationNotifications) {
+      console.log('Task modification email notifications are disabled');
+      return;
+    }
+
     // Skip if no assignments
     if (!task.assignments || task.assignments.length === 0) {
       console.log('No assignments to notify for task modifications');
@@ -222,17 +233,16 @@ const sendTaskModificationNotifications = async (task, isNewTask = false) => {
     
     console.log(`Scheduling task modification notifications for ${task.assignments.length} users`);
     
-    // Process notifications asynchronously without waiting
     task.assignments.forEach(assignment => {
-      // Extract user_id and ensure it's a number
-      const userId = typeof assignment.user_id === 'string' ? parseInt(assignment.user_id, 10) : assignment.user_id;
+      const userId = typeof assignment.user_id === 'string' 
+        ? parseInt(assignment.user_id, 10) 
+        : assignment.user_id;
       
       if (userId === undefined || userId === null) {
         console.error('Missing user ID in assignment:', assignment);
         return;
       }
       
-      // Send notification email asynchronously (fire and forget)
       setTimeout(() => {
         fetch('http://localhost:3000/api/email/send-task-modification', {
           method: 'POST',
