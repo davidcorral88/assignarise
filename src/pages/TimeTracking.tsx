@@ -26,6 +26,7 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import TimeTrackingForm from '@/components/TimeTracking/TimeTrackingForm';
 import WeeklyHours from '@/components/TimeTracking/WeeklyHours';
+import { TaskHoursSummary } from '@/components/TimeTracking/TaskHoursSummary';
 
 const TimeTracking = () => {
   const navigate = useNavigate();
@@ -406,64 +407,13 @@ const TimeTracking = () => {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo de horas por tarefa</CardTitle>
-            <CardDescription>
-              Visualiza o progreso das túas horas en cada tarefa asignada
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {userTasks.length > 0 ? (
-                userTasks.map(task => {
-                  const taskId = typeof task.id === 'string' ? task.id : String(task.id);
-                  
-                  const progress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
-                  
-                  return (
-                    <div key={task.id} className="p-4 rounded-lg border bg-muted/30">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-lg mb-1">{task.title}</h3>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Clock className="mr-1.5 h-4 w-4" />
-                            <span>Estado: {task.status === 'completed' ? 'Completada' : task.status === 'in_progress' ? 'En progreso' : 'Pendente'}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col sm:items-end">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/tasks/${taskId}`)}>
-                            <Eye className="mr-2 h-3 w-3" />
-                            Ver detalles
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <Separator className="my-4" />
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Progreso: {progress.percentage}%</span>
-                          <span>
-                            {formatHoursToDecimal(progress.worked)} / 
-                            {formatHoursToDecimal(progress.allocated)} horas
-                          </span>
-                        </div>
-                        <Progress value={progress.percentage} className="h-2" />
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Clock className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground mb-4">Non tes tarefas asignadas</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {currentUser && (
+          <TaskHoursSummary
+            tasks={userTasks}
+            taskProgress={taskProgress}
+            formatHoursToDecimal={formatHoursToDecimal}
+          />
+        )}
       </div>
     </Layout>
   );
