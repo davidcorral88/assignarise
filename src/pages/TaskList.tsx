@@ -96,6 +96,8 @@ const TaskList = () => {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
   const [tagSearchQuery, setTagSearchQuery] = useState('');
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
+  const [projectSearchQuery, setProjectSearchQuery] = useState('');
 
   const loadData = async () => {
     try {
@@ -181,6 +183,12 @@ const TaskList = () => {
 
       if (priorityFilter) {
         result = result.filter(task => task.priority === priorityFilter);
+      }
+
+      if (projectFilter) {
+        result = result.filter(task => 
+          task.project && task.project.toLowerCase() === projectFilter.toLowerCase()
+        );
       }
 
       if (tagFilter) {
@@ -281,7 +289,7 @@ const TaskList = () => {
       console.error('Error filtering tasks:', error);
       setFilteredTasks(tasks);
     }
-  }, [tasks, searchQuery, statusFilter, priorityFilter, tagFilter, creatorFilter, assignedToFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
+  }, [tasks, searchQuery, statusFilter, priorityFilter, tagFilter, creatorFilter, assignedToFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter, projectFilter]);
   
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -333,6 +341,7 @@ const TaskList = () => {
     setDueDateEndFilter(undefined);
     setSearchQuery('');
     setTagFilter(null);
+    setProjectFilter(null);
   };
 
   const getActiveFiltersCount = () => {
@@ -344,6 +353,7 @@ const TaskList = () => {
     if (startDateFilter || endDateFilter) count++;
     if (dueDateStartFilter || dueDateEndFilter) count++;
     if (tagFilter) count++;
+    if (projectFilter) count++;
     return count;
   };
 
@@ -466,6 +476,22 @@ const TaskList = () => {
       user.name.toLowerCase().includes(assigneeSearchQuery.toLowerCase())
     );
   }, [allUsers, assigneeSearchQuery]);
+
+  const getAllProjects = () => {
+    const projectsSet = new Set<string>();
+    tasks.forEach(task => {
+      if (task.project) {
+        projectsSet.add(task.project);
+      }
+    });
+    return Array.from(projectsSet).sort();
+  };
+
+  const filteredProjects = useMemo(() => {
+    return getAllProjects().filter(project => 
+      project.toLowerCase().includes(projectSearchQuery.toLowerCase())
+    );
+  }, [tasks, projectSearchQuery]);
 
   return (
     <Layout>
@@ -851,6 +877,43 @@ const TaskList = () => {
                         Borrar datas
                       </Button>
                     </div>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuGroup>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Filter className="mr-2 h-4 w-4" />
+                    <span>Proxecto</span>
+                    {projectFilter && (
+                      <Badge variant="outline" className="ml-auto">
+                        {projectFilter}
+                      </Badge>
+                    )}
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <div className="p-2">
+                      <Input
+                        placeholder="Buscar proxecto..."
+                        value={projectSearchQuery}
+                        onChange={(e) => setProjectSearchQuery(e.target.value)}
+                        className="mb-2"
+                      />
+                    </div>
+                    <ScrollArea className="h-[200px]">
+                      <DropdownMenuItem onClick={() => setProjectFilter(null)}>
+                        Todos os proxectos
+                      </DropdownMenuItem>
+                      {filteredProjects.map(project => (
+                        <DropdownMenuItem key={project} onClick={() => setProjectFilter(project)}>
+                          <Filter className="mr-2 h-4 w-4" />
+                          {project}
+                        </DropdownMenuItem>
+                      ))}
+                    </ScrollArea>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
               </DropdownMenuGroup>
