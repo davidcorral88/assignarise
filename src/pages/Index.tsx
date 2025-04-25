@@ -20,11 +20,11 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border/40 h-16 px-6 flex items-center justify-between bg-background/80 backdrop-blur-sm">
         <div className="flex items-center space-x-4">
-          {/* Logo iPlan - Left */}
+          {/* Logo Transporte Público de Galicia - Left */}
           <div className="h-10">
             <img 
-              src="/lovable-uploads/3a889774-6846-4e77-a62c-e22defccf4b8.png" 
-              alt="iPlan Logo" 
+              src="/lovable-uploads/47ad5262-111c-476b-807f-5cafd1398aec.png" 
+              alt="Transporte Público de Galicia Logo" 
               className="h-full object-contain"
             />
           </div>
