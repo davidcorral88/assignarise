@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
-import { Calendar } from 'lucide-react';
+import { Calendar, Search } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
   const [date, setDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
   // Improve task assignment detection to properly filter assigned tasks
   const assignedTasks = tasks.filter(task => {
@@ -72,7 +73,15 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
     });
   });
   
-  console.log(`Total tasks: ${tasks.length}, Filtered assigned tasks: ${assignedTasks.length}, User ID: ${userId}`);
+  // Filter tasks based on search query
+  const filteredTasks = assignedTasks.filter(task => {
+    const taskId = typeof task.id === 'string' ? task.id : String(task.id);
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      taskId.includes(searchLower) ||
+      task.title.toLowerCase().includes(searchLower)
+    );
+  });
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,36 +148,47 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="task">Tarefa *</Label>
-            <Select 
-              value={selectedTask} 
-              onValueChange={(value) => {
-                console.log('Tarefa seleccionada:', value);
-                setSelectedTask(value);
-              }}
-              required
-            >
-              <SelectTrigger id="task">
-                <SelectValue placeholder="Seleccionar tarefa" />
-              </SelectTrigger>
-              <SelectContent>
-                {assignedTasks.length > 0 ? (
-                  assignedTasks.map(task => (
-                    <SelectItem key={task.id} value={String(task.id)}>
-                      {task.title}
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por ID ou nome da tarefa..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Select 
+                value={selectedTask} 
+                onValueChange={(value) => {
+                  console.log('Tarefa seleccionada:', value);
+                  setSelectedTask(value);
+                }}
+                required
+              >
+                <SelectTrigger id="task">
+                  <SelectValue placeholder="Seleccionar tarefa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredTasks.length > 0 ? (
+                    filteredTasks.map(task => (
+                      <SelectItem key={task.id} value={String(task.id)}>
+                        #{task.id} - {task.title}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-tasks" disabled>
+                      {searchQuery ? 'Non se atoparon tarefas' : 'Non hai tarefas asignadas'}
                     </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="no-tasks" disabled>
-                    Non hai tarefas asignadas
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            {assignedTasks.length === 0 && (
-              <p className="text-sm text-amber-600 mt-2">
-                Non tes tarefas asignadas. Contacta co administrador.
-              </p>
-            )}
+                  )}
+                </SelectContent>
+              </Select>
+              {assignedTasks.length === 0 && (
+                <p className="text-sm text-amber-600 mt-2">
+                  Non tes tarefas asignadas. Contacta co administrador.
+                </p>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
