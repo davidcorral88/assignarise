@@ -256,6 +256,7 @@ const UserList = () => {
                 <TableHead>Teléfono</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Email ATSXPTPG</TableHead>
+                <TableHead>Organización</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Activo</TableHead>
                 <TableHead className="text-right">Accións</TableHead>
@@ -296,6 +297,11 @@ const UserList = () => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       {user.emailATSXPTPG || (
+                        <span className="text-muted-foreground text-sm">Non dispoñible</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.organization || (
                         <span className="text-muted-foreground text-sm">Non dispoñible</span>
                       )}
                     </TableCell>
