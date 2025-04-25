@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -8,7 +7,7 @@ import {
 } from '../utils/dataService';
 import { useAuth } from '../components/auth/useAuth';
 import { Task, TimeEntry } from '../utils/types';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { Clock, Calendar, PlusCircle, Timer, Save, Eye, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,7 @@ const TimeTracking = () => {
   const [loading, setLoading] = useState(true);
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [taskProgress, setTaskProgress] = useState<Record<string, {worked: number, allocated: number, percentage: number}>>({});
+  const [selectedWeek, setSelectedWeek] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
   
   useEffect(() => {
     const fetchData = async () => {
@@ -82,6 +82,20 @@ const TimeTracking = () => {
     
     fetchData();
   }, [currentUser]);
+
+  const handleWeekChange = (newWeek: Date) => {
+    setSelectedWeek(newWeek);
+  };
+
+  const getFilteredTimeEntries = () => {
+    const weekStart = startOfWeek(selectedWeek, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(selectedWeek, { weekStartsOn: 1 });
+
+    return timeEntries.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate >= weekStart && entryDate <= weekEnd;
+    });
+  };
   
   const calculateTasksProgress = async (fetchedTasks: Task[]) => {
     const userTaskIds = fetchedTasks
@@ -211,6 +225,8 @@ const TimeTracking = () => {
       </Layout>
     );
   }
+
+  const filteredTimeEntries = getFilteredTimeEntries();
   
   const userTasks = tasks.filter(task => {
     if (!task.assignments || !Array.isArray(task.assignments)) {
@@ -277,13 +293,14 @@ const TimeTracking = () => {
           />
         )}
         
-        {/* Add Weekly Hours component here */}
         {currentUser && (
           <WeeklyHours 
             tasks={tasks}
             timeEntries={timeEntries}
             userId={currentUser.id}
             onEntryAdded={handleTimeEntryAdded}
+            selectedWeek={selectedWeek}
+            onWeekChange={handleWeekChange}
           />
         )}
         
@@ -291,7 +308,7 @@ const TimeTracking = () => {
           <CardHeader>
             <CardTitle>Historial de horas rexistradas</CardTitle>
             <CardDescription>
-              Visualiza e xestiona os teus rexistros de horas traballadas
+              Visualiza e xestiona os teus rexistros de horas traballadas na semana do {format(selectedWeek, 'dd/MM/yyyy')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -307,8 +324,8 @@ const TimeTracking = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {timeEntries.length > 0 ? (
-                    timeEntries.map((entry) => {
+                  {filteredTimeEntries.length > 0 ? (
+                    filteredTimeEntries.map((entry) => {
                       const taskId = typeof entry.task_id === 'string' 
                         ? parseInt(entry.task_id, 10) 
                         : entry.task_id;
@@ -370,7 +387,7 @@ const TimeTracking = () => {
                       <TableCell colSpan={5} className="h-24 text-center">
                         <div className="flex flex-col items-center justify-center py-8">
                           <Timer className="h-10 w-10 text-muted-foreground/50 mb-4" />
-                          <p className="text-sm text-muted-foreground">Non rexistraches horas aínda</p>
+                          <p className="text-sm text-muted-foreground">Non hai rexistros para esta semana</p>
                           <Button 
                             variant="outline" 
                             className="mt-4" 

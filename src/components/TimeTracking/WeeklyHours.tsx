@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, parseISO, getDay, addWeeks, subWeeks } from 'date-fns';
 import { es, gl } from 'date-fns/locale';
@@ -29,15 +28,18 @@ interface WeeklyHoursProps {
   timeEntries: TimeEntry[];
   userId: string | number;
   onEntryAdded: (entry: TimeEntry) => void;
+  selectedWeek: Date;
+  onWeekChange: (newWeek: Date) => void;
 }
 
 const WeeklyHours: React.FC<WeeklyHoursProps> = ({ 
   tasks, 
   timeEntries,
   userId,
-  onEntryAdded 
+  onEntryAdded,
+  selectedWeek,
+  onWeekChange
 }) => {
-  const [currentWeek, setCurrentWeek] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const [weekTimeEntries, setWeekTimeEntries] = useState<Record<string, Record<string, TimeEntry>>>({});
   const [taskHours, setTaskHours] = useState<Record<string, Record<string, string>>>({});
@@ -45,11 +47,11 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   const goToPreviousWeek = () => {
-    setCurrentWeek(prev => subWeeks(prev, 1));
+    onWeekChange(subWeeks(selectedWeek, 1));
   };
 
   const goToNextWeek = () => {
-    setCurrentWeek(prev => addWeeks(prev, 1));
+    onWeekChange(addWeeks(selectedWeek, 1));
   };
 
   const addTaskToWeek = (taskId: string) => {
@@ -66,7 +68,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     setTaskHours(prev => {
       const newHours: Record<string, string> = {};
       for (let i = 0; i < 7; i++) {
-        const dayDate = format(addDays(currentWeek, i), 'yyyy-MM-dd');
+        const dayDate = format(addDays(selectedWeek, i), 'yyyy-MM-dd');
         newHours[dayDate] = '';
       }
       return { ...prev, [taskId]: newHours };
@@ -98,7 +100,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
   };
 
   const calculateDayTotal = (dayIndex: number): string => {
-    const dayDate = format(addDays(currentWeek, dayIndex), 'yyyy-MM-dd');
+    const dayDate = format(addDays(selectedWeek, dayIndex), 'yyyy-MM-dd');
     
     let total = 0;
     Object.keys(taskHours).forEach(taskId => {
@@ -227,8 +229,8 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
         : String(entry.task_id);
 
       const entryDate = format(new Date(entry.date), 'yyyy-MM-dd');
-      const weekStartDate = format(currentWeek, 'yyyy-MM-dd');
-      const weekEndDate = format(addDays(currentWeek, 6), 'yyyy-MM-dd');
+      const weekStartDate = format(selectedWeek, 'yyyy-MM-dd');
+      const weekEndDate = format(addDays(selectedWeek, 6), 'yyyy-MM-dd');
       
       if (entryDate >= weekStartDate && entryDate <= weekEndDate) {
         if (!entriesByTaskAndDay[taskId]) {
@@ -245,7 +247,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
           hoursData[taskId] = {};
           
           for (let i = 0; i < 7; i++) {
-            const dayDate = format(addDays(currentWeek, i), 'yyyy-MM-dd');
+            const dayDate = format(addDays(selectedWeek, i), 'yyyy-MM-dd');
             hoursData[taskId][dayDate] = '';
           }
         }
@@ -261,17 +263,17 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
         hoursData[taskId] = {};
         
         for (let i = 0; i < 7; i++) {
-          const dayDate = format(addDays(currentWeek, i), 'yyyy-MM-dd');
+          const dayDate = format(addDays(selectedWeek, i), 'yyyy-MM-dd');
           hoursData[taskId][dayDate] = '';
         }
       }
     });
     
     setTaskHours(hoursData);
-  }, [currentWeek, timeEntries, selectedTasks]);
+  }, [selectedWeek, timeEntries, selectedTasks]);
 
   const dayLabels = Array.from({ length: 7 }, (_, i) => {
-    const day = addDays(currentWeek, i);
+    const day = addDays(selectedWeek, i);
     return {
       weekday: format(day, 'EEE', { locale: gl }).toUpperCase(),
       dayNum: format(day, 'd'),
@@ -312,7 +314,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
             </Button>
             
             <div className="text-center font-medium">
-              Semana do {format(currentWeek, 'dd/MM/yyyy')}
+              Semana do {format(selectedWeek, 'dd/MM/yyyy')}
             </div>
             
             <Button 
