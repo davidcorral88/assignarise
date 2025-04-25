@@ -211,6 +211,68 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
   }
 };
 
+// Modify the email sending logic to check preferences
+const sendTaskModificationNotifications = async (task, isNewTask = false) => {
+  try {
+    // Check email preferences from settings
+    const emailPreferences = JSON.parse(
+      localStorage.getItem('emailPreferences') || '{}'
+    );
+
+    // Skip if task modification email notifications are disabled
+    if (!emailPreferences.taskModificationNotifications) {
+      console.log('Task modification email notifications are disabled');
+      return;
+    }
+
+    // Skip if no assignments
+    if (!task.assignments || task.assignments.length === 0) {
+      console.log('No assignments to notify for task modifications');
+      return;
+    }
+    
+    console.log(`Scheduling task modification notifications for ${task.assignments.length} users`);
+    
+    task.assignments.forEach(assignment => {
+      const userId = typeof assignment.user_id === 'string' 
+        ? parseInt(assignment.user_id, 10) 
+        : assignment.user_id;
+      
+      if (userId === undefined || userId === null) {
+        console.error('Missing user ID in assignment:', assignment);
+        return;
+      }
+      
+      setTimeout(() => {
+        fetch('http://localhost:3000/api/email/send-task-modification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            taskId: task.id,
+            userId,
+            isNewTask,
+            taskTitle: task.title,
+            taskStatus: task.status
+          })
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log(`Task modification email notification scheduled for task ${task.id} to user ${userId}:`, result);
+        })
+        .catch(error => {
+          console.error(`Failed to schedule task modification notification for task ${task.id} to user ${userId}:`, error);
+        });
+      }, 100);
+    });
+    
+    console.log(`All task modification notifications scheduled asynchronously`);
+  } catch (error) {
+    console.error('Error scheduling task modification notifications:', error);
+  }
+};
+
 // Create task
 router.post('/', async (req, res) => {
   const client = await pool.connect();
@@ -344,6 +406,9 @@ router.put('/:id', async (req, res) => {
       console.log('Assignments to update:', JSON.stringify(assignments));
     }
     
+    // Get original task to check for modifications
+    const originalTask = await client.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
+    
     // Get current assignments to determine changes
     const currentAssignmentsResult = await client.query(
       'SELECT user_id, allocated_hours FROM task_assignments WHERE task_id = $1',
@@ -441,6 +506,21 @@ router.put('/:id', async (req, res) => {
     }
     
     await client.query('COMMIT');
+    
+    // Send email notifications for assignments if needed
+    if (newAssignments.length > 0) {
+      sendAssignmentNotifications(taskId, newAssignments);
+    }
+    
+    // Send email notifications for task modifications
+    // Only if there are actual changes in the task (excluding assignment changes)
+    const hasTaskChanges = originalTask.rows[0].title !== title || 
+                          originalTask.rows[0].status !== status ||
+                          originalTask.rows[0].description !== description;
+                          
+    if (hasTaskChanges) {
+      sendTaskModificationNotifications(task);
+    }
     
     // Return complete task with tags and assignments
     task.tags = tags || [];

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, eachDayOfInterval, isSameDay, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { VacationDay, User, VacationType } from '@/utils/types';
 import { toast } from '@/components/ui/use-toast';
-import { getVacationDays, getUsers, addVacationDay, removeVacationDay, getHolidays } from '@/utils/dataService';
+import { getVacationDays, getUsers, addVacationDay, removeVacationDay } from '@/utils/dataService';
 import { eachYearOfInterval } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { useAuth } from '@/components/auth/useAuth';
@@ -20,8 +21,7 @@ import { useAuth } from '@/components/auth/useAuth';
 const absenceColors = {
   vacacions: '#F2FCE2', // Light green
   baixa_medica: '#D3E4FD', // Light blue
-  outros: '#FEF7CD', // Yellow
-  holiday: '#ffeaea' // Light red for holidays
+  outros: '#FEF7CD' // Yellow
 };
 
 const vacationTypeToLabel = (type: VacationType): string => {
@@ -38,7 +38,6 @@ const AbsencesCalendar = () => {
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [absences, setAbsences] = useState<VacationDay[]>([]);
-  const [holidays, setHolidays] = useState<{ date: string; name: string }[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [absenceReason, setAbsenceReason] = useState<string>('');
@@ -191,6 +190,7 @@ const AbsencesCalendar = () => {
         const usersData = await getUsers();
         setUsers(usersData);
         
+        // Set the current logged-in user as default if available
         if (currentUser && currentUser.id) {
           setSelectedUserId(currentUser.id.toString());
         } else if (usersData.length > 0 && !selectedUserId) {
@@ -238,19 +238,6 @@ const AbsencesCalendar = () => {
     fetchAbsences();
   }, [selectedUserId, selectedYear]);
 
-  useEffect(() => {
-    const fetchHolidays = async () => {
-      try {
-        const holidaysData = await getHolidays(parseInt(selectedYear));
-        setHolidays(holidaysData);
-      } catch (error) {
-        console.error('Error fetching holidays:', error);
-      }
-    };
-
-    fetchHolidays();
-  }, [selectedYear]);
-
   const absenceMap = new Map<string, string>();
   absences.forEach(absence => {
     const absenceDate = parseISO(absence.date);
@@ -258,18 +245,12 @@ const AbsencesCalendar = () => {
     absenceMap.set(dateStr, absence.type || 'vacacions');
   });
 
-  const holidayDates = new Set(holidays.map(holiday => {
-    const holidayDate = parseISO(holiday.date);
-    return format(holidayDate, 'yyyy-MM-dd');
-  }));
-
   const selectedUser = users.find(user => user.id.toString() === selectedUserId);
 
   const modifiersStyles = {
     vacacions: { backgroundColor: absenceColors.vacacions },
     baixa_medica: { backgroundColor: absenceColors.baixa_medica },
-    outros: { backgroundColor: absenceColors.outros },
-    holiday: { backgroundColor: '#ffeaea' }
+    outros: { backgroundColor: absenceColors.outros }
   };
 
   const absenceTypes = Array.from(new Set(absences.map(a => a.type || 'vacacions')));
@@ -349,17 +330,13 @@ const AbsencesCalendar = () => {
                         outros: (date) => {
                           const dateStr = format(date, 'yyyy-MM-dd');
                           return absenceMap.get(dateStr) === 'outros';
-                        },
-                        holiday: (date) => {
-                          const dateStr = format(date, 'yyyy-MM-dd');
-                          return holidayDates.has(dateStr);
                         }
                       }}
                       modifiersStyles={modifiersStyles}
                     />
                   </div>
                   
-                  {(absenceTypes.length > 0 || holidays.length > 0) && (
+                  {absenceTypes.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-4 justify-center">
                       <div className="text-sm font-medium">Lenda:</div>
                       {absenceTypes.includes('vacacions') && (
@@ -378,12 +355,6 @@ const AbsencesCalendar = () => {
                         <div className="flex items-center">
                           <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: absenceColors.outros }}></div>
                           <span className="text-sm">Outros</span>
-                        </div>
-                      )}
-                      {holidays.length > 0 && (
-                        <div className="flex items-center">
-                          <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: '#ffeaea' }}></div>
-                          <span className="text-sm">Festivos</span>
                         </div>
                       )}
                     </div>
