@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, ArrowRight } from 'lucide-react';
@@ -39,7 +40,7 @@ const Index = () => {
           {/* Logo iPlan - Right */}
           <div className="h-10">
             <img 
-              src="/lovable-uploads/0ceff2cd-db6e-45af-93ff-b54176c93864.png" 
+              src="/lovable-uploads/80c0bed1-5854-4bda-a87e-7acd7f29a206.png" 
               alt="iPlan Logo" 
               className="h-full object-contain"
             />
