@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,40 +10,17 @@ import { DailyReview } from '@/components/settings/DailyReview';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Shield, Database } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 
 const Settings = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [emailPreferences, setEmailPreferences] = useState({
-    assignmentNotifications: true,
-    taskModificationNotifications: true
-  });
   
   useEffect(() => {
     // Only administrators can access this page
     if (!currentUser || currentUser.role !== 'admin') {
       navigate('/dashboard');
     }
-    
-    // Load email preferences from localStorage
-    const savedPreferences = localStorage.getItem('emailPreferences');
-    if (savedPreferences) {
-      setEmailPreferences(JSON.parse(savedPreferences));
-    }
   }, [currentUser, navigate]);
-  
-  const handlePreferenceChange = (preference: keyof typeof emailPreferences) => {
-    setEmailPreferences(prev => {
-      const newPreferences = {
-        ...prev,
-        [preference]: !prev[preference]
-      };
-      localStorage.setItem('emailPreferences', JSON.stringify(newPreferences));
-      return newPreferences;
-    });
-  };
   
   if (!currentUser || currentUser.role !== 'admin') {
     return null;
@@ -69,30 +47,6 @@ const Settings = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <Switch
-                  id="assignment-notifications"
-                  checked={emailPreferences.assignmentNotifications}
-                  onCheckedChange={() => handlePreferenceChange('assignmentNotifications')}
-                />
-                <Label htmlFor="assignment-notifications">
-                  Envío de emails ao realizar modificacións nas asignacións de horas a tarefas
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <Switch
-                  id="task-notifications"
-                  checked={emailPreferences.taskModificationNotifications}
-                  onCheckedChange={() => handlePreferenceChange('taskModificationNotifications')}
-                />
-                <Label htmlFor="task-notifications">
-                  Envío de emails ao realizar modificacións nas tarefas
-                </Label>
-              </div>
-            </div>
-            
             <Alert className="bg-green-50 border-green-200">
               <Database className="h-4 w-4 text-green-600" />
               <AlertTitle className="text-green-800">
