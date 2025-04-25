@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,7 +19,6 @@ import UserConfig from "./pages/UserConfig";
 import Settings from "./pages/Settings";
 import Calendars from "./pages/Calendars";
 import NotFound from "./pages/NotFound";
-import PowerBI from "./pages/PowerBI";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,7 +52,6 @@ const App = () => (
             <Route path="/config" element={<UserConfig />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/calendars" element={<Calendars />} />
-            <Route path="/powerbi" element={<PowerBI />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

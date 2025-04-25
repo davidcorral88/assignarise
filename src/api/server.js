@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -17,7 +18,6 @@ const passwordsRoutes = require('./routes/passwords');
 const emailRoutes = require('./routes/email');
 const workdayScheduleRoutes = require('./routes/workday-schedules');
 const reviewConfigRoutes = require('./routes/review-config');
-const powerbiRoutes = require('./routes/powerbi');
 
 // Create Express application
 const app = express();
@@ -39,7 +39,6 @@ app.use('/api/passwords', passwordsRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/workday_schedules', workdayScheduleRoutes);
 app.use('/api/review_config', reviewConfigRoutes);
-app.use('/api/powerbi', powerbiRoutes);
 
 // Start server - listen on all interfaces, not just localhost
 app.listen(port, '0.0.0.0', () => {
