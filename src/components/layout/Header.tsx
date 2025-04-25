@@ -108,19 +108,14 @@ export const Header: React.FC = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
-          {/* Logo Transporte Público de Galicia - Left */}
+          {/* Logo iPlan - Left */}
           <div className="h-10 mr-4">
             <img 
-              src="/lovable-uploads/47ad5262-111c-476b-807f-5cafd1398aec.png" 
-              alt="Transporte Público de Galicia Logo" 
+              src="/lovable-uploads/3a889774-6846-4e77-a62c-e22defccf4b8.png" 
+              alt="iPlan Logo" 
               className="h-full object-contain"
             />
           </div>
-
-          <Link to="/dashboard" className="flex items-center mr-8 font-semibold text-xl">
-            <Clock className="h-6 w-6 mr-2 text-primary" />
-            <span className="animate-fade-in" style={{ color: "#007bc4" }}>Control de Tarefas</span>
-          </Link>
 
           {isMobile ? (
             <Button variant="ghost" size="icon" onClick={toggleMobileMenu} className="md:hidden">
