@@ -17,6 +17,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectSeparator
 } from "@/components/ui/select";
 import { toast } from '@/components/ui/use-toast';
 import { Task, TimeEntry } from '@/utils/types';
@@ -40,6 +41,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
   const [weekTimeEntries, setWeekTimeEntries] = useState<Record<string, Record<string, TimeEntry>>>({});
   const [taskHours, setTaskHours] = useState<Record<string, Record<string, string>>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const goToPreviousWeek = () => {
     setCurrentWeek(prev => subWeeks(prev, 1));
@@ -276,6 +278,18 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     };
   });
 
+  const filteredTasks = tasks
+    .filter(task => {
+      const taskId = typeof task.id === 'string' ? task.id : String(task.id);
+      if (selectedTasks.includes(taskId)) return false;
+      
+      const searchLower = searchQuery.toLowerCase();
+      const titleMatches = task.title.toLowerCase().includes(searchLower);
+      const idMatches = taskId.toLowerCase().includes(searchLower);
+      
+      return titleMatches || idMatches;
+    });
+
   return (
     <Card>
       <CardHeader>
@@ -398,19 +412,35 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                         <SelectValue placeholder="Engadir tarefa..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {tasks
-                          .filter(task => {
-                            const taskId = typeof task.id === 'string' ? task.id : String(task.id);
-                            return !selectedTasks.includes(taskId);
-                          })
-                          .map(task => {
+                        <div className="p-2">
+                          <div className="flex w-full items-center space-x-2">
+                            <Search className="h-4 w-4 text-muted-foreground/70" />
+                            <input
+                              className="flex w-full rounded-md bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground focus:outline-none"
+                              placeholder="Buscar por ID ou nome..."
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <SelectSeparator />
+                        {filteredTasks.length > 0 ? (
+                          filteredTasks.map(task => {
                             const taskId = typeof task.id === 'string' ? task.id : String(task.id);
                             return (
                               <SelectItem key={taskId} value={taskId}>
-                                {task.title}
+                                <span className="font-medium">{taskId}</span>
+                                <span className="ml-2 text-muted-foreground">
+                                  - {task.title}
+                                </span>
                               </SelectItem>
                             );
-                          })}
+                          })
+                        ) : (
+                          <div className="p-2 text-sm text-muted-foreground text-center">
+                            Non se atoparon tarefas
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
