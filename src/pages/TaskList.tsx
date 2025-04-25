@@ -95,6 +95,7 @@ const TaskList = () => {
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
 
   const loadData = async () => {
     try {
@@ -184,9 +185,8 @@ const TaskList = () => {
 
       if (tagFilter) {
         result = result.filter(task => 
-          task.tags && task.tags.some(tag => 
-            tag.toLowerCase() === tagFilter.toLowerCase()
-          )
+          task.tags && Array.isArray(task.tags) && 
+          task.tags.some(tag => tag.toLowerCase() === tagFilter.toLowerCase())
         );
       }
 
@@ -449,6 +449,12 @@ const TaskList = () => {
     return Array.from(tagsSet).sort();
   };
 
+  const filteredTags = useMemo(() => {
+    return getAllTags().filter(tag => 
+      tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
+    );
+  }, [tasks, tagSearchQuery]);
+
   const filteredUsers = useMemo(() => {
     return allUsers.filter(user => 
       user.name.toLowerCase().includes(userSearchQuery.toLowerCase())
@@ -582,15 +588,25 @@ const TaskList = () => {
                     )}
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    <DropdownMenuItem onClick={() => setTagFilter(null)}>
-                      Todas as etiquetas
-                    </DropdownMenuItem>
-                    {getAllTags().map(tag => (
-                      <DropdownMenuItem key={tag} onClick={() => setTagFilter(tag)}>
-                        <Hash className="mr-2 h-4 w-4" />
-                        {tag}
+                    <div className="p-2">
+                      <Input
+                        placeholder="Buscar etiqueta..."
+                        value={tagSearchQuery}
+                        onChange={(e) => setTagSearchQuery(e.target.value)}
+                        className="mb-2"
+                      />
+                    </div>
+                    <ScrollArea className="h-[200px]">
+                      <DropdownMenuItem onClick={() => setTagFilter(null)}>
+                        Todas as etiquetas
                       </DropdownMenuItem>
-                    ))}
+                      {filteredTags.map(tag => (
+                        <DropdownMenuItem key={tag} onClick={() => setTagFilter(tag)}>
+                          <Hash className="mr-2 h-4 w-4" />
+                          {tag}
+                        </DropdownMenuItem>
+                      ))}
+                    </ScrollArea>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
               </DropdownMenuGroup>
