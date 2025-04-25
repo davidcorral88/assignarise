@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, eachDayOfInterval, isSameDay, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -15,6 +16,7 @@ import { toast } from '@/components/ui/use-toast';
 import { getVacationDays, getUsers, addVacationDay, removeVacationDay } from '@/utils/dataService';
 import { eachYearOfInterval } from 'date-fns';
 import { DateRange } from 'react-day-picker';
+import { useAuth } from '@/components/auth/useAuth';
 
 const absenceColors = {
   vacacions: '#F2FCE2', // Light green
@@ -32,6 +34,7 @@ const vacationTypeToLabel = (type: VacationType): string => {
 };
 
 const AbsencesCalendar = () => {
+  const { currentUser } = useAuth();
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [absences, setAbsences] = useState<VacationDay[]>([]);
@@ -187,7 +190,10 @@ const AbsencesCalendar = () => {
         const usersData = await getUsers();
         setUsers(usersData);
         
-        if (usersData.length > 0 && !selectedUserId) {
+        // Set the current logged-in user as default if available
+        if (currentUser && currentUser.id) {
+          setSelectedUserId(currentUser.id.toString());
+        } else if (usersData.length > 0 && !selectedUserId) {
           setSelectedUserId(usersData[0].id.toString());
         }
       } catch (error) {
@@ -201,7 +207,7 @@ const AbsencesCalendar = () => {
     };
 
     fetchUsers();
-  }, [selectedUserId]);
+  }, [currentUser]);
 
   useEffect(() => {
     const fetchAbsences = async () => {
