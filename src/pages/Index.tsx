@@ -23,7 +23,7 @@ const Index = () => {
           {/* Logo Transporte Público de Galicia - Left */}
           <div className="h-10">
             <img 
-              src="/lovable-uploads/8612bd3a-aae6-4470-9f8c-90f0a60578c0.png" 
+              src="/lovable-uploads/47ad5262-111c-476b-807f-5cafd1398aec.png" 
               alt="Transporte Público de Galicia Logo" 
               className="h-full object-contain"
             />
