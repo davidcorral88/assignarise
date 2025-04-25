@@ -7,7 +7,6 @@ import { DatabaseImport } from '@/components/settings/DatabaseImport';
 import PostgreSQLMigration from '@/components/settings/PostgreSQLMigration';
 import { DailyReview } from '@/components/settings/DailyReview';
 import { StorageUsage } from '@/components/settings/StorageUsage';
-import { PowerBITab } from '@/components/PowerBI/PowerBITab';
 
 const Settings = () => {
   return (
@@ -26,7 +25,6 @@ const Settings = () => {
             <TabsTrigger value="import">Importar datos</TabsTrigger>
             <TabsTrigger value="storage">Almacenamento</TabsTrigger>
             <TabsTrigger value="migration">Migración</TabsTrigger>
-            <TabsTrigger value="powerbi">PowerBI</TabsTrigger>
           </TabsList>
           <TabsContent value="review" className="space-y-4">
             <DailyReview />
@@ -42,9 +40,6 @@ const Settings = () => {
           </TabsContent>
           <TabsContent value="migration" className="space-y-4">
             <PostgreSQLMigration />
-          </TabsContent>
-          <TabsContent value="powerbi" className="space-y-4">
-            <PowerBITab />
           </TabsContent>
         </Tabs>
       </div>

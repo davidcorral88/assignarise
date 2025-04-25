@@ -9,7 +9,8 @@ import {
   Users, 
   Settings, 
   User,
-  Calendar
+  Calendar,
+  BarChart3
 } from 'lucide-react';
 
 export const Navigation = () => {
@@ -47,7 +48,7 @@ export const Navigation = () => {
       name: 'Usuarios',
       path: '/users',
       icon: <Users className="h-5 w-5" />,
-      show: true // All users can see the Users section now
+      show: true
     },
     {
       name: 'Perfil',
@@ -59,13 +60,19 @@ export const Navigation = () => {
       name: 'Calendarios',
       path: '/calendars',
       icon: <Calendar className="h-5 w-5" />,
-      show: true  // All users can see the Calendars section
+      show: true
+    },
+    {
+      name: 'PowerBI',
+      path: '/powerbi',
+      icon: <BarChart3 className="h-5 w-5" />,
+      show: true
     },
     {
       name: 'Configuración',
       path: '/settings',
       icon: <Settings className="h-5 w-5" />,
-      show: isAdmin  // Only visible for administrators
+      show: isAdmin
     }
   ];
 
