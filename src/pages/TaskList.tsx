@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
@@ -71,6 +71,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const TaskList = () => {
   const { currentUser } = useAuth();
@@ -92,6 +93,8 @@ const TaskList = () => {
   const [users, setUsers] = useState<Record<number, User>>({});
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
 
   const loadData = async () => {
     try {
@@ -446,6 +449,18 @@ const TaskList = () => {
     return Array.from(tagsSet).sort();
   };
 
+  const filteredUsers = useMemo(() => {
+    return allUsers.filter(user => 
+      user.name.toLowerCase().includes(userSearchQuery.toLowerCase())
+    );
+  }, [allUsers, userSearchQuery]);
+
+  const filteredAssignees = useMemo(() => {
+    return allUsers.filter(user => 
+      user.name.toLowerCase().includes(assigneeSearchQuery.toLowerCase())
+    );
+  }, [allUsers, assigneeSearchQuery]);
+
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -594,25 +609,30 @@ const TaskList = () => {
                     )}
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    <DropdownMenuItem onClick={() => setCreatorFilter(null)}>
-                      Todos os usuarios
-                    </DropdownMenuItem>
-                    {allUsers.map(user => (
-                      <DropdownMenuItem key={user.id} onClick={() => setCreatorFilter(user.id)}>
-                        <div className="flex items-center">
-                          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                            {user.avatar ? (
-                              <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
-                            ) : (
-                              <span className="text-xs font-medium text-primary-foreground">
-                                {user.name.substring(0, 2)}
-                              </span>
-                            )}
-                          </div>
-                          {user.name}
-                        </div>
+                    <div className="p-2">
+                      <Input
+                        placeholder="Buscar usuario..."
+                        value={userSearchQuery}
+                        onChange={(e) => setUserSearchQuery(e.target.value)}
+                        className="mb-2"
+                      />
+                    </div>
+                    <ScrollArea className="h-[300px]">
+                      <DropdownMenuItem onClick={() => setCreatorFilter(null)}>
+                        Todos os usuarios
                       </DropdownMenuItem>
-                    ))}
+                      {filteredUsers.map(user => (
+                        <DropdownMenuItem key={user.id} onClick={() => setCreatorFilter(user.id)}>
+                          <div className="flex items-center">
+                            <Avatar className="h-6 w-6 mr-2">
+                              <AvatarImage src={user.avatar} />
+                              <AvatarFallback>{user.name.substring(0, 2)}</AvatarFallback>
+                            </Avatar>
+                            {user.name}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </ScrollArea>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
               </DropdownMenuGroup>
@@ -631,25 +651,30 @@ const TaskList = () => {
                     )}
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
-                    <DropdownMenuItem onClick={() => setAssignedToFilter(null)}>
-                      Todos os usuarios
-                    </DropdownMenuItem>
-                    {allUsers.map(user => (
-                      <DropdownMenuItem key={user.id} onClick={() => setAssignedToFilter(user.id)}>
-                        <div className="flex items-center">
-                          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                            {user.avatar ? (
-                              <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
-                            ) : (
-                              <span className="text-xs font-medium text-primary-foreground">
-                                {user.name.substring(0, 2)}
-                              </span>
-                            )}
-                          </div>
-                          {user.name}
-                        </div>
+                    <div className="p-2">
+                      <Input
+                        placeholder="Buscar usuario..."
+                        value={assigneeSearchQuery}
+                        onChange={(e) => setAssigneeSearchQuery(e.target.value)}
+                        className="mb-2"
+                      />
+                    </div>
+                    <ScrollArea className="h-[300px]">
+                      <DropdownMenuItem onClick={() => setAssignedToFilter(null)}>
+                        Todos os usuarios
                       </DropdownMenuItem>
-                    ))}
+                      {filteredAssignees.map(user => (
+                        <DropdownMenuItem key={user.id} onClick={() => setAssignedToFilter(user.id)}>
+                          <div className="flex items-center">
+                            <Avatar className="h-6 w-6 mr-2">
+                              <AvatarImage src={user.avatar} />
+                              <AvatarFallback>{user.name.substring(0, 2)}</AvatarFallback>
+                            </Avatar>
+                            {user.name}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </ScrollArea>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
               </DropdownMenuGroup>
