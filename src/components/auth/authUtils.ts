@@ -2,7 +2,6 @@
 import { User } from '@/utils/types';
 import { getUserByEmail, addUser, getNextUserId } from '@/utils/dataService';
 import { toast } from '@/components/ui/use-toast';
-import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
 
 // Function to create a new user
 export const createNewUser = async (email: string): Promise<User> => {
@@ -22,7 +21,7 @@ export const createNewUser = async (email: string): Promise<User> => {
       id: nextId,
       name: name,
       email: email,
-      password: DEFAULT_PASSWORD, // Using the default password from dbConfig
+      password: '', // No default password, will be set through password reset or db directly
       role: 'worker', // Default role is worker
       active: true
     };
