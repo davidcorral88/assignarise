@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { KeyRound, Mail, AlertCircle, Check, Info, Copy } from 'lucide-react';
+import { KeyRound, Mail, AlertCircle, Check, Info } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import {
   Dialog,
@@ -29,8 +29,6 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [newPassword, setNewPassword] = useState<string | null>(null);
-  const [emailFailed, setEmailFailed] = useState(false);
   
   const handleResetPassword = async () => {
     setIsLoading(true);
@@ -41,33 +39,16 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
       if (result.success) {
         setIsSuccess(true);
         
-        // Check if email was sent successfully
-        if (result.emailSent) {
-          toast({
-            title: "Contrasinal resetado",
-            description: `Enviouse un correo electrónico a ${user.email} co novo contrasinal.`,
-          });
-        } else {
-          // Email failed but we have the new password
-          setNewPassword(result.newPassword || null);
-          setEmailFailed(true);
-          
-          toast({
-            title: "Contrasinal resetado",
-            description: "O contrasinal foi resetado pero houbo un erro ao enviar o correo. O contrasinal móstrase na pantalla.",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Contrasinal resetado",
+          description: `Enviouse un correo electrónico a ${user.email} co novo contrasinal.`,
+        });
         
-        // Only close automatically if email succeeded
-        if (result.emailSent) {
-          setTimeout(() => {
-            onOpenChange(false);
-            setIsSuccess(false);
-            setNewPassword(null);
-            setEmailFailed(false);
-          }, 2000);
-        }
+        // Close the dialog after a time
+        setTimeout(() => {
+          onOpenChange(false);
+          setIsSuccess(false);
+        }, 2000);
       } else {
         throw new Error("Non se puido resetear o contrasinal");
       }
@@ -79,16 +60,6 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-  
-  const copyPasswordToClipboard = () => {
-    if (newPassword) {
-      navigator.clipboard.writeText(newPassword);
-      toast({
-        title: "Contrasinal copiado",
-        description: "O contrasinal foi copiado ao portapapeis",
-      });
     }
   };
   
@@ -107,42 +78,12 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
         
         {isSuccess ? (
           <div className="py-6">
-            {emailFailed && newPassword ? (
-              <div className="space-y-4">
-                <Alert className="bg-amber-50 border-amber-200">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-700">
-                    Non se puido enviar o correo electrónico. O novo contrasinal móstrase a continuación.
-                  </AlertDescription>
-                </Alert>
-                
-                <div className="p-3 bg-gray-100 rounded-md">
-                  <div className="flex justify-between items-center">
-                    <p className="font-mono text-sm">{newPassword}</p>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={copyPasswordToClipboard}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Copy className="h-4 w-4" />
-                      <span className="sr-only">Copiar contrasinal</span>
-                    </Button>
-                  </div>
-                </div>
-                
-                <p className="text-sm text-muted-foreground">
-                  Deberá proporcionar este contrasinal ao usuario manualmente.
-                </p>
-              </div>
-            ) : (
-              <Alert className="bg-green-50 border-green-200">
-                <Check className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-700">
-                  Enviouse un correo electrónico co novo contrasinal.
-                </AlertDescription>
-              </Alert>
-            )}
+            <Alert className="bg-green-50 border-green-200">
+              <Check className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                Enviouse un correo electrónico co novo contrasinal.
+              </AlertDescription>
+            </Alert>
           </div>
         ) : (
           <div className="flex flex-col gap-4 py-4">
@@ -164,27 +105,14 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
             <Alert className="bg-amber-50 border-amber-200">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-700">
-                O usuario recibirá un correo electrónico co seu novo contrasinal. 
-                Se o envío do correo falla, mostrarase o contrasinal na pantalla.
+                O usuario recibirá un correo electrónico co seu novo contrasinal.
               </AlertDescription>
             </Alert>
           </div>
         )}
         
         <DialogFooter>
-          {isSuccess && emailFailed ? (
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                onOpenChange(false);
-                setIsSuccess(false);
-                setNewPassword(null);
-                setEmailFailed(false);
-              }}
-            >
-              Pechar
-            </Button>
-          ) : !isSuccess ? (
+          {!isSuccess && (
             <>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
@@ -204,7 +132,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
                 )}
               </Button>
             </>
-          ) : null}
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

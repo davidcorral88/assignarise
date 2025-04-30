@@ -675,32 +675,14 @@ export const changeUserPassword = async (
   }
 };
 
-export const resetUserPassword = async (userId: number) => {
+export const resetUserPassword = async (userId: number): Promise<{ success: boolean, password?: string }> => {
   try {
-    const response = await fetch(`${API_URL}/passwords/reset`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId }),
+    return await apiRequest<{ success: boolean, password?: string }>('/passwords/reset', 'POST', {
+      userId
     });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error resetting password');
-    }
-    
-    // Parse the enhanced response that may include newPassword if email fails
-    const data = await response.json();
-    return {
-      success: true,
-      emailSent: data.emailSent !== false,
-      newPassword: data.newPassword || null,
-      message: data.message || 'Password reset successful'
-    };
   } catch (error) {
-    console.error('Error in resetUserPassword:', error);
-    throw error;
+    handleFetchError(error, `Error al restablecer contraseña del usuario ${userId}:`);
+    return { success: false };
   }
 };
 

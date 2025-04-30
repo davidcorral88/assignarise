@@ -10,7 +10,7 @@ export const DEFAULT_USE_POSTGRESQL = true;
 export const POSTGRESQL_ONLY_MODE = true;
 
 // Contraseña predeterminada para usuarios nuevos
-export const DEFAULT_PASSWORD = 'dc0rralIplan';
+export const DEFAULT_PASSWORD = 'dxm2025';
 
 // PostgreSQL database connection config
 export const dbConfig = {
