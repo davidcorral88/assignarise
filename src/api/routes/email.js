@@ -4,18 +4,30 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 
-// Configure email transporter with longer timeout settings
+// Configure email transporter with improved timeout settings and connection retries
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com', // Replace with your SMTP server
+  host: 'smtp.gmail.com',
   port: 587,
   secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com', // Replace with actual email in production
-    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy', // Replace with actual password in production
+    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
   },
-  connectionTimeout: 60000, // 1 minute connection timeout
-  greetingTimeout: 30000, // 30 seconds for SMTP greeting
-  socketTimeout: 60000,   // 1 minute socket timeout
+  // Enhanced timeout settings
+  connectionTimeout: 90000, // 90 seconds connection timeout
+  greetingTimeout: 60000,   // 60 seconds for SMTP greeting
+  socketTimeout: 90000,     // 90 seconds socket timeout
+  // Add retry mechanism
+  pool: true,               // Use pooled connections
+  maxConnections: 5,        // Limit number of connections
+  maxMessages: 100,         // Limit number of messages per connection
+  // TLS options
+  tls: {
+    rejectUnauthorized: false, // Accept self-signed certificates
+    ciphers: 'SSLv3'           // Use legacy ciphers for compatibility
+  },
+  // Debug mode for detailed logs (remove in production)
+  debug: false
 });
 
 // Test email configuration
@@ -29,7 +41,7 @@ router.get('/test', async (req, res) => {
   }
 });
 
-// Send task assignment notification
+// Send task assignment notification with improved error handling
 router.post('/send-task-assignment', async (req, res) => {
   try {
     const { taskId, userId, allocatedHours, isNewTask } = req.body;
@@ -137,17 +149,29 @@ router.post('/send-task-assignment', async (req, res) => {
       `
     };
     
-    // Send the email with promise handling to prevent blocking
-    const sendEmailPromise = transporter.sendMail(mailOptions)
-      .then(info => {
+    // Send the email using Promise with timeout and retry logic
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 3000; // 3 seconds
+    
+    const sendEmailWithRetry = async (attempt = 1) => {
+      try {
+        console.log(`Email sending attempt ${attempt} of ${MAX_RETRIES} for user ${userId}`);
+        const info = await transporter.sendMail(mailOptions);
         console.log('Email sent successfully:', info.messageId);
         return info;
-      })
-      .catch(error => {
-        console.error('Error in email sending:', error);
-        // We log the error but don't throw it to prevent failing the whole request
-        return { error: error.message, sent: false };
-      });
+      } catch (error) {
+        console.error(`Email sending attempt ${attempt} failed:`, error);
+        
+        if (attempt < MAX_RETRIES) {
+          console.log(`Retrying in ${RETRY_DELAY/1000} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          return sendEmailWithRetry(attempt + 1);
+        } else {
+          console.error('Email sending failed after max retries:', error);
+          throw error;
+        }
+      }
+    };
     
     // Return success immediately without waiting for email to complete sending
     res.json({ 
@@ -156,12 +180,22 @@ router.post('/send-task-assignment', async (req, res) => {
       async: true
     });
     
-    // Let the email sending continue in the background
-    await sendEmailPromise;
+    // Let the email sending continue in the background with retry logic
+    try {
+      await sendEmailWithRetry();
+    } catch (error) {
+      // We log the error but don't throw it since the HTTP response has already been sent
+      console.error('Final email sending error:', error);
+      // Here we could potentially log this to a database or notification system
+      // for admin follow-up, but we don't crash the server
+    }
     
   } catch (error) {
     console.error('Error processing task assignment email:', error);
-    res.status(500).json({ error: 'Failed to process email', details: error.message });
+    // Only send error response if we haven't already sent a success response
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to process email', details: error.message });
+    }
   }
 });
 
