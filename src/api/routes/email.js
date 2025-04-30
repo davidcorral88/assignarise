@@ -4,28 +4,100 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 
-// Configure email transporter with longer timeout settings
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com', // Replace with your SMTP server
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com', // Replace with actual email in production
-    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy', // Replace with actual password in production
-  },
-  connectionTimeout: 60000, // 1 minute connection timeout
-  greetingTimeout: 30000, // 30 seconds for SMTP greeting
-  socketTimeout: 60000,   // 1 minute socket timeout
-});
+// Configure email transporter with better error handling and longer timeout settings
+let transporter;
+try {
+  transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com', 
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+      pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
+    },
+    connectionTimeout: 120000, // 2 minute connection timeout (increased)
+    greetingTimeout: 60000,    // 1 minute for SMTP greeting (increased)
+    socketTimeout: 120000,     // 2 minute socket timeout (increased)
+    debug: true,               // Enable debug logs
+    logger: true,              // Enable logger
+    tls: {
+      rejectUnauthorized: false // Less strict about certificates
+    },
+    maxConnections: 1,         // Limit concurrent connections
+    maxMessages: 5,            // Limit messages per connection
+    pool: false                // Don't use connection pooling for more control
+  });
+} catch (error) {
+  console.error('Failed to create email transporter', error);
+}
 
 // Test email configuration
 router.get('/test', async (req, res) => {
   try {
-    await transporter.verify();
-    res.json({ status: 'Email server connection successful' });
+    if (!transporter) {
+      return res.status(500).json({ 
+        status: 'Email server configuration failed',
+        error: 'Transporter not created'
+      });
+    }
+    
+    try {
+      // Try to verify SMTP connection
+      await transporter.verify();
+      res.json({ status: 'Email server connection successful' });
+    } catch (verifyError) {
+      console.error('Email server verify error:', verifyError);
+      res.status(500).json({ 
+        status: 'Email server connection failed during verify', 
+        details: verifyError.message,
+        code: verifyError.code,
+        command: verifyError.command
+      });
+    }
   } catch (error) {
-    console.error('Email server connection error:', error);
-    res.status(500).json({ error: 'Email server connection failed', details: error.message });
+    console.error('Email server test error:', error);
+    res.status(500).json({ 
+      status: 'Email server test failed', 
+      details: error.message 
+    });
+  }
+});
+
+// Email configuration status route
+router.get('/status', async (req, res) => {
+  try {
+    if (!transporter) {
+      return res.json({
+        configured: false,
+        message: 'Email transporter not configured'
+      });
+    }
+    
+    try {
+      // Attempt a lightweight connection test
+      await transporter.verify({ timeout: 5000 }); // Short timeout for quick checking
+      
+      res.json({
+        configured: true,
+        status: 'connected',
+        message: 'Email system is configured and connected'
+      });
+    } catch (error) {
+      res.json({
+        configured: true,
+        status: 'error',
+        message: 'Email system is configured but connection failed',
+        error: error.message,
+        code: error.code
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      configured: false,
+      status: 'error',
+      message: 'Failed to check email system status',
+      error: error.message
+    });
   }
 });
 
@@ -36,6 +108,15 @@ router.post('/send-task-assignment', async (req, res) => {
     
     if (!taskId || !userId) {
       return res.status(400).json({ error: 'Task ID and User ID are required' });
+    }
+    
+    // Quick check if email system is configured
+    if (!transporter) {
+      return res.json({ 
+        message: 'Email service is not configured',
+        status: 'skipped',
+        emailSent: false
+      });
     }
     
     console.log(`Preparing to send task assignment email for task ${taskId} to user ${userId} with ${allocatedHours} hours`);
@@ -66,6 +147,7 @@ router.post('/send-task-assignment', async (req, res) => {
       console.log(`User ${userId} (${user.name}) has email notifications disabled. Skipping notification.`);
       return res.json({ 
         message: 'Email notification skipped - user has disabled notifications',
+        status: 'skipped',
         userId,
         userName: user.name
       });
@@ -137,27 +219,26 @@ router.post('/send-task-assignment', async (req, res) => {
       `
     };
     
-    // Send the email with promise handling to prevent blocking
-    const sendEmailPromise = transporter.sendMail(mailOptions)
-      .then(info => {
-        console.log('Email sent successfully:', info.messageId);
-        return info;
-      })
-      .catch(error => {
-        console.error('Error in email sending:', error);
-        // We log the error but don't throw it to prevent failing the whole request
-        return { error: error.message, sent: false };
+    // Try to send the email but handle errors gracefully
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', info.messageId);
+      
+      res.json({ 
+        message: 'Task assignment email sent',
+        status: 'success',
+        to: recipientEmail
       });
-    
-    // Return success immediately without waiting for email to complete sending
-    res.json({ 
-      message: 'Task assignment email sending in progress',
-      to: recipientEmail,
-      async: true
-    });
-    
-    // Let the email sending continue in the background
-    await sendEmailPromise;
+    } catch (emailError) {
+      console.error('Error in email sending:', emailError);
+      
+      res.json({ 
+        message: 'Task assignment email failed',
+        status: 'error',
+        error: emailError.message,
+        to: recipientEmail
+      });
+    }
     
   } catch (error) {
     console.error('Error processing task assignment email:', error);

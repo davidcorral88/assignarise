@@ -7,19 +7,32 @@ const nodemailer = require('nodemailer');
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
 
-// Configure email transporter with longer timeouts
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
-  },
-  connectionTimeout: 60000, // 1 minute connection timeout
-  greetingTimeout: 30000, // 30 seconds for SMTP greeting
-  socketTimeout: 60000,   // 1 minute socket timeout
-});
+// Configure email transporter with longer timeouts and better error handling
+let transporter;
+try {
+  transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+      pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
+    },
+    connectionTimeout: 120000, // 2 minute connection timeout (increased)
+    greetingTimeout: 60000,    // 1 minute for SMTP greeting (increased)
+    socketTimeout: 120000,     // 2 minute socket timeout (increased)
+    debug: true,               // Enable debug logs
+    logger: true,              // Enable logger
+    tls: {
+      rejectUnauthorized: false // Less strict about certificates
+    },
+    maxConnections: 1,         // Limit concurrent connections
+    maxMessages: 5,            // Limit messages per connection
+    pool: false                // Don't use connection pooling for more control
+  });
+} catch (error) {
+  console.error('Failed to create email transporter', error);
+}
 
 // Helper function to generate random password
 function generateRandomPassword(length = 12) {
@@ -135,8 +148,20 @@ router.post('/reset', async (req, res) => {
     await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
     await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
 
-    // Send email with new password, handled as a promise to avoid blocking
-    const sendEmailPromise = transporter.sendMail({
+    // Return early if email transporter is not configured
+    if (!transporter) {
+      return res.json({ 
+        success: true,
+        passwordReset: true,
+        emailSent: false,
+        emailError: 'Email transporter not configured',
+        newPassword: newPassword, // Include password in response when email can't be sent
+        message: 'Password reset successful but email sending failed. Use the provided password.'
+      });
+    }
+
+    // Prepare email content
+    const mailOptions = {
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
       to: recipientEmail,
       subject: 'Reseteo de contrasinal - Sistema de Tarefas',
@@ -165,20 +190,32 @@ router.post('/reset', async (req, res) => {
           </p>
         </div>
       `
-    }).catch(error => {
-      console.error('Error sending password reset email:', error);
-      // We catch but don't rethrow to prevent the main function from failing
-      return { error: error.message, sent: false };
-    });
-
-    // Return success immediately without waiting for email to complete sending
-    res.json({ 
-      success: true,
-      message: 'Password reset successful and email sending in progress'
-    });
+    };
     
-    // Let the email sending continue in the background
-    await sendEmailPromise;
+    // Try to send email but handle errors gracefully
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', info.messageId);
+      
+      res.json({ 
+        success: true,
+        passwordReset: true,
+        emailSent: true,
+        message: 'Password reset successful and email sent'
+      });
+    } catch (emailError) {
+      console.error('Error sending password reset email:', emailError);
+      
+      // Still return success but include the error and password in the response
+      res.json({ 
+        success: true,
+        passwordReset: true,
+        emailSent: false,
+        emailError: emailError.message,
+        newPassword: newPassword, // Include password in response when email fails
+        message: 'Password reset successful but email sending failed. Use the provided password.'
+      });
+    }
     
   } catch (error) {
     console.error('Error resetting password:', error);
