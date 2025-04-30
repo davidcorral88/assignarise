@@ -179,51 +179,27 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
         return;
       }
       
-      // Send notification email asynchronously with retry mechanism
-      const MAX_RETRIES = 3;
-      const RETRY_DELAY = 3000; // 3 seconds
-      
-      const sendWithRetry = async (attempt = 1) => {
-        try {
-          const response = await fetch('http://localhost:3000/api/email/send-task-assignment', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              taskId,
-              userId,
-              allocatedHours: hours,
-              isNewTask
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          
-          const result = await response.json();
-          console.log(`Email notification scheduled for task ${taskId} to user ${userId}:`, result);
-          return result;
-        } catch (error) {
-          console.error(`Email notification attempt ${attempt} failed for task ${taskId} to user ${userId}:`, error);
-          
-          if (attempt < MAX_RETRIES) {
-            console.log(`Retrying in ${RETRY_DELAY/1000} seconds...`);
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-            return sendWithRetry(attempt + 1);
-          } else {
-            console.error(`Email notification failed after ${MAX_RETRIES} attempts for task ${taskId} to user ${userId}`);
-            // Don't throw, just log the failure
-            return { error: error.message, sent: false };
-          }
-        }
-      };
-      
-      // Start the retry process but don't await it to keep it non-blocking
+      // Send notification email asynchronously (fire and forget)
       setTimeout(() => {
-        sendWithRetry().catch(error => {
-          console.error(`Unhandled error in email notification process:`, error);
+        fetch('http://localhost:3000/api/email/send-task-assignment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            taskId,
+            userId,
+            allocatedHours: hours,
+            isNewTask
+          })
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log(`Email notification scheduled for task ${taskId} to user ${userId}:`, result);
+        })
+        .catch(error => {
+          console.error(`Failed to schedule notification for task ${taskId} to user ${userId}:`, error);
+          // We log the error but don't throw it since this is non-blocking
         });
       }, 100); // Small delay to avoid overwhelming the server
     });

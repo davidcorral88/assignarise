@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Upload, AlertTriangle, Check, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { testPostgreSQLConnection } from '@/utils/migrationService';
 import { useAuth } from '@/components/auth/useAuth';
+import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
 
 interface ImportUsersButtonProps {
   onImportComplete: () => void;
@@ -156,7 +158,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
           id: item.id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: item.name,
           email: item.email,
-          password: item.password || '', // No default password, will be set through password reset
+          password: item.password || DEFAULT_PASSWORD, // Usar contraseña predeterminada si no se proporciona
           role: item.role,
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=0D8ABC&color=fff`,
           organism: item.organism,
@@ -166,7 +168,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
         };
         
         try {
-          console.log(`Importando usuario: ${newUser.name} a PostgreSQL`);
+          console.log(`Importando usuario: ${newUser.name} a PostgreSQL con contraseña predeterminada`);
           await addUser(newUser);
           importResults.success++;
         } catch (error) {
@@ -184,7 +186,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
     if (importResults.errors === 0) {
       toast({
         title: "Importación completada",
-        description: `Se importaron ${importResults.success} usuarios correctamente a PostgreSQL. Deberá establecer contraseñas para estos usuarios.`,
+        description: `Se importaron ${importResults.success} usuarios correctamente a PostgreSQL con la contraseña predeterminada.`,
       });
     } else {
       toast({
@@ -239,7 +241,7 @@ const ImportUsersButton: React.FC<ImportUsersButtonProps> = ({ onImportComplete 
           </DialogHeader>
           
           <div className="bg-blue-50 p-2 rounded text-xs text-blue-700 mb-3">
-            Los datos se almacenarán en PostgreSQL. Deberá establecer contraseñas para los usuarios importados.
+            Los datos se almacenarán en PostgreSQL.
           </div>
           
           <div className="max-h-60 overflow-auto border rounded-md">

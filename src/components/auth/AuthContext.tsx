@@ -1,7 +1,9 @@
+
 import React, { createContext, useState, useEffect } from 'react';
 import { AuthContextType, User } from '../../utils/types';
 import { toast } from '@/components/ui/use-toast';
 import { getUserByEmail, verifyUserPassword } from '@/utils/dataService';
+import { DEFAULT_PASSWORD } from '@/utils/dbConfig';
 import { createNewUser } from './authUtils';
 
 // Create the auth context
@@ -80,8 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isPasswordValid = await verifyUserPassword(user.id, password);
         } catch (error) {
           console.error("Error verifying password:", error);
-          // No fallback to default password since we removed it
-          isPasswordValid = false;
+          // Fallback to direct comparison with default password
+          isPasswordValid = password === DEFAULT_PASSWORD;
         }
       }
       

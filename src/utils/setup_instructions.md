@@ -43,7 +43,7 @@ psql -U postgres -d task_management -p 5432 -f C:\Users\administrator\Documents\
 SELECT * FROM users;
 ```
 
-Deberías ver los usuarios creados en la tabla.
+Deberías ver al menos 5 usuarios predefinidos en la tabla.
 
 ## 3. Configuración del servidor API
 
@@ -89,13 +89,25 @@ npm run preview
 
 ## 5. Accediendo a la aplicación
 
-Para iniciar sesión, deberás crear primero usuarios directamente en la base de datos o a través de la función de registro si está habilitada.
+### Usuarios predeterminados para inicio de sesión
+
+La aplicación incluye los siguientes usuarios predeterminados:
+
+| Email                     | Rol      | Contraseña |
+|---------------------------|----------|------------|
+| admin@example.com         | Gerente  | Cualquiera |
+| ana.pereira@example.com   | Gerente  | Cualquiera |
+| carlos.silva@example.com  | Trabajador | Cualquiera |
+| laura.mendez@example.com  | Trabajador | Cualquiera |
+| miguel.gonzalez@example.com | Trabajador | Cualquiera |
+
+Nota: Para fines de demostración, la aplicación aceptará cualquier contraseña para estos usuarios.
 
 ## 6. Creación de nuevos usuarios
 
 ### Opción 1: A través de la interfaz de usuario
 
-1. Inicia sesión como administrador
+1. Inicia sesión como administrador (admin@example.com)
 2. Navega a la sección "Usuarios"
 3. Haz clic en "Agregar Usuario"
 4. Completa la información requerida
@@ -108,11 +120,6 @@ Ejecuta un comando SQL como este:
 INSERT INTO users (id, name, email, role, avatar, active) 
 VALUES 
 ('6', 'Nuevo Usuario', 'nuevo.usuario@example.com', 'worker', 'https://ui-avatars.com/api/?name=Nuevo+Usuario&background=0D8ABC&color=fff', true);
-
--- Establecer contraseña (reemplazar con hash adecuado en producción)
-INSERT INTO user_passwords (user_id, password_hash) 
-VALUES 
-('6', '$2b$10$examplehashexamplehashexamplehash');
 ```
 
 ## 7. Solución de problemas comunes
@@ -126,9 +133,9 @@ Si tienes problemas para iniciar sesión:
 3. Verifica que las credenciales en `dbConfig.ts` sean correctas
 4. Comprueba que el usuario exista en la base de datos:
    ```sql
-   SELECT * FROM users WHERE email = 'tu.email@example.com';
-   SELECT * FROM user_passwords WHERE user_id = (SELECT id FROM users WHERE email = 'tu.email@example.com');
+   SELECT * FROM users WHERE email = 'admin@example.com';
    ```
+5. Si el problema persiste, intenta iniciar sesión con un usuario de demostración como fallback
 
 ### Configuración del servidor API
 
@@ -137,6 +144,14 @@ Si tienes problemas con el servidor API:
 1. Verifica que el servidor API esté en ejecución
 2. Comprueba que la URL en `API_URL` en `dbConfig.ts` apunte a la dirección correcta
 3. Revisa los logs del servidor API para errores específicos
+
+### Uso en modo local para desarrollo o demostración
+
+Para usar la aplicación sin configurar PostgreSQL, puedes cambiar la aplicación para utilizar almacenamiento local. Esto no se recomienda para producción, pero es útil para desarrollo:
+
+1. Ve a la página de Configuración en la aplicación
+2. Cambia de "Usar PostgreSQL" a "Usar almacenamiento local"
+3. Los datos se guardarán en el almacenamiento local del navegador
 
 ## 8. Contacto y soporte
 
