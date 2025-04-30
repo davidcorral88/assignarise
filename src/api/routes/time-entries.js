@@ -62,7 +62,6 @@ router.get('/', async (req, res) => {
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const { start_date, end_date } = req.query;
     
     // Ensure userId is an integer
     const userIdInt = parseInt(userId, 10);
@@ -73,24 +72,8 @@ router.get('/user/:userId', async (req, res) => {
     
     console.log('Fetching time entries for user ID:', userIdInt);
     
-    let query = 'SELECT * FROM time_entries WHERE user_id = $1';
-    const params = [userIdInt];
-    
-    // Add date range filters if provided
-    if (start_date) {
-      query += ` AND date >= $${params.length + 1}`;
-      params.push(start_date);
-    }
-    
-    if (end_date) {
-      query += ` AND date <= $${params.length + 1}`;
-      params.push(end_date);
-    }
-    
-    query += ' ORDER BY date DESC';
-    
-    console.log('User time entries query:', query, params);
-    const result = await pool.query(query, params);
+    const query = 'SELECT * FROM time_entries WHERE user_id = $1 ORDER BY date DESC';
+    const result = await pool.query(query, [userIdInt]);
     
     console.log(`Retrieved ${result.rows.length} time entries for user ID ${userIdInt}`);
     

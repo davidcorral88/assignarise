@@ -19,7 +19,6 @@ import UserConfig from "./pages/UserConfig";
 import Settings from "./pages/Settings";
 import Calendars from "./pages/Calendars";
 import NotFound from "./pages/NotFound";
-import TaskDashboard from "./pages/TaskDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,7 +52,6 @@ const App = () => (
             <Route path="/config" element={<UserConfig />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/calendars" element={<Calendars />} />
-            <Route path="/task-dashboard" element={<TaskDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

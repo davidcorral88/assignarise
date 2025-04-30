@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -86,12 +85,6 @@ export const Header: React.FC = () => {
       icon: <Clock className="mr-2 h-4 w-4" />,
       label: 'Rexistro de Horas',
       show: true
-    },
-    {
-      to: '/task-dashboard',
-      icon: <BarChart3 className="mr-2 h-4 w-4" />,
-      label: 'Cuadro de Mando',
-      show: true // All users can see the dashboard
     },
     {
       to: '/settings',
