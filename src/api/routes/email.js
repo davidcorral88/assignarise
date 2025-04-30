@@ -25,7 +25,11 @@ try {
     },
     maxConnections: 1,         // Limit concurrent connections
     maxMessages: 5,            // Limit messages per connection
-    pool: false                // Don't use connection pooling for more control
+    pool: false,               // Don't use connection pooling for more control
+    // Add error handling for connection issues
+    onError: (err) => {
+      console.error('Nodemailer transport error:', err);
+    }
   });
 } catch (error) {
   console.error('Failed to create email transporter', error);
@@ -42,8 +46,23 @@ router.get('/test', async (req, res) => {
     }
     
     try {
-      // Try to verify SMTP connection
-      await transporter.verify();
+      // Try to verify SMTP connection with promise handling
+      await new Promise((resolve, reject) => {
+        const verifyTimeout = setTimeout(() => {
+          reject(new Error('SMTP verification timed out after 15 seconds'));
+        }, 15000);
+        
+        transporter.verify()
+          .then(result => {
+            clearTimeout(verifyTimeout);
+            resolve(result);
+          })
+          .catch(err => {
+            clearTimeout(verifyTimeout);
+            reject(err);
+          });
+      });
+      
       res.json({ status: 'Email server connection successful' });
     } catch (verifyError) {
       console.error('Email server verify error:', verifyError);
@@ -74,8 +93,22 @@ router.get('/status', async (req, res) => {
     }
     
     try {
-      // Attempt a lightweight connection test
-      await transporter.verify({ timeout: 5000 }); // Short timeout for quick checking
+      // Attempt a lightweight connection test with proper promise handling
+      await new Promise((resolve, reject) => {
+        const statusTimeout = setTimeout(() => {
+          reject(new Error('SMTP verification timed out after 5 seconds'));
+        }, 5000);
+        
+        transporter.verify({ timeout: 5000 }) // Short timeout for quick checking
+          .then(result => {
+            clearTimeout(statusTimeout);
+            resolve(result);
+          })
+          .catch(err => {
+            clearTimeout(statusTimeout);
+            reject(err);
+          });
+      });
       
       res.json({
         configured: true,
@@ -219,9 +252,26 @@ router.post('/send-task-assignment', async (req, res) => {
       `
     };
     
-    // Try to send the email but handle errors gracefully
+    // Try to send the email with proper promise handling to avoid callback issues
     try {
-      const info = await transporter.sendMail(mailOptions);
+      // Wrap in a promise with a timeout to prevent hanging
+      const emailPromise = new Promise((resolve, reject) => {
+        const sendTimeout = setTimeout(() => {
+          reject(new Error('Email sending timed out after 30 seconds'));
+        }, 30000); // Set 30 second timeout for email sending
+        
+        transporter.sendMail(mailOptions)
+          .then(info => {
+            clearTimeout(sendTimeout);
+            resolve(info);
+          })
+          .catch(err => {
+            clearTimeout(sendTimeout);
+            reject(err);
+          });
+      });
+      
+      const info = await emailPromise;
       console.log('Email sent successfully:', info.messageId);
       
       res.json({ 

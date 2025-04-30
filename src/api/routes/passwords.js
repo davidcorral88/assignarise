@@ -28,7 +28,11 @@ try {
     },
     maxConnections: 1,         // Limit concurrent connections
     maxMessages: 5,            // Limit messages per connection
-    pool: false                // Don't use connection pooling for more control
+    pool: false,               // Don't use connection pooling for more control
+    // Add error handling for connection issues
+    onError: (err) => {
+      console.error('Nodemailer transport error:', err);
+    }
   });
 } catch (error) {
   console.error('Failed to create email transporter', error);
@@ -192,9 +196,26 @@ router.post('/reset', async (req, res) => {
       `
     };
     
-    // Try to send email but handle errors gracefully
+    // Try to send email with proper promise handling to avoid callback issues
     try {
-      const info = await transporter.sendMail(mailOptions);
+      // Wrap in a promise with a timeout to prevent hanging
+      const emailPromise = new Promise((resolve, reject) => {
+        const sendTimeout = setTimeout(() => {
+          reject(new Error('Email sending timed out after 30 seconds'));
+        }, 30000); // Set 30 second timeout for email sending
+        
+        transporter.sendMail(mailOptions)
+          .then(info => {
+            clearTimeout(sendTimeout);
+            resolve(info);
+          })
+          .catch(err => {
+            clearTimeout(sendTimeout);
+            reject(err);
+          });
+      });
+      
+      const info = await emailPromise;
       console.log('Email sent successfully:', info.messageId);
       
       res.json({ 
