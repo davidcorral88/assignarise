@@ -193,13 +193,18 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
             isNewTask
           })
         })
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(result => {
           console.log(`Email notification scheduled for task ${taskId} to user ${userId}:`, result);
         })
         .catch(error => {
           console.error(`Failed to schedule notification for task ${taskId} to user ${userId}:`, error);
-          // We log the error but don't throw it since this is non-blocking
+          // Non-blocking, so we just log the error
         });
       }, 100); // Small delay to avoid overwhelming the server
     });
@@ -211,7 +216,7 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
   }
 };
 
-// Modify the email sending logic to check preferences
+// Modify the email sending logic to check preferences and handle errors gracefully
 const sendTaskModificationNotifications = async (task, isNewTask = false) => {
   try {
     // Check email preferences from settings
@@ -257,7 +262,12 @@ const sendTaskModificationNotifications = async (task, isNewTask = false) => {
             taskStatus: task.status
           })
         })
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(result => {
           console.log(`Task modification email notification scheduled for task ${task.id} to user ${userId}:`, result);
         })
