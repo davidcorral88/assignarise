@@ -1,0 +1,283 @@
+
+# MANUAL DE USUARIO - CONTROL DE TAREFAS
+
+## ÍNDICE
+1. Introducción
+2. Acceso al sistema
+3. Interfaz principal
+4. Gestión de tareas
+5. Registro de tiempo
+6. Calendarios y planificación
+7. Perfil de usuario
+8. Configuración (administradores)
+9. Resolución de problemas comunes
+10. Preguntas frecuentes
+
+## 1. INTRODUCCIÓN
+
+La aplicación Control de Tarefas es una herramienta diseñada para la gestión eficiente de tareas y el seguimiento del tiempo dedicado a proyectos. Este sistema permite a los usuarios organizar su trabajo, registrar horas dedicadas a cada tarea, y a los administradores supervisar la productividad y asignar recursos de manera óptima.
+
+### 1.1. Requisitos técnicos
+
+Para utilizar Control de Tarefas se recomienda:
+- Navegadores: Chrome (v90+), Firefox (v88+), Edge (v90+) o Safari (v14+)
+- Conexión a internet estable
+- Resolución de pantalla mínima recomendada: 1280x720
+
+### 1.2. Roles de usuario
+
+El sistema contempla tres roles principales:
+- **Trabajador**: Puede ver y actualizar sus propias tareas, registrar horas y gestionar su perfil.
+- **Director**: Además de las funcionalidades de trabajador, puede crear tareas, asignarlas y ver informes de todos los usuarios.
+- **Administrador**: Tiene acceso completo al sistema, incluida la configuración y gestión de usuarios.
+
+## 2. ACCESO AL SISTEMA
+
+### 2.1. Iniciar sesión
+
+1. Abra su navegador y acceda a la URL proporcionada por su administrador.
+2. En la pantalla de inicio de sesión, introduzca su dirección de correo electrónico.
+3. Introduzca su contraseña.
+4. Haga clic en el botón "Iniciar sesión".
+
+Si es la primera vez que accede, es posible que necesite cambiar su contraseña temporal.
+
+### 2.2. Recuperación de contraseña
+
+Si ha olvidado su contraseña:
+1. En la pantalla de inicio de sesión, haga clic en "¿Olvidó su contraseña?".
+2. Introduzca su correo electrónico registrado.
+3. Recibirá un correo con instrucciones para restablecer su contraseña.
+4. Siga las instrucciones del correo para crear una nueva contraseña.
+
+### 2.3. Cerrar sesión
+
+Para cerrar sesión de forma segura:
+1. Haga clic en su nombre/avatar en la esquina superior derecha.
+2. Seleccione "Pechar sesión".
+
+## 3. INTERFAZ PRINCIPAL
+
+Tras iniciar sesión, accederá al panel de control (Dashboard), que muestra:
+
+### 3.1. Panel de control (Dashboard)
+
+- **Resumen del día**: Muestra las tareas pendientes y horas registradas hoy.
+- **Gráfico de actividad**: Presenta visualmente su registro de tiempo reciente.
+- **Tareas recientes**: Lista las tareas en las que ha trabajado recientemente.
+- **Estadísticas**: Muestra métricas de productividad y tiempo registrado.
+
+### 3.2. Navegación principal
+
+La barra lateral de navegación permite acceder a:
+- **Dashboard**: Panel principal con resumen de actividad.
+- **Tarefas**: Gestión y visualización de tareas.
+- **Rexistro de tempo**: Registro de horas trabajadas.
+- **Calendarios**: Visualización de festivos, ausencias y horarios.
+- **Usuarios**: (Solo administradores y directores) Gestión de usuarios.
+- **Configuración**: (Solo administradores) Ajustes del sistema.
+
+## 4. GESTIÓN DE TAREAS
+
+### 4.1. Visualización de tareas
+
+En la sección "Tarefas" podrá ver:
+- Lista de tareas asignadas a usted o creadas por usted.
+- Filtros por estado, categoría, proyecto, prioridad o fecha.
+- Búsqueda por texto para localizar tareas específicas.
+
+### 4.2. Creación de tareas (Director y Administrador)
+
+Para crear una nueva tarea:
+1. Haga clic en el botón "+ Nova tarefa".
+2. Rellene el formulario con:
+   - Título (obligatorio)
+   - Descripción
+   - Fechas de inicio y fin
+   - Prioridad
+   - Categoría y proyecto
+   - Etiquetas
+3. Asigne la tarea a uno o varios usuarios.
+4. Establezca las horas asignadas para cada usuario.
+5. Haga clic en "Gardar" para crear la tarea.
+
+### 4.3. Edición de tareas
+
+Para editar una tarea existente:
+1. Localice la tarea en la lista.
+2. Haga clic en el icono de edición (lápiz) o en el título para ver los detalles.
+3. En la pantalla de detalles, haga clic en "Editar".
+4. Modifique los campos necesarios.
+5. Haga clic en "Gardar" para actualizar la información.
+
+### 4.4. Cambio de estado de las tareas
+
+Los estados disponibles para las tareas son:
+- **Pendente**: Tarea creada pero no iniciada.
+- **En progreso**: Tarea en la que se está trabajando actualmente.
+- **Pausada**: Tarea temporalmente detenida.
+- **Completada**: Tarea finalizada.
+- **Cancelada**: Tarea que no se va a realizar.
+
+Para cambiar el estado:
+1. En la vista de detalles, seleccione el nuevo estado en el desplegable.
+2. Confirme el cambio si el sistema lo solicita.
+
+### 4.5. Asignación de tareas (Director y Administrador)
+
+Para asignar o reasignar tareas:
+1. En la vista de detalles de la tarea, vaya a la sección "Asignaciones".
+2. Haga clic en "Engadir asignación".
+3. Seleccione el usuario al que desea asignar la tarea.
+4. Establezca las horas estimadas.
+5. Haga clic en "Gardar".
+
+## 5. REGISTRO DE TIEMPO
+
+### 5.1. Registro diario de horas
+
+Para registrar el tiempo trabajado:
+1. Acceda a la sección "Rexistro de tempo".
+2. Seleccione la fecha (por defecto es el día actual).
+3. Haga clic en "Engadir rexistro".
+4. Seleccione la tarea a la que dedicó tiempo.
+5. Introduzca las horas trabajadas (puede usar decimales para minutos).
+6. Añada notas opcionales sobre el trabajo realizado.
+7. Haga clic en "Gardar".
+
+### 5.2. Vista semanal y mensual
+
+- Para cambiar entre vistas, utilice los selectores en la parte superior.
+- La vista semanal muestra el tiempo registrado cada día de la semana actual.
+- La vista mensual presenta un resumen del tiempo registrado por día en todo el mes.
+
+### 5.3. Informes de tiempo
+
+Para generar informes:
+1. Utilice los filtros disponibles para seleccionar:
+   - Rango de fechas
+   - Proyectos específicos
+   - Categorías específicas
+   - Usuarios (solo directores y administradores)
+2. Haga clic en "Xerar informe".
+3. Puede exportar el informe en formato Excel haciendo clic en "Exportar a Excel".
+
+## 6. CALENDARIOS Y PLANIFICACIÓN
+
+### 6.1. Calendario de festivos
+
+El calendario muestra los días festivos oficiales. Para consultarlo:
+1. Vaya a la sección "Calendarios".
+2. Seleccione la pestaña "Festivos".
+
+### 6.2. Calendario de ausencias
+
+Para registrar ausencias (vacaciones, bajas, etc.):
+1. Vaya a "Calendarios" y seleccione la pestaña "Ausencias".
+2. Haga clic en "Rexistrar ausencia".
+3. Seleccione el tipo de ausencia (vacaciones, enfermedad, etc.).
+4. Establezca las fechas de inicio y fin.
+5. Añada un comentario opcional.
+6. Haga clic en "Gardar".
+
+Los directores y administradores pueden ver las ausencias de todos los usuarios.
+
+### 6.3. Configuración de horarios laborales
+
+Para configurar sus horarios (si está permitido):
+1. Vaya a "Calendarios" y seleccione "Horarios".
+2. Vea su horario actual por defecto.
+3. Si necesita modificar su horario, contacte con su administrador.
+
+## 7. PERFIL DE USUARIO
+
+### 7.1. Visualización y edición del perfil
+
+Para gestionar su información personal:
+1. Haga clic en su nombre/avatar en la esquina superior derecha.
+2. Seleccione "Perfil".
+3. Para modificar su información, haga clic en "Editar".
+4. Actualice los campos permitidos.
+5. Haga clic en "Gardar" para confirmar los cambios.
+
+### 7.2. Cambio de contraseña
+
+Para cambiar su contraseña:
+1. Vaya a su perfil.
+2. Haga clic en "Cambiar contrasinal".
+3. Introduzca su contraseña actual.
+4. Introduzca la nueva contraseña (debe cumplir con los requisitos de seguridad).
+5. Confirme la nueva contraseña.
+6. Haga clic en "Actualizar contrasinal".
+
+## 8. CONFIGURACIÓN (ADMINISTRADORES)
+
+### 8.1. Gestión de usuarios
+
+Para gestionar usuarios:
+1. Vaya a la sección "Usuarios".
+2. Aquí puede:
+   - Ver todos los usuarios del sistema.
+   - Crear nuevos usuarios haciendo clic en "+ Novo usuario".
+   - Editar usuarios existentes haciendo clic en el icono de edición.
+   - Activar o desactivar usuarios.
+   - Restablecer contraseñas.
+
+### 8.2. Configuración del sistema
+
+Para ajustar la configuración general:
+1. Vaya a la sección "Configuración".
+2. Aquí puede configurar:
+   - Opciones de revisión diaria de tareas.
+   - Ver el uso de almacenamiento.
+   - Acceder a opciones de backup y restauración de la base de datos (contactando con el administrador del sistema).
+
+## 9. RESOLUCIÓN DE PROBLEMAS COMUNES
+
+### 9.1. Problemas de inicio de sesión
+
+- **No puedo iniciar sesión**: Verifique que está introduciendo el correo electrónico y la contraseña correctos.
+- **Recibo un error de "Cuenta desactivada"**: Contacte con su administrador.
+- **He olvidado mi contraseña**: Utilice la opción "¿Olvidó su contraseña?" en la pantalla de inicio de sesión.
+
+### 9.2. Problemas con las tareas
+
+- **No veo mis tareas asignadas**: Verifique los filtros aplicados en la lista de tareas.
+- **No puedo editar una tarea**: Solo los creadores, directores y administradores pueden editar tareas.
+- **No puedo cambiar el estado de una tarea**: Asegúrese de que tiene permisos suficientes y que la tarea no está bloqueada.
+
+### 9.3. Problemas con el registro de tiempo
+
+- **No puedo registrar horas**: Verifique que está intentando registrar tiempo en una tarea que le ha sido asignada.
+- **La tarea no aparece en la lista de selección**: La tarea puede estar completada o no tenerla asignada.
+- **Error al guardar registro de tiempo**: Asegúrese de que el formato de horas es correcto (use punto como separador decimal, no coma).
+
+## 10. PREGUNTAS FRECUENTES
+
+**P: ¿Puedo registrar tiempo en tareas de días anteriores?**
+R: Sí, puede seleccionar cualquier fecha para registrar tiempo.
+
+**P: ¿Cómo puedo ver el tiempo total que he dedicado a un proyecto?**
+R: En la sección "Rexistro de tempo", utilice los filtros para seleccionar el proyecto y el período deseado.
+
+**P: ¿Quién puede ver mis registros de tiempo?**
+R: Usted puede ver sus propios registros. Los directores y administradores pueden ver los registros de todos los usuarios.
+
+**P: ¿Cómo puedo solicitar vacaciones en el sistema?**
+R: Vaya a "Calendarios", seleccione "Ausencias" y registre una nueva ausencia de tipo "Vacaciones".
+
+**P: ¿Puedo exportar mis tareas o registros de tiempo?**
+R: Sí, en las vistas correspondientes encontrará botones de "Exportar a Excel".
+
+**P: ¿Cómo cambia el rol de un usuario?**
+R: Solo los administradores pueden cambiar roles. Deben editar el perfil del usuario y modificar el campo "Rol".
+
+**P: ¿Se envían notificaciones cuando se me asigna una tarea?**
+R: Sí, si su cuenta tiene configurado el correo electrónico, recibirá notificaciones por email.
+
+**P: ¿Hay alguna aplicación móvil disponible?**
+R: Actualmente el sistema está optimizado para navegadores web, pero se adapta a dispositivos móviles.
+
+---
+
+Para cualquier problema o consulta no cubierta en este manual, contacte con el administrador del sistema.

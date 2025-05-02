@@ -1,0 +1,827 @@
+
+# MANUAL DE INSTALACIÓN - CONTROL DE TAREFAS
+
+## ÍNDICE
+1. Requisitos del sistema
+2. Instalación en entorno local (desarrollo)
+3. Instalación en entorno de producción
+4. Configuración de la base de datos PostgreSQL
+5. Configuración del servidor API
+6. Configuración de correo electrónico
+7. Migración de datos
+8. Verificación y pruebas
+9. Solución de problemas comunes
+10. Mantenimiento y copias de seguridad
+
+## 1. REQUISITOS DEL SISTEMA
+
+### 1.1. Hardware recomendado
+
+- **Servidor de aplicación**:
+  - CPU: 2+ núcleos
+  - RAM: 4GB mínimo (8GB recomendado)
+  - Almacenamiento: 20GB mínimo
+  - Conexión a internet: 10+ Mbps
+
+- **Servidor de base de datos** (puede ser el mismo que el servidor de aplicación):
+  - CPU: 2+ núcleos
+  - RAM: 4GB mínimo (8GB recomendado para bases de datos mayores)
+  - Almacenamiento: 50GB+ SSD recomendado
+
+### 1.2. Software necesario
+
+- **Sistema Operativo**: Windows Server 2019+, Ubuntu 20.04+, o cualquier distribución Linux moderna
+- **Node.js**: Versión 18.x o superior
+- **PostgreSQL**: Versión 14 o superior
+- **Navegadores compatibles para cliente**: Chrome, Firefox, Safari, Edge (versiones actualizadas)
+- **Servidor Web**: Apache o Nginx (opcional, para producción)
+
+### 1.3. Conocimientos previos recomendados
+
+- Administración básica de servidores Linux/Windows
+- Conocimientos básicos de PostgreSQL
+- Familiaridad con Node.js y npm
+- Conceptos básicos de redes (puertos, DNS, etc.)
+
+## 2. INSTALACIÓN EN ENTORNO LOCAL (DESARROLLO)
+
+### 2.1. Descarga del código fuente
+
+1. Clone el repositorio:
+   ```bash
+   git clone [URL_DEL_REPOSITORIO] control_tarefas
+   cd control_tarefas
+   ```
+
+2. Instale las dependencias:
+   ```bash
+   npm install
+   ```
+
+### 2.2. Configuración del entorno local
+
+1. Configure la base de datos PostgreSQL (ver sección 4).
+
+2. Cree una copia del archivo de configuración:
+   ```bash
+   cp src/utils/dbConfig.example.ts src/utils/dbConfig.ts
+   ```
+
+3. Edite `src/utils/dbConfig.ts` con los parámetros correctos:
+   ```typescript
+   export const dbConfig = {
+     host: 'localhost',
+     port: 5432,  // O el puerto que configure para PostgreSQL
+     database: 'controltarefasv2',
+     user: 'USUARIO_DB',
+     password: 'CONTRASEÑA_DB'
+   };
+   ```
+
+### 2.3. Inicialización de la base de datos
+
+1. Ejecute el script de creación de la base de datos:
+   ```bash
+   psql -U postgres -c "CREATE USER task_control WITH PASSWORD 'su_contraseña';"
+   psql -U postgres -c "CREATE DATABASE controltarefasv2 OWNER task_control;"
+   ```
+
+2. Importe la estructura de la base de datos:
+   ```bash
+   psql -U task_control -d controltarefasv2 -f src/utils/controltarefasv2_schema.sql
+   ```
+
+### 2.4. Ejecución en modo desarrollo
+
+1. Inicie el servidor API (en una terminal separada):
+   ```bash
+   cd src/api
+   node server.js
+   # O si prefiere usar nodemon para desarrollo:
+   # npm install -g nodemon
+   # nodemon server.js
+   ```
+
+2. Inicie la aplicación web:
+   ```bash
+   npm run dev
+   ```
+
+3. Acceda a la aplicación en su navegador: `http://localhost:5173`
+
+## 3. INSTALACIÓN EN ENTORNO DE PRODUCCIÓN
+
+### 3.1. Preparación del servidor
+
+1. Actualice el sistema:
+   ```bash
+   # En Ubuntu/Debian
+   sudo apt update
+   sudo apt upgrade -y
+   
+   # En CentOS/RHEL
+   sudo yum update -y
+   ```
+
+2. Instale Node.js:
+   ```bash
+   # Usando nvm (recomendado)
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+   source ~/.bashrc
+   nvm install 18
+   nvm use 18
+   
+   # Alternativa en Ubuntu/Debian
+   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+   sudo apt install -y nodejs
+   ```
+
+3. Instale PostgreSQL:
+   ```bash
+   # En Ubuntu/Debian
+   sudo apt install postgresql postgresql-contrib -y
+   
+   # En CentOS/RHEL
+   sudo yum install -y postgresql-server postgresql-contrib
+   sudo postgresql-setup initdb
+   sudo systemctl start postgresql
+   sudo systemctl enable postgresql
+   ```
+
+### 3.2. Despliegue del código
+
+1. Clone o copie el código en el servidor:
+   ```bash
+   git clone [URL_DEL_REPOSITORIO] /opt/control_tarefas
+   cd /opt/control_tarefas
+   ```
+
+2. Instale las dependencias:
+   ```bash
+   npm install --production
+   ```
+
+3. Construya la aplicación para producción:
+   ```bash
+   npm run build
+   ```
+
+### 3.3. Configuración del servidor web (Nginx)
+
+1. Instale Nginx:
+   ```bash
+   sudo apt install nginx -y
+   ```
+
+2. Configure un sitio para la aplicación:
+   ```bash
+   sudo nano /etc/nginx/sites-available/control_tarefas
+   ```
+
+3. Añada la siguiente configuración:
+   ```nginx
+   server {
+       listen 80;
+       server_name tu-dominio.com www.tu-dominio.com;
+       
+       location / {
+           root /opt/control_tarefas/dist;
+           try_files $uri $uri/ /index.html;
+           index index.html;
+       }
+       
+       location /api {
+           proxy_pass http://localhost:3000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+4. Habilite el sitio y reinicie Nginx:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/control_tarefas /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+### 3.4. Configuración del servidor API como servicio
+
+1. Cree un archivo de servicio systemd:
+   ```bash
+   sudo nano /etc/systemd/system/control-tarefas-api.service
+   ```
+
+2. Añada la siguiente configuración:
+   ```ini
+   [Unit]
+   Description=Control Tarefas API Server
+   After=network.target postgresql.service
+
+   [Service]
+   Environment=NODE_ENV=production
+   Type=simple
+   User=www-data
+   WorkingDirectory=/opt/control_tarefas/src/api
+   ExecStart=/usr/bin/node server.js
+   Restart=on-failure
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+3. Habilite e inicie el servicio:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable control-tarefas-api
+   sudo systemctl start control-tarefas-api
+   ```
+
+### 3.5. Configuración de seguridad
+
+1. Instale y configure un firewall (UFW en Ubuntu):
+   ```bash
+   sudo apt install ufw
+   sudo ufw allow ssh
+   sudo ufw allow http
+   sudo ufw allow https
+   sudo ufw enable
+   ```
+
+2. Configure SSL/HTTPS con Let's Encrypt:
+   ```bash
+   sudo apt install certbot python3-certbot-nginx
+   sudo certbot --nginx -d tu-dominio.com -d www.tu-dominio.com
+   ```
+
+## 4. CONFIGURACIÓN DE LA BASE DE DATOS POSTGRESQL
+
+### 4.1. Creación y configuración inicial
+
+1. Inicie sesión como administrador de PostgreSQL:
+   ```bash
+   sudo -u postgres psql
+   ```
+
+2. Cree un usuario para la aplicación:
+   ```sql
+   CREATE USER task_control WITH PASSWORD 'su_contraseña';
+   ```
+
+3. Cree la base de datos:
+   ```sql
+   CREATE DATABASE controltarefasv2 OWNER task_control;
+   ```
+
+4. Salga de la consola PostgreSQL:
+   ```sql
+   \q
+   ```
+
+### 4.2. Configuración de PostgreSQL para rendimiento
+
+Edite el archivo de configuración de PostgreSQL (`postgresql.conf`):
+```bash
+sudo nano /etc/postgresql/14/main/postgresql.conf
+```
+
+Ajustes recomendados para servidores con 8GB de RAM:
+```
+shared_buffers = 2GB
+work_mem = 64MB
+maintenance_work_mem = 256MB
+effective_cache_size = 4GB
+max_connections = 100
+```
+
+Reinicie PostgreSQL después de los cambios:
+```bash
+sudo systemctl restart postgresql
+```
+
+### 4.3. Importación de la estructura de base de datos
+
+Ejecute el script de creación de tablas:
+```bash
+psql -U task_control -d controltarefasv2 -f src/utils/controltarefasv2_schema.sql
+```
+
+Si necesita ejecutar con contraseña:
+```bash
+PGPASSWORD=su_contraseña psql -U task_control -d controltarefasv2 -f src/utils/controltarefasv2_schema.sql
+```
+
+### 4.4. Configuración de backups automáticos
+
+1. Cree un script de backup:
+   ```bash
+   sudo nano /usr/local/bin/backup_database.sh
+   ```
+
+2. Añada el siguiente contenido:
+   ```bash
+   #!/bin/bash
+   BACKUP_DIR="/var/backups/postgres"
+   TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+   PGPASSWORD=su_contraseña pg_dump -U task_control -h localhost controltarefasv2 > $BACKUP_DIR/controltarefasv2_$TIMESTAMP.sql
+   find $BACKUP_DIR -type f -name "controltarefasv2_*.sql" -mtime +7 -delete
+   ```
+
+3. Haga ejecutable el script:
+   ```bash
+   sudo chmod +x /usr/local/bin/backup_database.sh
+   ```
+
+4. Configure una tarea cron para ejecutar el backup diariamente:
+   ```bash
+   sudo crontab -e
+   ```
+
+5. Añada la siguiente línea:
+   ```
+   0 2 * * * /usr/local/bin/backup_database.sh
+   ```
+
+## 5. CONFIGURACIÓN DEL SERVIDOR API
+
+### 5.1. Configuración de conexión a la base de datos
+
+Edite el archivo de conexión a la base de datos (`src/api/db/connection.js`):
+```bash
+nano src/api/db/connection.js
+```
+
+Actualice los parámetros de conexión:
+```javascript
+const pool = new Pool({
+  user: 'task_control',
+  host: 'localhost',
+  database: 'controltarefasv2',
+  password: 'su_contraseña',
+  port: 5432,
+});
+```
+
+### 5.2. Configuración de puerto y host
+
+Si necesita cambiar el puerto o host del API, edite `src/api/server.js`:
+```bash
+nano src/api/server.js
+```
+
+Modifique las siguientes líneas:
+```javascript
+const port = process.env.PORT || 3000;
+const host = process.env.HOST || 'localhost';
+
+app.listen(port, host, () => {
+  console.log(`API server running at http://${host}:${port}/api`);
+});
+```
+
+### 5.3. Configuración de CORS (para desarrollo)
+
+El archivo de configuración CORS está en `src/api/config/cors.js`. Si necesita permitir orígenes adicionales, edítelo:
+```javascript
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'https://tu-dominio.com'
+  ],
+  // ... resto de configuración
+};
+```
+
+### 5.4. Escalabilidad y rendimiento
+
+Para mejorar el rendimiento del servidor API en producción, considere:
+
+1. Implementar PM2 para gestionar el proceso Node.js:
+   ```bash
+   npm install -g pm2
+   pm2 start server.js --name "control-tarefas-api" --watch
+   pm2 save
+   pm2 startup
+   ```
+
+2. Configurar los parámetros de conexión a la base de datos para un mejor rendimiento:
+   ```javascript
+   const pool = new Pool({
+     // ... credenciales existentes
+     max: 20, // máximo número de clientes en el pool
+     idleTimeoutMillis: 30000, // tiempo máximo de inactividad
+     connectionTimeoutMillis: 2000, // tiempo de espera para conexión
+   });
+   ```
+
+## 6. CONFIGURACIÓN DE CORREO ELECTRÓNICO
+
+### 6.1. Configuración de SMTP para notificaciones
+
+Para configurar el envío de correos electrónicos, edite la configuración SMTP en el servidor API:
+
+1. Configure sus credenciales SMTP en la aplicación:
+
+Para Gmail o servicios similares:
+```javascript
+// En el archivo donde se configura el servicio de correo
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: 'su-email@gmail.com',
+    pass: 'su-contraseña-o-clave-de-aplicación',
+  },
+  tls: {
+    rejectUnauthorized: false
+  },
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
+  rateDelta: 1000,
+  rateLimit: 5
+});
+
+transporter.verify(function(error, success) {
+  if (error) {
+    console.error('Error de configuración SMTP:', error);
+  } else {
+    console.log('Servidor SMTP listo para enviar mensajes');
+  }
+});
+```
+
+### 6.2. Prueba de envío de correo electrónico
+
+Para verificar que la configuración de correo funciona correctamente:
+
+1. Cree un punto de prueba en la API:
+```javascript
+// En src/api/routes/status.js o similar
+router.get('/test-email', async (req, res) => {
+  try {
+    await transporter.sendMail({
+      from: '"Control Tarefas" <su-email@gmail.com>',
+      to: "correo-prueba@ejemplo.com",
+      subject: "Prueba de configuración de correo",
+      text: "Este es un correo de prueba para verificar la configuración SMTP",
+      html: "<b>Este es un correo de prueba para verificar la configuración SMTP</b>",
+    });
+    res.json({ success: true, message: 'Email enviado correctamente' });
+  } catch (error) {
+    console.error('Error al enviar el correo:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+```
+
+2. Acceda a `http://localhost:3000/api/status/test-email` para probar.
+
+### 6.3. Configuración de plantillas de correo
+
+Para personalizar las plantillas de correos:
+
+1. Cree una carpeta para las plantillas:
+```bash
+mkdir -p src/api/templates/email
+```
+
+2. Cree plantillas HTML para diferentes tipos de notificaciones (por ejemplo, `task-assigned.html`).
+
+3. Implemente un sistema para usar estas plantillas en el envío:
+```javascript
+const fs = require('fs').promises;
+const path = require('path');
+const handlebars = require('handlebars');
+
+async function sendTemplateEmail(to, subject, templateName, data) {
+  try {
+    const templatePath = path.join(__dirname, '..', 'templates', 'email', `${templateName}.html`);
+    const templateContent = await fs.readFile(templatePath, 'utf-8');
+    const template = handlebars.compile(templateContent);
+    const html = template(data);
+    
+    return transporter.sendMail({
+      from: '"Control Tarefas" <su-email@gmail.com>',
+      to,
+      subject,
+      html
+    });
+  } catch (error) {
+    console.error('Error al enviar correo con plantilla:', error);
+    throw error;
+  }
+}
+```
+
+## 7. MIGRACIÓN DE DATOS
+
+### 7.1. Migración desde versiones anteriores
+
+Si está actualizando desde una versión anterior, siga estos pasos:
+
+1. Realice una copia de seguridad de la base de datos actual:
+```bash
+pg_dump -U task_control -d base_de_datos_anterior > backup_antes_migracion.sql
+```
+
+2. Ejecute el script de migración específico:
+```bash
+node src/utils/migrate_data.js
+```
+
+3. Si la migración es desde almacenamiento local a PostgreSQL, utilice la interfaz web:
+   - Acceda como administrador
+   - Vaya a la sección "Configuración"
+   - Utilice la opción "Migración a PostgreSQL"
+   - Siga las instrucciones en pantalla
+
+### 7.2. Verificación de datos migrados
+
+Después de la migración, verifique que todos los datos se han transferido correctamente:
+
+1. Compruebe los conteos de registros en la base de datos:
+```sql
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM tasks;
+SELECT COUNT(*) FROM time_entries;
+-- etc.
+```
+
+2. Verifique la integridad referencial:
+```sql
+SELECT t.id, COUNT(ta.user_id) as assignments
+FROM tasks t
+LEFT JOIN task_assignments ta ON t.id = ta.task_id
+GROUP BY t.id;
+```
+
+3. Identifique posibles duplicados:
+```sql
+SELECT email, COUNT(*) FROM users GROUP BY email HAVING COUNT(*) > 1;
+```
+
+## 8. VERIFICACIÓN Y PRUEBAS
+
+### 8.1. Verificación de instalación
+
+Complete esta lista de comprobación para verificar la instalación:
+
+1. La aplicación web carga correctamente en `http://tu-dominio.com`
+2. La API responde correctamente en `http://tu-dominio.com/api/status`
+3. Los usuarios pueden iniciar sesión
+4. Se pueden crear, asignar y actualizar tareas
+5. Se pueden registrar horas en tareas
+6. Los administradores pueden acceder a la sección de configuración
+7. Los correos electrónicos de notificación se envían correctamente
+8. Los calendarios y horarios se visualizan correctamente
+
+### 8.2. Pruebas de carga
+
+Si espera un uso intensivo, considere realizar pruebas de carga:
+
+1. Instale herramientas como Apache JMeter o k6:
+```bash
+# Ejemplo con k6
+npm install -g k6
+```
+
+2. Cree un script de prueba básico:
+```javascript
+// loadtest.js
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export default function() {
+  const res = http.get('http://tu-dominio.com/api/status');
+  check(res, { 'status was 200': (r) => r.status === 200 });
+  sleep(1);
+}
+```
+
+3. Ejecute la prueba:
+```bash
+k6 run --vus 50 --duration 30s loadtest.js
+```
+
+### 8.3. Comprobación de seguridad
+
+Verifique los aspectos de seguridad:
+
+1. Todas las comunicaciones utilizan HTTPS
+2. Los puertos innecesarios están cerrados en el firewall
+3. La base de datos solo es accesible localmente o a través de una VPN
+4. Los permisos de archivos están correctamente establecidos:
+   ```bash
+   sudo chown -R www-data:www-data /opt/control_tarefas/dist
+   sudo find /opt/control_tarefas/dist -type d -exec chmod 755 {} \;
+   sudo find /opt/control_tarefas/dist -type f -exec chmod 644 {} \;
+   ```
+
+## 9. SOLUCIÓN DE PROBLEMAS COMUNES
+
+### 9.1. Problemas de conexión a la base de datos
+
+**Problema**: Error "could not connect to server: Connection refused"
+
+**Soluciones**:
+1. Verifique que PostgreSQL está en ejecución:
+   ```bash
+   sudo systemctl status postgresql
+   ```
+
+2. Compruebe la configuración de PostgreSQL para permitir conexiones:
+   ```bash
+   sudo nano /etc/postgresql/14/main/pg_hba.conf
+   ```
+   Añada o modifique:
+   ```
+   host    all             all             127.0.0.1/32            md5
+   ```
+
+3. Verifique que PostgreSQL escucha en la interfaz correcta:
+   ```bash
+   sudo nano /etc/postgresql/14/main/postgresql.conf
+   ```
+   Asegúrese de que:
+   ```
+   listen_addresses = 'localhost'  # o '*' para todas las interfaces
+   ```
+
+4. Reinicie PostgreSQL:
+   ```bash
+   sudo systemctl restart postgresql
+   ```
+
+### 9.2. Errores en el servidor API
+
+**Problema**: API no responde o devuelve errores 5xx
+
+**Soluciones**:
+1. Verifique los logs de error:
+   ```bash
+   sudo journalctl -u control-tarefas-api.service
+   # o si usa PM2:
+   pm2 logs control-tarefas-api
+   ```
+
+2. Compruebe las dependencias:
+   ```bash
+   cd /opt/control_tarefas/src/api
+   npm install
+   ```
+
+3. Verifique la conectividad a la base de datos:
+   ```bash
+   node -e "const { Pool } = require('pg'); \
+   const pool = new Pool({ \
+     user: 'task_control', \
+     host: 'localhost', \
+     database: 'controltarefasv2', \
+     password: 'su_contraseña', \
+     port: 5432 \
+   }); \
+   pool.query('SELECT NOW()', (err, res) => { \
+     if (err) console.error(err); \
+     else console.log(res.rows); \
+     pool.end(); \
+   });"
+   ```
+
+### 9.3. Problemas de rendimiento
+
+**Problema**: La aplicación se ejecuta lentamente
+
+**Soluciones**:
+1. Optimice PostgreSQL según la sección 4.2
+2. Implemente caché:
+   ```javascript
+   const NodeCache = require('node-cache');
+   const cache = new NodeCache({ stdTTL: 300 }); // 5 minutos
+   
+   // Ejemplo de ruta con caché
+   router.get('/frequently-accessed-data', (req, res) => {
+     const cacheKey = 'frequent-data';
+     const cachedData = cache.get(cacheKey);
+     
+     if (cachedData) {
+       return res.json(cachedData);
+     }
+     
+     // Consulta original aquí...
+     const data = { /* datos consultados */ };
+     
+     cache.set(cacheKey, data);
+     return res.json(data);
+   });
+   ```
+   
+3. Utilice PM2 para escalar horizontalmente:
+   ```bash
+   pm2 start server.js -i max
+   ```
+
+### 9.4. Problemas con CORS
+
+**Problema**: Errores de CORS en el navegador
+
+**Soluciones**:
+1. Verifique la configuración en `src/api/config/cors.js`
+2. Asegúrese de que incluye todos los orígenes necesarios
+3. Para desarrollo rápido (no recomendado para producción), puede permitir todos los orígenes:
+   ```javascript
+   const corsOptions = {
+     origin: '*',
+     // resto de opciones
+   };
+   ```
+
+## 10. MANTENIMIENTO Y COPIAS DE SEGURIDAD
+
+### 10.1. Plan de mantenimiento regular
+
+1. **Diario**:
+   - Verificación de los logs de error
+   - Comprobación del espacio en disco
+   - Ejecución de copias de seguridad automáticas
+
+2. **Semanal**:
+   - Verificación del rendimiento de la base de datos
+   - Eliminación de logs antiguos
+
+3. **Mensual**:
+   - Actualización de seguridad del sistema operativo
+   - Verificación de la seguridad de la aplicación
+   - Optimización de la base de datos (VACUUM ANALYZE)
+
+### 10.2. Procedimiento de copia de seguridad
+
+1. **Copia de seguridad de la base de datos**:
+   ```bash
+   PGPASSWORD=su_contraseña pg_dump -U task_control -h localhost -F c -b -v -f /ruta/backup/controltarefasv2_$(date +%Y%m%d).backup controltarefasv2
+   ```
+
+2. **Copia de seguridad de archivos de la aplicación**:
+   ```bash
+   tar -czvf /ruta/backup/control_tarefas_files_$(date +%Y%m%d).tar.gz /opt/control_tarefas
+   ```
+
+3. **Restauración de la base de datos** (si es necesario):
+   ```bash
+   PGPASSWORD=su_contraseña pg_restore -U task_control -h localhost -d controltarefasv2 -c /ruta/backup/controltarefasv2_YYYYMMDD.backup
+   ```
+
+### 10.3. Actualización de la aplicación
+
+Para actualizar a una nueva versión:
+
+1. Realice una copia de seguridad completa.
+2. Detenga los servicios:
+   ```bash
+   sudo systemctl stop control-tarefas-api
+   ```
+
+3. Actualice el código:
+   ```bash
+   cd /opt/control_tarefas
+   git pull
+   npm install
+   npm run build
+   ```
+
+4. Actualice la base de datos si es necesario:
+   ```bash
+   psql -U task_control -d controltarefasv2 -f src/utils/update_schema.sql
+   ```
+
+5. Reinicie los servicios:
+   ```bash
+   sudo systemctl start control-tarefas-api
+   ```
+
+### 10.4. Monitorización
+
+Para una supervisión continua:
+
+1. Instale y configure herramientas como Prometheus y Grafana:
+   ```bash
+   # Ejemplo para Prometheus
+   sudo apt install -y prometheus prometheus-node-exporter
+   ```
+
+2. Configure alertas para métricas críticas:
+   - Uso de CPU > 90%
+   - Uso de memoria > 90%
+   - Espacio en disco < 10%
+   - Tiempo de respuesta de la API > 2 segundos
+
+3. Implemente monitorización de logs con ELK Stack o similar para análisis avanzado.
+
+---
+
+Este manual de instalación debe ser adaptado según las necesidades específicas de su entorno. Para cualquier duda o problema durante la instalación, contacte con el soporte técnico.
