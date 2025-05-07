@@ -18,6 +18,8 @@ import TimeTracking from "./pages/TimeTracking";
 import UserConfig from "./pages/UserConfig";
 import Settings from "./pages/Settings";
 import Calendars from "./pages/Calendars";
+import Help from "./pages/Help";
+import ManualOnline from "./pages/ManualOnline";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -52,6 +54,8 @@ const App = () => (
             <Route path="/config" element={<UserConfig />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/calendars" element={<Calendars />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/help/manual" element={<ManualOnline />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

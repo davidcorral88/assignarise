@@ -9,7 +9,8 @@ import {
   Users, 
   Settings, 
   User,
-  Calendar
+  Calendar,
+  HelpCircle
 } from 'lucide-react';
 
 export const Navigation = () => {
@@ -60,6 +61,12 @@ export const Navigation = () => {
       path: '/calendars',
       icon: <Calendar className="h-5 w-5" />,
       show: true  // All users can see the Calendars section
+    },
+    {
+      name: 'Axuda',
+      path: '/help',
+      icon: <HelpCircle className="h-5 w-5" />,
+      show: true  // All users can see the Help section
     },
     {
       name: 'Configuración',

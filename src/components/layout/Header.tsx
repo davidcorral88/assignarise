@@ -12,7 +12,8 @@ import {
   Settings,
   BarChart3,
   Calendar,
-  KeyRound
+  KeyRound,
+  HelpCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -85,6 +86,12 @@ export const Header: React.FC = () => {
       icon: <Clock className="mr-2 h-4 w-4" />,
       label: 'Rexistro de Horas',
       show: true
+    },
+    {
+      to: '/help',
+      icon: <HelpCircle className="mr-2 h-4 w-4" />,
+      label: 'Axuda',
+      show: true // All users can see Help
     },
     {
       to: '/settings',
