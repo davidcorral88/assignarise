@@ -7,7 +7,22 @@ const bcrypt = require('bcrypt');
 router.get('/', async (req, res) => {
   try {
     console.log('Fetching all users');
-    const result = await pool.query('SELECT * FROM users ORDER BY id');
+    
+    // Get the requesting user's role from the request header
+    const requestingUserRole = req.headers['user-role'];
+    console.log(`Request from user with role: ${requestingUserRole}`);
+    
+    // If the requesting user is an admin, return all users
+    // Otherwise, filter out admin users
+    let query = 'SELECT * FROM users';
+    if (requestingUserRole !== 'admin') {
+      query += " WHERE role != 'admin'";
+      console.log('Filtering out admin users for non-admin request');
+    }
+    
+    query += ' ORDER BY id';
+    
+    const result = await pool.query(query);
     console.log(`Found ${result.rows.length} users`);
     res.json(result.rows);
   } catch (error) {
