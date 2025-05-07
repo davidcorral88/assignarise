@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Download, Folder } from 'lucide-react';
+import { FileText, Download, Folder, HelpCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
