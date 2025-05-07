@@ -84,8 +84,14 @@ const UserList = () => {
     try {
       setIsLoading(true);
       const loadedUsers = await getUsers();
-      setUsers(loadedUsers);
-      setFilteredUsers(loadedUsers);
+      
+      // Filter out admin users for non-admin users
+      const filteredLoadedUsers = isAdmin 
+        ? loadedUsers 
+        : loadedUsers.filter(user => user.role !== 'admin');
+      
+      setUsers(filteredLoadedUsers);
+      setFilteredUsers(filteredLoadedUsers);
     } catch (error) {
       console.error('Error loading users:', error);
       toast({
