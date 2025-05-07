@@ -107,27 +107,6 @@ const Help = () => {
                     </div>
                   ))
                 )}
-                
-                <Separator className="my-4" />
-                
-                <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-                  <div className="flex items-center">
-                    <FileText className="h-5 w-5 text-blue-500 mr-3" />
-                    <div>
-                      <p className="font-medium">Manual de usuario (online)</p>
-                      <p className="text-xs text-muted-foreground">Documento de referencia en liña</p>
-                    </div>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center"
-                    onClick={() => window.open('/help/manual', '_blank')}
-                  >
-                    <FileText className="h-4 w-4 mr-1" />
-                    Ver online
-                  </Button>
-                </div>
               </div>
             )}
           </CardContent>
@@ -147,15 +126,7 @@ const Help = () => {
             <div className="space-y-4">
               <div className="flex flex-col space-y-1">
                 <span className="font-medium">Correo electrónico:</span>
-                <span className="text-muted-foreground">soporte@controltarefas.gal</span>
-              </div>
-              <div className="flex flex-col space-y-1">
-                <span className="font-medium">Teléfono:</span>
-                <span className="text-muted-foreground">+34 981 000 000</span>
-              </div>
-              <div className="flex flex-col space-y-1">
-                <span className="font-medium">Horario de atención:</span>
-                <span className="text-muted-foreground">Luns a venres, de 9:00 a 14:00</span>
+                <span className="text-muted-foreground">atsxptpg_tecnoloxico@iplanmovilidad.com</span>
               </div>
             </div>
           </CardContent>
