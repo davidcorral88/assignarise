@@ -29,34 +29,9 @@ const resolvePromise = async <T>(promise: Promise<T>): Promise<T> => {
   }
 };
 
-// New function to get users with role filtering
-export const getUsersWithRoleFiltering = async (currentUserRole: string | undefined): Promise<User[]> => {
-  try {
-    console.log(`Fetching users with role filtering for user role: ${currentUserRole}`);
-    
-    const headers: Record<string, string> = {};
-    if (currentUserRole) {
-      headers['user-role'] = currentUserRole;
-    }
-    
-    const response = await fetch(`${apiService.API_URL}/users`, {
-      headers
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch users');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching users with role filtering:', error);
-    throw error;
-  }
-};
-
-// Keep existing exports but modify getUsers
+// Re-export functions from apiService with properly typed re-exports
 export const { 
-  // getUsers, - replaced with our modified version
+  getUsers,
   getUserById,
   getUserByEmail,
   addUser,
@@ -101,10 +76,6 @@ export const {
   getTaskAttachments,
   deleteTaskAttachment
 } = apiService;
-
-// Re-export getUsers from apiService for backward compatibility
-// This is used by code that doesn't need the admin filtering
-export const getUsers = apiService.getUsers;
 
 // Helper functions for React useState - these all need to be adjusted to work with the correct typings
 export const getTaskByIdForState = async (id: string, setState: React.Dispatch<React.SetStateAction<Task | null>>) => {

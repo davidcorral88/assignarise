@@ -51,7 +51,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
-import { getUsersWithRoleFiltering, getUserById, updateUser, deleteUser } from '../utils/dataService';
+import { getUsers, getUserById, updateUser, deleteUser } from '../utils/dataService';
 import { User } from '../utils/types';
 import ImportUsersButton from '../components/users/ImportUsersButton';
 import ResetPasswordDialog from '../components/users/ResetPasswordDialog';
@@ -83,10 +83,15 @@ const UserList = () => {
   const loadUsers = async () => {
     try {
       setIsLoading(true);
-      // Use the new function with role filtering
-      const loadedUsers = await getUsersWithRoleFiltering(currentUser?.role);
-      setUsers(loadedUsers);
-      setFilteredUsers(loadedUsers);
+      const loadedUsers = await getUsers();
+      
+      // Filter out admin users for non-admin users
+      const filteredLoadedUsers = isAdmin 
+        ? loadedUsers 
+        : loadedUsers.filter(user => user.role !== 'admin');
+      
+      setUsers(filteredLoadedUsers);
+      setFilteredUsers(filteredLoadedUsers);
     } catch (error) {
       console.error('Error loading users:', error);
       toast({

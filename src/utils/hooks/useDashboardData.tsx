@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, Task, TimeEntry } from '@/utils/types';
 import { getTasksByUserId, getTasks, getTimeEntriesByUserId, getUsers } from '@/utils/apiService';
@@ -33,7 +32,13 @@ export const useDashboardData = ({ currentUser }: UseDashboardDataProps): Dashbo
           // Fetch users count with better error handling
           try {
             const users = await getUsers();
-            setUserCount(users.length);
+            
+            // Filter admin users from count for non-admin users
+            const filteredUsers = currentUser.role === 'admin' 
+              ? users 
+              : users.filter(user => user.role !== 'admin');
+            
+            setUserCount(filteredUsers.length);
           } catch (error) {
             console.error("Error fetching users:", error);
             setUserCount(0); // Fallback
