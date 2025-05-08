@@ -1,0 +1,392 @@
+
+# MANUAL DE CONFIGURACIÓN Y RESOLUCIÓN DE PROBLEMAS DE ENVÍO DE CORREOS
+
+## ÍNDICE
+1. Problemas comunes y soluciones
+2. Configuraciones alternativas de servidores SMTP
+3. Herramientas para testeo de correo
+4. Ajustes de seguridad y firewall
+5. Uso de servicios alternativos
+6. Verificación de credenciales
+7. Configuración para entornos de producción
+
+## 1. PROBLEMAS COMUNES Y SOLUCIONES
+
+### Errores de conexión (ETIMEDOUT)
+- **Problema**: Los errores "ETIMEDOUT" indican que no se pudo establecer conexión con el servidor SMTP.
+- **Soluciones**:
+  * Verificar conectividad a internet del servidor
+  * Comprobar si existe un firewall bloqueando las conexiones salientes
+  * Confirmar que los puertos requeridos (465, 587, 25) no estén bloqueados
+  * Usar una VPN o proxy si el ISP está bloqueando puertos SMTP
+  * Aumentar los tiempos de espera (timeout) en la configuración
+
+### Errores de autenticación
+- **Problema**: Fallos de acceso por credenciales incorrectas.
+- **Soluciones**:
+  * Verificar que usuario y contraseña sean correctos
+  * Para cuentas Gmail, usar contraseña de aplicación en lugar de contraseña normal
+  * Comprobar que la cuenta no tenga habilitada verificación en dos pasos sin contraseña de aplicación
+
+### Errores de límite de envío
+- **Problema**: El servidor rechaza enviar más correos por alcanzar el límite.
+- **Soluciones**:
+  * Implementar colas y retrasos entre envíos
+  * Distribuir envíos entre varios servidores o cuentas
+  * Contactar al proveedor para aumentar el límite
+
+## 2. CONFIGURACIONES ALTERNATIVAS DE SERVIDORES SMTP
+
+### Gmail
+```javascript
+// Opción 1: SSL en puerto 465
+{
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'tu_correo@gmail.com',
+    pass: 'tu_contraseña_de_aplicación'
+  }
+}
+
+// Opción 2: TLS en puerto 587
+{
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  requireTLS: true,
+  auth: {
+    user: 'tu_correo@gmail.com',
+    pass: 'tu_contraseña_de_aplicación'
+  }
+}
+
+// Opción 3: Servicio predefinido Gmail
+{
+  service: 'gmail',
+  auth: {
+    user: 'tu_correo@gmail.com',
+    pass: 'tu_contraseña_de_aplicación'
+  }
+}
+```
+
+### Outlook/Hotmail
+```javascript
+{
+  host: 'smtp-mail.outlook.com',
+  port: 587,
+  secure: false,
+  requireTLS: true,
+  auth: {
+    user: 'tu_correo@outlook.com',
+    pass: 'tu_contraseña'
+  }
+}
+```
+
+### Yahoo
+```javascript
+{
+  host: 'smtp.mail.yahoo.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'tu_correo@yahoo.com',
+    pass: 'tu_contraseña_de_aplicación'
+  }
+}
+```
+
+### Office 365
+```javascript
+{
+  host: 'smtp.office365.com',
+  port: 587,
+  secure: false,
+  requireTLS: true,
+  auth: {
+    user: 'tu_correo@tudominio.com',
+    pass: 'tu_contraseña'
+  }
+}
+```
+
+### Amazon SES
+```javascript
+{
+  host: 'email-smtp.us-east-1.amazonaws.com', // Ajusta la región según corresponda
+  port: 587,
+  secure: false,
+  auth: {
+    user: 'CLAVE_DE_ACCESO_SES',  // Obtenido de AWS
+    pass: 'CLAVE_SECRETA_SES'     // Obtenido de AWS
+  }
+}
+```
+
+## 3. HERRAMIENTAS PARA TESTEO DE CORREO
+
+### Herramientas locales
+- **MailHog**: Servidor SMTP local para pruebas que captura todos los correos salientes sin enviarlos realmente.
+  * Instalación: `docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog`
+  * Configuración para pruebas:
+    ```javascript
+    {
+      host: 'localhost',
+      port: 1025,
+      secure: false,
+      ignoreTLS: true // Sin cifrado para pruebas locales
+    }
+    ```
+
+- **Mailtrap**: Servicio en línea para prueba de correos.
+  * Crear cuenta en mailtrap.io
+  * Configuración:
+    ```javascript
+    {
+      host: 'smtp.mailtrap.io',
+      port: 2525,
+      auth: {
+        user: 'tu_usuario_mailtrap',
+        pass: 'tu_contraseña_mailtrap'
+      }
+    }
+    ```
+
+### Verificadores SMTP
+- **SMTP Diagnostics**:
+  * Probar manualmente con `telnet smtp.gmail.com 587`
+  * Verificar respuesta del servidor y comandos SMTP
+
+- **Verificación DNS**:
+  * Comprobar registros SPF, DKIM y DMARC para dominio remitente
+  * Usar herramientas como MXToolbox (mxtoolbox.com)
+
+## 4. AJUSTES DE SEGURIDAD Y FIREWALL
+
+### Permitir tráfico saliente
+- Configurar el firewall para permitir tráfico saliente en los puertos:
+  * Puerto 25 (SMTP estándar - raramente usado hoy en día)
+  * Puerto 465 (SMTP sobre SSL)
+  * Puerto 587 (SMTP con STARTTLS)
+
+### Ajustes de seguridad en cuentas de correo
+- Para Gmail:
+  1. Habilitar "Acceso de aplicaciones menos seguras" o
+  2. Crear "Contraseñas de aplicación" (recomendado):
+     * Ir a cuenta Google > Seguridad > Verificación en dos pasos > Contraseñas de aplicación
+     * Crear nueva contraseña específica para la aplicación
+     * Usar esta contraseña en lugar de la contraseña normal
+
+- Para cuentas corporativas:
+  * Verificar con el administrador IT si hay restricciones adicionales
+  * Solicitar permisos especiales para aplicaciones de terceros
+
+## 5. USO DE SERVICIOS ALTERNATIVOS
+
+### Servicios de envío de correo especializados
+- **SendGrid**:
+  ```javascript
+  const sgMail = require('@sendgrid/mail');
+  sgMail.setApiKey('TU_API_KEY_SENDGRID');
+  
+  const msg = {
+    to: 'destinatario@ejemplo.com',
+    from: 'remitente@ejemplo.com',
+    subject: 'Asunto del correo',
+    text: 'Contenido en texto plano',
+    html: '<strong>Contenido HTML</strong>',
+  };
+  
+  sgMail.send(msg);
+  ```
+
+- **Mailgun**:
+  ```javascript
+  const formData = require('form-data');
+  const Mailgun = require('mailgun.js');
+  const mailgun = new Mailgun(formData);
+  
+  const mg = mailgun.client({
+    username: 'api',
+    key: 'TU_API_KEY_MAILGUN'
+  });
+  
+  mg.messages.create('tu-dominio.com', {
+    from: "Remitente <remitente@ejemplo.com>",
+    to: ["destinatario@ejemplo.com"],
+    subject: "Asunto del correo",
+    text: "Contenido en texto plano",
+    html: "<strong>Contenido HTML</strong>"
+  });
+  ```
+
+- **AWS SES**:
+  ```javascript
+  const AWS = require('aws-sdk');
+  
+  AWS.config.update({
+    accessKeyId: 'TU_ACCESS_KEY',
+    secretAccessKey: 'TU_SECRET_KEY',
+    region: 'us-east-1'
+  });
+  
+  const ses = new AWS.SES({ apiVersion: '2010-12-01' });
+  
+  const params = {
+    Destination: {
+      ToAddresses: ['destinatario@ejemplo.com']
+    },
+    Message: {
+      Body: {
+        Html: {
+          Charset: "UTF-8",
+          Data: "<strong>Contenido HTML</strong>"
+        },
+        Text: {
+          Charset: "UTF-8",
+          Data: "Contenido texto plano"
+        }
+      },
+      Subject: {
+        Charset: "UTF-8",
+        Data: "Asunto del correo"
+      }
+    },
+    Source: "remitente@ejemplo.com"
+  };
+  
+  ses.sendEmail(params).promise();
+  ```
+
+## 6. VERIFICACIÓN DE CREDENCIALES
+
+### Verificar credenciales en Gmail
+1. Acceder a https://myaccount.google.com/security
+2. Verificar si está activada la verificación en dos pasos
+3. Si está activada, crear una contraseña de aplicación específica
+4. Si no está activada, habilitar "Acceso de aplicaciones menos seguras"
+5. Probar credenciales con una herramienta como Gmail SMTP Test
+
+### Verificar credenciales en cuentas corporativas
+1. Confirmar con el administrador IT:
+   - Si el servidor permite envío SMTP desde aplicaciones externas
+   - Si hay restricciones de IP para conexiones SMTP
+   - Si se requieren certificados especiales
+
+## 7. CONFIGURACIÓN PARA ENTORNOS DE PRODUCCIÓN
+
+### Mejores prácticas
+- Usar variables de entorno para almacenar credenciales
+- Implementar sistema de colas para envíos masivos
+- Configurar reintentos automáticos con backoff exponencial
+- Monitorizar tasa de entregas y rebotes
+- Verificar registros SPF, DKIM y DMARC para dominios propios
+
+### Ejemplo de configuración robusta
+```javascript
+// Archivo: email-service.js
+const nodemailer = require('nodemailer');
+
+// Lista de configuraciones SMTP a probar en orden
+const smtpConfigurations = [
+  // Principal
+  {
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 60000,
+  },
+  // Alternativa 1
+  {
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    connectionTimeout: 30000,
+  },
+  // Alternativa 2 (otro proveedor)
+  {
+    host: 'smtp-mail.outlook.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    connectionTimeout: 30000,
+  }
+];
+
+// Crear transportador con primera configuración
+let currentConfigIndex = 0;
+let transporter = createTransporter(0);
+
+function createTransporter(configIndex = 0) {
+  const config = smtpConfigurations[configIndex];
+  
+  return nodemailer.createTransport({
+    ...config,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+  });
+}
+
+// Función para enviar con reintentos y alternativas
+async function sendEmailWithRetry(mailOptions, maxRetries = 3, maxConfigs = smtpConfigurations.length) {
+  let retries = 0;
+  let configAttempts = 0;
+  
+  while (configAttempts < maxConfigs) {
+    retries = 0;
+    
+    while (retries < maxRetries) {
+      try {
+        const result = await transporter.sendMail(mailOptions);
+        console.log(`Email enviado correctamente a ${mailOptions.to}`);
+        return result;
+      } catch (error) {
+        retries++;
+        console.error(`Intento ${retries} fallido con config #${currentConfigIndex + 1}:`, error.message);
+        
+        if (retries < maxRetries) {
+          const waitTime = Math.min(1000 * Math.pow(2, retries), 30000);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+    
+    // Si todos los reintentos fallaron con config actual, probar siguiente
+    configAttempts++;
+    if (configAttempts < maxConfigs) {
+      currentConfigIndex = (currentConfigIndex + 1) % smtpConfigurations.length;
+      transporter = createTransporter(currentConfigIndex);
+    }
+  }
+  
+  throw new Error(`Todos los intentos de envío fallaron para ${mailOptions.to}`);
+}
+
+module.exports = {
+  sendEmailWithRetry
+};
+```
+
+### Alternativas sin servidor SMTP
+
+Si los problemas de SMTP persisten, considera estas alternativas:
+
+1. **API de servicios de correo**: Usar SendGrid, Mailgun o servicios similares con sus APIs REST
+2. **Webhooks y servicios de terceros**: Integrar con servicios como Zapier que pueden enviar correos
+3. **Envío desde frontend**: Para notificaciones simples, usar servicios como EmailJS
+4. **Notificaciones alternativas**: Considerar SMS, notificaciones push o mensajería interna
+
+---
+Documento elaborado para sistema de envío de correos de la aplicación de Gestión de Tareas.
+Para más información, consultar la documentación oficial de Nodemailer: https://nodemailer.com/
