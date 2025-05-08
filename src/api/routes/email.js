@@ -4,19 +4,62 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 
-// Configure email transporter with longer timeout settings
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com', // Replace with your SMTP server
-  port: 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com', // Replace with actual email in production
-    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy', // Replace with actual password in production
-  },
-  connectionTimeout: 60000, // 1 minute connection timeout
-  greetingTimeout: 30000, // 30 seconds for SMTP greeting
-  socketTimeout: 60000,   // 1 minute socket timeout
-});
+// Enhanced transporter configuration with retry logic
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+      pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
+    },
+    connectionTimeout: 60000, // 1 minute connection timeout
+    greetingTimeout: 30000, // 30 seconds for SMTP greeting
+    socketTimeout: 60000,   // 1 minute socket timeout
+    // Add a retry strategy
+    pool: true,             // Use connection pooling
+    maxConnections: 5,      // Limit connections to avoid overload
+    maxMessages: 100,       // Limit messages per connection
+  });
+}
+
+// Create initial transporter
+let transporter = createTransporter();
+
+// Function to send email with retry logic
+async function sendEmailWithRetry(mailOptions, maxRetries = 3) {
+  let retries = 0;
+  let lastError = null;
+
+  while (retries < maxRetries) {
+    try {
+      // If we've had a previous error, recreate the transporter
+      if (lastError) {
+        console.log(`Retry attempt ${retries + 1} for email to ${mailOptions.to}`);
+        transporter = createTransporter();
+      }
+
+      const result = await transporter.sendMail(mailOptions);
+      console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
+      return result;
+    } catch (error) {
+      retries++;
+      lastError = error;
+      console.error(`Email sending attempt ${retries} failed:`, error);
+      
+      // Wait before retrying (exponential backoff)
+      if (retries < maxRetries) {
+        const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
+        console.log(`Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+  }
+
+  console.error(`All ${maxRetries} attempts to send email to ${mailOptions.to} failed.`);
+  throw lastError;
+}
 
 // Test email configuration
 router.get('/test', async (req, res) => {
@@ -29,7 +72,7 @@ router.get('/test', async (req, res) => {
   }
 });
 
-// Send task assignment notification
+// Send task assignment notification with CC functionality
 router.post('/send-task-assignment', async (req, res) => {
   try {
     const { taskId, userId, allocatedHours, isNewTask } = req.body;
@@ -97,10 +140,31 @@ router.post('/send-task-assignment', async (req, res) => {
       ? `Asignóusevos unha nova tarefa no sistema de xestión.`
       : `Actualizouse a vosa asignación dunha tarefa no sistema de xestión.`;
     
+    // Include CC addresses if there are other users with emailATSXPTPG assigned to this task
+    const ccAddresses = [];
+    
+    // Get all users assigned to this task
+    const assignmentsResult = await pool.query(
+      'SELECT u.id, u.name, u.email, u.emailatsxptpg FROM users u ' +
+      'JOIN task_assignments ta ON u.id = ta.user_id ' +
+      'WHERE ta.task_id = $1 AND u.id <> $2', // exclude current user
+      [taskId, userId]
+    );
+    
+    // Add emailATSXPTPG addresses to CC if available
+    assignmentsResult.rows.forEach(assignedUser => {
+      if (assignedUser.emailatsxptpg && assignedUser.email_notification !== false) {
+        ccAddresses.push(assignedUser.emailatsxptpg);
+      }
+    });
+    
+    console.log(`Including ${ccAddresses.length} CC addresses:`, ccAddresses);
+    
     // Create email content
     const mailOptions = {
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
       to: recipientEmail,
+      cc: ccAddresses.length > 0 ? ccAddresses.join(',') : undefined,
       subject: emailSubject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
@@ -137,27 +201,22 @@ router.post('/send-task-assignment', async (req, res) => {
       `
     };
     
-    // Send the email with promise handling to prevent blocking
-    const sendEmailPromise = transporter.sendMail(mailOptions)
-      .then(info => {
-        console.log('Email sent successfully:', info.messageId);
-        return info;
-      })
-      .catch(error => {
-        console.error('Error in email sending:', error);
-        // We log the error but don't throw it to prevent failing the whole request
-        return { error: error.message, sent: false };
-      });
-    
     // Return success immediately without waiting for email to complete sending
     res.json({ 
       message: 'Task assignment email sending in progress',
       to: recipientEmail,
+      cc: ccAddresses.length > 0 ? ccAddresses : undefined,
       async: true
     });
     
-    // Let the email sending continue in the background
-    await sendEmailPromise;
+    // Send email with retry using our enhanced function
+    try {
+      await sendEmailWithRetry(mailOptions);
+      console.log(`Task assignment email successfully sent to ${recipientEmail}`);
+    } catch (error) {
+      console.error(`Final failure sending task assignment email to ${recipientEmail}:`, error);
+      // We don't propagate this error since the API already responded
+    }
     
   } catch (error) {
     console.error('Error processing task assignment email:', error);

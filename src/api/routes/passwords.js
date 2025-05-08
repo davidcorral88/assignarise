@@ -7,19 +7,62 @@ const nodemailer = require('nodemailer');
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
 
-// Configure email transporter with longer timeouts
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
-  },
-  connectionTimeout: 60000, // 1 minute connection timeout
-  greetingTimeout: 30000, // 30 seconds for SMTP greeting
-  socketTimeout: 60000,   // 1 minute socket timeout
-});
+// Enhanced transporter configuration with retry logic
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+      pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
+    },
+    connectionTimeout: 60000, // 1 minute connection timeout
+    greetingTimeout: 30000, // 30 seconds for SMTP greeting
+    socketTimeout: 60000,   // 1 minute socket timeout
+    // Add a retry strategy
+    pool: true,             // Use connection pooling
+    maxConnections: 5,      // Limit connections to avoid overload
+    maxMessages: 100,       // Limit messages per connection
+  });
+}
+
+// Create initial transporter
+let transporter = createTransporter();
+
+// Function to send email with retry logic
+async function sendEmailWithRetry(mailOptions, maxRetries = 3) {
+  let retries = 0;
+  let lastError = null;
+
+  while (retries < maxRetries) {
+    try {
+      // If we've had a previous error, recreate the transporter
+      if (lastError) {
+        console.log(`Retry attempt ${retries + 1} for email to ${mailOptions.to}`);
+        transporter = createTransporter();
+      }
+
+      const result = await transporter.sendMail(mailOptions);
+      console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
+      return result;
+    } catch (error) {
+      retries++;
+      lastError = error;
+      console.error(`Email sending attempt ${retries} failed:`, error);
+      
+      // Wait before retrying (exponential backoff)
+      if (retries < maxRetries) {
+        const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
+        console.log(`Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+  }
+
+  console.error(`All ${maxRetries} attempts to send email to ${mailOptions.to} failed.`);
+  throw lastError;
+}
 
 // Helper function to generate random password
 function generateRandomPassword(length = 12) {
@@ -120,13 +163,37 @@ router.post('/reset', async (req, res) => {
     }
 
     // Check if user exists and get their email
-    const userCheck = await pool.query('SELECT email, name FROM users WHERE id = $1', [userId]);
+    const userCheck = await pool.query('SELECT email, emailatsxptpg, name, email_notification FROM users WHERE id = $1', [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const user = userCheck.rows[0];
-    const recipientEmail = user.email;
+    
+    // Check if user has explicitly disabled email notifications
+    if (user.email_notification === false) {
+      console.log(`User ${userId} (${user.name}) has email notifications disabled.`);
+      
+      // Generate new random password without sending email
+      const newPassword = generateRandomPassword();
+      
+      // Update password in database
+      await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
+      await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
+      
+      return res.json({
+        success: true,
+        message: 'Password reset successful. User has email notifications disabled, returning password directly.',
+        password: newPassword // Return password since email won't be sent
+      });
+    }
+    
+    // Prefer emailATSXPTPG if available, otherwise use regular email
+    const recipientEmail = user.emailatsxptpg || user.email;
+
+    if (!recipientEmail) {
+      return res.status(400).json({ error: 'User has no email address' });
+    }
 
     // Generate new random password
     const newPassword = generateRandomPassword();
@@ -135,8 +202,14 @@ router.post('/reset', async (req, res) => {
     await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
     await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
 
-    // Send email with new password, handled as a promise to avoid blocking
-    const sendEmailPromise = transporter.sendMail({
+    // Return success immediately without waiting for email to complete sending
+    res.json({ 
+      success: true,
+      message: 'Password reset successful and email sending in progress'
+    });
+    
+    // Create email content
+    const mailOptions = {
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
       to: recipientEmail,
       subject: 'Reseteo de contrasinal - Sistema de Tarefas',
@@ -165,20 +238,16 @@ router.post('/reset', async (req, res) => {
           </p>
         </div>
       `
-    }).catch(error => {
-      console.error('Error sending password reset email:', error);
-      // We catch but don't rethrow to prevent the main function from failing
-      return { error: error.message, sent: false };
-    });
-
-    // Return success immediately without waiting for email to complete sending
-    res.json({ 
-      success: true,
-      message: 'Password reset successful and email sending in progress'
-    });
+    };
     
-    // Let the email sending continue in the background
-    await sendEmailPromise;
+    // Send email with retry using our enhanced function
+    try {
+      await sendEmailWithRetry(mailOptions);
+      console.log(`Password reset email successfully sent to ${recipientEmail}`);
+    } catch (error) {
+      console.error(`Final failure sending password reset email to ${recipientEmail}:`, error);
+      // We don't propagate this error since the API already responded
+    }
     
   } catch (error) {
     console.error('Error resetting password:', error);

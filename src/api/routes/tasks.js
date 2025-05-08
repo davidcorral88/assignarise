@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -167,7 +168,7 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
     console.log(`Scheduling notifications for ${assignments.length} task assignments`);
     
     // Process notifications asynchronously without waiting
-    assignments.forEach(assignment => {
+    for (const assignment of assignments) {
       // Extract user_id and ensure it's a number
       const userId = typeof assignment.user_id === 'string' ? parseInt(assignment.user_id, 10) : assignment.user_id;
       
@@ -176,33 +177,61 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
       
       if (userId === undefined || userId === null) {
         console.error('Missing user ID in assignment:', assignment);
-        return;
+        continue;
       }
       
-      // Send notification email asynchronously (fire and forget)
-      setTimeout(() => {
-        fetch('http://localhost:3000/api/email/send-task-assignment', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            taskId,
-            userId,
-            allocatedHours: hours,
-            isNewTask
-          })
-        })
-        .then(response => response.json())
-        .then(result => {
-          console.log(`Email notification scheduled for task ${taskId} to user ${userId}:`, result);
-        })
-        .catch(error => {
-          console.error(`Failed to schedule notification for task ${taskId} to user ${userId}:`, error);
-          // We log the error but don't throw it since this is non-blocking
-        });
-      }, 100); // Small delay to avoid overwhelming the server
-    });
+      try {
+        // Send with fetch but add timeout and retry logic
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const sendNotification = async (retries = 3) => {
+          try {
+            const response = await fetch('http://localhost:3000/api/email/send-task-assignment', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                taskId,
+                userId,
+                allocatedHours: hours,
+                isNewTask
+              }),
+              signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log(`Email notification scheduled for task ${taskId} to user ${userId}:`, result);
+          } catch (error) {
+            if (retries > 0) {
+              console.log(`Retrying notification for user ${userId}, attempts left: ${retries}`);
+              // Wait with exponential backoff before retry
+              const waitTime = Math.min(1000 * Math.pow(2, 3 - retries), 5000);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+              return sendNotification(retries - 1);
+            } else {
+              console.error(`Failed to schedule notification for task ${taskId} to user ${userId} after all retries:`, error);
+            }
+          }
+        };
+        
+        // Start the notification process with retries
+        await sendNotification();
+      } catch (error) {
+        console.error(`Error sending notification for task ${taskId} to user ${userId}:`, error);
+        // Non-blocking, just log the error
+      }
+      
+      // Add small delay between notifications to avoid overwhelming the server
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
     
     console.log(`All notifications scheduled asynchronously`);
   } catch (error) {
