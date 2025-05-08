@@ -12,7 +12,7 @@ function createTransporter() {
     secure: false,
     auth: {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
+      pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
     },
     connectionTimeout: 60000, // 1 minute connection timeout
     greetingTimeout: 30000, // 30 seconds for SMTP greeting
