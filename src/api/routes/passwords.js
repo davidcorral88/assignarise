@@ -7,39 +7,19 @@ const nodemailer = require('nodemailer');
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
 
-// Configure email transporter with longer timeouts and better error handling
-let transporter;
-try {
-  transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
-    },
-    connectionTimeout: 60000, // 1 minute connection timeout
-    greetingTimeout: 30000, // 30 seconds for SMTP greeting
-    socketTimeout: 60000,    // 1 minute socket timeout
-    tls: {
-      rejectUnauthorized: false // Accept self-signed certificates
-    },
-    pool: true, // Use connection pooling for better performance
-    maxConnections: 5,
-    maxMessages: 100
-  });
-  
-  // Verify connection configuration
-  transporter.verify(function(error, success) {
-    if (error) {
-      console.error('Email server connection error:', error);
-    } else {
-      console.log("Email server connection is ready to receive messages");
-    }
-  });
-} catch (error) {
-  console.error('Error creating email transporter:', error);
-}
+// Configure email transporter with longer timeouts
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
+  },
+  connectionTimeout: 60000, // 1 minute connection timeout
+  greetingTimeout: 30000, // 30 seconds for SMTP greeting
+  socketTimeout: 60000,   // 1 minute socket timeout
+});
 
 // Helper function to generate random password
 function generateRandomPassword(length = 12) {
@@ -51,37 +31,6 @@ function generateRandomPassword(length = 12) {
   }
   return password;
 }
-
-// Retry email sending logic
-const sendEmailWithRetry = async (mailOptions, maxRetries = 3) => {
-  let lastError = null;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      if (!transporter) {
-        throw new Error('Email transporter not initialized');
-      }
-      
-      console.log(`Sending email, attempt ${attempt}/${maxRetries}`);
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully: ${info.messageId}`);
-      return { success: true, messageId: info.messageId };
-    } catch (error) {
-      lastError = error;
-      console.error(`Email sending attempt ${attempt} failed:`, error);
-      
-      if (attempt < maxRetries) {
-        // Exponential backoff: wait longer between retries
-        const delay = Math.pow(2, attempt) * 1000;
-        console.log(`Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  }
-  
-  console.error('All email sending attempts failed');
-  return { success: false, error: lastError };
-};
 
 // Verify user password
 router.post('/verify', async (req, res) => {
@@ -171,15 +120,14 @@ router.post('/reset', async (req, res) => {
     }
 
     // Check if user exists and get their email
-    const userCheck = await pool.query('SELECT email, name, "emailATSXPTPG" FROM users WHERE id = $1', [userId]);
+    const userCheck = await pool.query('SELECT email, name FROM users WHERE id = $1', [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const user = userCheck.rows[0];
     const recipientEmail = user.email;
-    const emailATSXPTPG = user.emailATSXPTPG;
-    
+
     // Generate new random password
     const newPassword = generateRandomPassword();
 
@@ -187,8 +135,8 @@ router.post('/reset', async (req, res) => {
     await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
     await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
 
-    // Set up email options with CC if available
-    const mailOptions = {
+    // Send email with new password, handled as a promise to avoid blocking
+    const sendEmailPromise = transporter.sendMail({
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
       to: recipientEmail,
       subject: 'Reseteo de contrasinal - Sistema de Tarefas',
@@ -217,12 +165,11 @@ router.post('/reset', async (req, res) => {
           </p>
         </div>
       `
-    };
-    
-    // Add CC if emailATSXPTPG is available
-    if (emailATSXPTPG) {
-      mailOptions.cc = emailATSXPTPG;
-    }
+    }).catch(error => {
+      console.error('Error sending password reset email:', error);
+      // We catch but don't rethrow to prevent the main function from failing
+      return { error: error.message, sent: false };
+    });
 
     // Return success immediately without waiting for email to complete sending
     res.json({ 
@@ -230,9 +177,8 @@ router.post('/reset', async (req, res) => {
       message: 'Password reset successful and email sending in progress'
     });
     
-    // Send email with retry logic in the background
-    const emailResult = await sendEmailWithRetry(mailOptions);
-    console.log('Password reset email result:', emailResult);
+    // Let the email sending continue in the background
+    await sendEmailPromise;
     
   } catch (error) {
     console.error('Error resetting password:', error);

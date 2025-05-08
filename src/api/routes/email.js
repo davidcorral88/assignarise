@@ -1,154 +1,132 @@
 
 const express = require('express');
 const router = express.Router();
-const pool = require('../db/connection');
 const nodemailer = require('nodemailer');
+const pool = require('../db/connection');
 
-// Email configuration
-let transporter;
-try {
-  transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
-    },
-    connectionTimeout: 60000, // 1 minute connection timeout
-    greetingTimeout: 30000,   // 30 seconds for SMTP greeting
-    socketTimeout: 60000,     // 1 minute socket timeout
-    tls: {
-      rejectUnauthorized: false // Accept self-signed certificates
-    },
-    pool: true, // Use connection pooling for better performance
-    maxConnections: 5,
-    maxMessages: 100
-  });
-  
-  // Verify connection configuration
-  transporter.verify(function(error, success) {
-    if (error) {
-      console.error('Email server connection error:', error);
-    } else {
-      console.log("Email server connection is ready to receive messages");
-    }
-  });
-} catch (error) {
-  console.error('Error creating email transporter:', error);
-}
+// Configure email transporter with longer timeout settings
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com', // Replace with your SMTP server
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com', // Replace with actual email in production
+    pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy', // Replace with actual password in production
+  },
+  connectionTimeout: 60000, // 1 minute connection timeout
+  greetingTimeout: 30000, // 30 seconds for SMTP greeting
+  socketTimeout: 60000,   // 1 minute socket timeout
+});
 
-// Helper function to send emails with retry mechanism
-const sendEmailWithRetry = async (mailOptions, maxRetries = 3) => {
-  let lastError = null;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      if (!transporter) {
-        throw new Error('Email transporter not initialized');
-      }
-      
-      console.log(`Sending email, attempt ${attempt}/${maxRetries}`);
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully: ${info.messageId}`);
-      return { success: true, messageId: info.messageId };
-    } catch (error) {
-      lastError = error;
-      console.error(`Email sending attempt ${attempt} failed:`, error);
-      
-      if (attempt < maxRetries) {
-        // Exponential backoff: wait longer between retries
-        const delay = Math.pow(2, attempt) * 1000;
-        console.log(`Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  }
-  
-  console.error('All email sending attempts failed');
-  return { success: false, error: lastError };
-};
-
-// Check if user wants to receive email notifications
-const shouldSendNotification = async (userId) => {
+// Test email configuration
+router.get('/test', async (req, res) => {
   try {
-    const result = await pool.query('SELECT email_notification FROM users WHERE id = $1', [userId]);
-    
-    if (result.rows.length === 0) {
-      return false; // User not found
-    }
-    
-    return result.rows[0].email_notification === true;
+    await transporter.verify();
+    res.json({ status: 'Email server connection successful' });
   } catch (error) {
-    console.error('Error checking user notification preferences:', error);
-    return false; // Default to not sending on error
+    console.error('Email server connection error:', error);
+    res.status(500).json({ error: 'Email server connection failed', details: error.message });
   }
-};
+});
 
 // Send task assignment notification
 router.post('/send-task-assignment', async (req, res) => {
   try {
-    const { taskId, userId, allocatedHours, isNewTask = false } = req.body;
+    const { taskId, userId, allocatedHours, isNewTask } = req.body;
     
     if (!taskId || !userId) {
-      return res.status(400).json({ error: 'Missing required parameters' });
+      return res.status(400).json({ error: 'Task ID and User ID are required' });
     }
     
-    console.log(`Preparing to send task assignment notification for task ${taskId} to user ${userId}`);
-
-    // Check if user wants email notifications
-    const wantsNotification = await shouldSendNotification(userId);
-    if (!wantsNotification) {
-      console.log(`User ${userId} has disabled email notifications`);
-      return res.json({ 
-        success: true, 
-        message: 'User has disabled email notifications',
-        notificationSent: false
-      });
-    }
+    console.log(`Preparing to send task assignment email for task ${taskId} to user ${userId} with ${allocatedHours} hours`);
     
     // Get task details
-    const taskResult = await pool.query('SELECT title, description FROM tasks WHERE id = $1', [taskId]);
-    
+    const taskResult = await pool.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
     if (taskResult.rows.length === 0) {
       return res.status(404).json({ error: 'Task not found' });
     }
+    const task = taskResult.rows[0];
     
     // Get user details
-    const userResult = await pool.query('SELECT name, email, "emailATSXPTPG" FROM users WHERE id = $1', [userId]);
-    
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    const task = taskResult.rows[0];
     const user = userResult.rows[0];
     
-    // Build email body
-    const action = isNewTask ? 'creada' : 'actualizada';
+    console.log(`Found user for notification:`, {
+      userId,
+      name: user.name,
+      email: user.email,
+      emailATSXPTPG: user.emailatsxptpg || 'No alternative email'
+    });
     
-    // Set up email options
+    // Check if user has email notification enabled (defaulted to true if not specified)
+    if (user.email_notification === false) {
+      console.log(`User ${userId} (${user.name}) has email notifications disabled. Skipping notification.`);
+      return res.json({ 
+        message: 'Email notification skipped - user has disabled notifications',
+        userId,
+        userName: user.name
+      });
+    }
+    
+    // Determine which email to use - prefer the ATSXPTPG email if available
+    const recipientEmail = user.emailatsxptpg || user.email;
+    
+    // If user has no email, we can't send notification
+    if (!recipientEmail) {
+      return res.status(400).json({ error: 'User has no email address' });
+    }
+    
+    // Format dates for better readability
+    const startDate = task.start_date ? new Date(task.start_date).toLocaleDateString('es-ES') : 'Non definida';
+    const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString('es-ES') : 'Non definida';
+    
+    // Get task tags
+    const tagsResult = await pool.query('SELECT tag FROM task_tags WHERE task_id = $1', [taskId]);
+    const tags = tagsResult.rows.map(row => row.tag).join(', ') || 'Ningunha';
+    
+    // Different subject for new task vs updated task assignment
+    const emailSubject = isNewTask 
+      ? `Nova asignación de tarefa: ${task.title}`
+      : `Actualización de tarefa asignada: ${task.title}`;
+      
+    // Different intro message based on new vs updated task  
+    const introMessage = isNewTask
+      ? `Asignóusevos unha nova tarefa no sistema de xestión.`
+      : `Actualizouse a vosa asignación dunha tarefa no sistema de xestión.`;
+    
+    // Create email content
     const mailOptions = {
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
-      to: user.email,
-      subject: `Tarefa ${action}: ${task.title}`,
+      to: recipientEmail,
+      subject: emailSubject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-          <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">Asignación de tarefa ${action}</h2>
+          <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">${isNewTask ? 'Nova asignación de tarefa' : 'Actualización de tarefa asignada'}</h2>
           <p>Ola ${user.name},</p>
-          <p>Foiche asignada unha tarefa no sistema de xestión de tarefas.</p>
+          <p>${introMessage}</p>
           
           <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">${task.title}</h3>
-            <p><strong>Tempo asignado:</strong> ${allocatedHours || 'Non especificado'} horas</p>
-            <p><strong>Descrición:</strong> ${task.description || 'Sen descrición'}</p>
+            <h3 style="margin-top: 0; color: #333;">Detalles da tarefa</h3>
+            <p><strong>Título:</strong> ${task.title}</p>
+            <p><strong>Descrición:</strong> ${task.description || 'Non dispoñible'}</p>
+            <p><strong>Estado:</strong> ${task.status}</p>
+            <p><strong>Prioridade:</strong> ${task.priority}</p>
+            <p><strong>Data de inicio:</strong> ${startDate}</p>
+            <p><strong>Data de vencemento:</strong> ${dueDate}</p>
+            <p><strong>Etiquetas:</strong> ${tags}</p>
+            <p><strong>Categoría:</strong> ${task.category || 'Non definida'}</p>
+            <p><strong>Proxecto:</strong> ${task.project || 'Non definido'}</p>
+            <p><strong style="color: #2c7be5;">Horas asignadas:</strong> ${allocatedHours} horas</p>
           </div>
           
-          <p>Podes ver os detalles completos da tarefa accedendo ao sistema:</p>
+          <p>Pode acceder á tarefa no sistema de xestión facendo clic no seguinte enlace:</p>
           <p style="text-align: center;">
             <a href="${process.env.FRONTEND_URL || 'https://rexistrodetarefas.iplanmovilidad.com'}/tasks/${taskId}" 
                style="display: inline-block; background-color: #2c7be5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
-              Ver tarefa
+              Ver detalles da tarefa
             </a>
           </p>
           
@@ -159,34 +137,31 @@ router.post('/send-task-assignment', async (req, res) => {
       `
     };
     
-    // Add CC if emailATSXPTPG is available
-    if (user.emailATSXPTPG) {
-      mailOptions.cc = user.emailATSXPTPG;
-    }
-
-    // Send email with retry logic
-    console.log(`Sending task assignment email to ${user.email}`);
+    // Send the email with promise handling to prevent blocking
+    const sendEmailPromise = transporter.sendMail(mailOptions)
+      .then(info => {
+        console.log('Email sent successfully:', info.messageId);
+        return info;
+      })
+      .catch(error => {
+        console.error('Error in email sending:', error);
+        // We log the error but don't throw it to prevent failing the whole request
+        return { error: error.message, sent: false };
+      });
     
-    // Return success immediately to prevent blocking the API
+    // Return success immediately without waiting for email to complete sending
     res.json({ 
-      success: true, 
-      message: 'Email notification queued for sending',
-      notificationSent: true
+      message: 'Task assignment email sending in progress',
+      to: recipientEmail,
+      async: true
     });
     
-    // Send email asynchronously
-    const emailResult = await sendEmailWithRetry(mailOptions);
-    console.log('Task assignment email result:', emailResult);
+    // Let the email sending continue in the background
+    await sendEmailPromise;
     
   } catch (error) {
-    console.error('Error sending task assignment notification:', error);
-    // If this fails, we still return a 200 response because it's a background process
-    // but we log the error for debugging
-    res.status(200).json({ 
-      success: false, 
-      message: 'Error sending email notification',
-      error: error.message
-    });
+    console.error('Error processing task assignment email:', error);
+    res.status(500).json({ error: 'Failed to process email', details: error.message });
   }
 });
 

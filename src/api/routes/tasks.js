@@ -167,74 +167,42 @@ const sendAssignmentNotifications = async (taskId, assignments, isNewTask = fals
     console.log(`Scheduling notifications for ${assignments.length} task assignments`);
     
     // Process notifications asynchronously without waiting
-    const promises = assignments.map(assignment => {
-      return new Promise(async (resolve) => {
-        try {
-          // Extract user_id and ensure it's a number
-          const userId = typeof assignment.user_id === 'string' ? parseInt(assignment.user_id, 10) : assignment.user_id;
-          
-          // Extract allocatedHours
-          const hours = assignment.allocatedHours || assignment.allocated_hours;
-          
-          if (userId === undefined || userId === null) {
-            console.error('Missing user ID in assignment:', assignment);
-            resolve({ userId, success: false, error: 'Missing user ID' });
-            return;
-          }
-          
-          // Check if the user exists and get their notification preferences
-          const userResult = await pool.query(
-            'SELECT email_notification FROM users WHERE id = $1', 
-            [userId]
-          );
-          
-          if (userResult.rows.length === 0 || userResult.rows[0].email_notification !== true) {
-            console.log(`Skipping notification for user ${userId} (notifications disabled or user not found)`);
-            resolve({ userId, success: true, notificationSent: false });
-            return;
-          }
-          
-          // Send notification email asynchronously (fire and forget)
-          try {
-            const response = await fetch('http://localhost:3000/api/email/send-task-assignment', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                taskId,
-                userId,
-                allocatedHours: hours,
-                isNewTask
-              })
-            });
-            
-            const result = await response.json();
-            console.log(`Email notification scheduled for task ${taskId} to user ${userId}:`, result);
-            resolve({ userId, success: true, notificationSent: true });
-          } catch (error) {
-            console.error(`Failed to schedule notification for task ${taskId} to user ${userId}:`, error);
-            resolve({ userId, success: false, error: error.message });
-          }
-        } catch (error) {
-          console.error(`Error processing notification for task ${taskId}:`, error);
-          resolve({ success: false, error: error.message });
-        }
-      });
-    });
-    
-    // Execute all notification requests in parallel with a small delay between each
-    // to avoid overwhelming the server
-    for (let i = 0; i < promises.length; i++) {
-      // Introduce a small delay between requests to avoid overwhelming the server
-      if (i > 0) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+    assignments.forEach(assignment => {
+      // Extract user_id and ensure it's a number
+      const userId = typeof assignment.user_id === 'string' ? parseInt(assignment.user_id, 10) : assignment.user_id;
+      
+      // Extract allocatedHours
+      const hours = assignment.allocatedHours || assignment.allocated_hours;
+      
+      if (userId === undefined || userId === null) {
+        console.error('Missing user ID in assignment:', assignment);
+        return;
       }
-      promises[i].catch(error => {
-        console.error('Error in notification promise:', error);
-        return { success: false, error: error.message };
-      });
-    }
+      
+      // Send notification email asynchronously (fire and forget)
+      setTimeout(() => {
+        fetch('http://localhost:3000/api/email/send-task-assignment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            taskId,
+            userId,
+            allocatedHours: hours,
+            isNewTask
+          })
+        })
+        .then(response => response.json())
+        .then(result => {
+          console.log(`Email notification scheduled for task ${taskId} to user ${userId}:`, result);
+        })
+        .catch(error => {
+          console.error(`Failed to schedule notification for task ${taskId} to user ${userId}:`, error);
+          // We log the error but don't throw it since this is non-blocking
+        });
+      }, 100); // Small delay to avoid overwhelming the server
+    });
     
     console.log(`All notifications scheduled asynchronously`);
   } catch (error) {
