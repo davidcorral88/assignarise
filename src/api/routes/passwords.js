@@ -7,12 +7,12 @@ const nodemailer = require('nodemailer');
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
 
-// Enhanced transporter configuration with retry logic
+// Enhanced transporter configuration with SSL on port 465
 function createTransporter() {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true, // use SSL
     auth: {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
       pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',

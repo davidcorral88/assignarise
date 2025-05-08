@@ -4,12 +4,12 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 
-// Enhanced transporter configuration with retry logic
+// Enhanced transporter configuration with SSL on port 465
 function createTransporter() {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true, // use SSL
     auth: {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
       pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
