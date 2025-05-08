@@ -7,60 +7,104 @@ const nodemailer = require('nodemailer');
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
 
-// Enhanced transporter configuration with SSL on port 465
-function createTransporter() {
-  return nodemailer.createTransport({
+// List of SMTP configurations to try in order
+const smtpConfigurations = [
+  // Option 1: SSL on port 465 (most secure)
+  {
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, // use SSL
+    secure: true,
+    connectionTimeout: 30000, // reduce timeout to fail faster
+  },
+  // Option 2: TLS on port 587 (standard)
+  {
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    connectionTimeout: 30000,
+  },
+  // Option 3: Direct Gmail API (as fallback)
+  {
+    service: 'gmail',
+    connectionTimeout: 30000,
+  }
+];
+
+// Create transporter with the first configuration
+function createTransporter(configIndex = 0) {
+  // Ensure index is within bounds
+  const index = Math.min(configIndex, smtpConfigurations.length - 1);
+  const config = smtpConfigurations[index];
+  
+  console.log(`Trying email configuration #${index + 1}:`, {
+    host: config.host || config.service,
+    port: config.port,
+    secure: config.secure
+  });
+  
+  return nodemailer.createTransport({
+    ...config,
     auth: {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
       pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
     },
-    connectionTimeout: 60000, // 1 minute connection timeout
-    greetingTimeout: 30000, // 30 seconds for SMTP greeting
-    socketTimeout: 60000,   // 1 minute socket timeout
-    // Add a retry strategy
-    pool: true,             // Use connection pooling
-    maxConnections: 5,      // Limit connections to avoid overload
-    maxMessages: 100,       // Limit messages per connection
+    // Common options
+    greetingTimeout: 30000,
+    socketTimeout: 60000,
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
   });
 }
 
-// Create initial transporter
-let transporter = createTransporter();
+// Initial transporter with first configuration
+let transporter = createTransporter(0);
+let currentConfigIndex = 0;
 
-// Function to send email with retry logic
-async function sendEmailWithRetry(mailOptions, maxRetries = 3) {
+// Function to send email with retry and fallback logic
+async function sendEmailWithRetry(mailOptions, maxRetries = 3, maxConfigs = smtpConfigurations.length) {
   let retries = 0;
+  let configAttempts = 0;
   let lastError = null;
 
-  while (retries < maxRetries) {
-    try {
-      // If we've had a previous error, recreate the transporter
-      if (lastError) {
-        console.log(`Retry attempt ${retries + 1} for email to ${mailOptions.to}`);
-        transporter = createTransporter();
-      }
+  while (configAttempts < maxConfigs) {
+    retries = 0;
+    
+    while (retries < maxRetries) {
+      try {
+        // If we've had a previous error, recreate the transporter if needed
+        if (lastError && retries === 0) {
+          console.log(`Using email configuration #${currentConfigIndex + 1} for ${mailOptions.to}`);
+        }
 
-      const result = await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
-      return result;
-    } catch (error) {
-      retries++;
-      lastError = error;
-      console.error(`Email sending attempt ${retries} failed:`, error);
-      
-      // Wait before retrying (exponential backoff)
-      if (retries < maxRetries) {
-        const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
-        console.log(`Waiting ${waitTime}ms before retry...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
+        const result = await transporter.sendMail(mailOptions);
+        console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
+        return result;
+      } catch (error) {
+        retries++;
+        lastError = error;
+        console.error(`Email sending attempt ${retries} with config #${currentConfigIndex + 1} failed:`, error.message);
+        
+        // Wait before retrying (exponential backoff)
+        if (retries < maxRetries) {
+          const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
+          console.log(`Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
       }
+    }
+    
+    // If all retries failed with current config, try next config
+    configAttempts++;
+    if (configAttempts < maxConfigs) {
+      currentConfigIndex = (currentConfigIndex + 1) % smtpConfigurations.length;
+      console.log(`Switching to email configuration #${currentConfigIndex + 1} after ${maxRetries} failed attempts`);
+      transporter = createTransporter(currentConfigIndex);
     }
   }
 
-  console.error(`All ${maxRetries} attempts to send email to ${mailOptions.to} failed.`);
+  console.error(`All ${maxRetries * maxConfigs} attempts to send email to ${mailOptions.to} failed.`);
   throw lastError;
 }
 
@@ -163,7 +207,7 @@ router.post('/reset', async (req, res) => {
     }
 
     // Check if user exists and get their email
-    // Fix: Use correct column name case - "emailATSXPTPG" instead of "emailatsxptpg"
+    // Use correct column name case - "emailATSXPTPG"
     const userCheck = await pool.query('SELECT email, "emailATSXPTPG", name, email_notification FROM users WHERE id = $1', [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });

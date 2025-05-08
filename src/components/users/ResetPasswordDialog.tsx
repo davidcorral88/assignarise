@@ -29,6 +29,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [directPassword, setDirectPassword] = useState<string | null>(null);
   
   const handleResetPassword = async () => {
     setIsLoading(true);
@@ -39,16 +40,25 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
       if (result.success) {
         setIsSuccess(true);
         
-        toast({
-          title: "Contrasinal resetado",
-          description: `Enviouse un correo electrónico a ${user.email} co novo contrasinal.`,
-        });
-        
-        // Close the dialog after a time
-        setTimeout(() => {
-          onOpenChange(false);
-          setIsSuccess(false);
-        }, 2000);
+        // If email is disabled, server returns password directly
+        if (result.password) {
+          setDirectPassword(result.password);
+          toast({
+            title: "Contrasinal resetado",
+            description: "O usuario ten as notificacións de correo desactivadas. O contrasinal mostrarase directamente.",
+          });
+        } else {
+          toast({
+            title: "Contrasinal resetado",
+            description: `Enviouse un correo electrónico a ${user.emailATSXPTPG || user.email} co novo contrasinal.`,
+          });
+          
+          // Close the dialog after a time
+          setTimeout(() => {
+            onOpenChange(false);
+            setIsSuccess(false);
+          }, 2000);
+        }
       } else {
         throw new Error("Non se puido resetear o contrasinal");
       }
@@ -64,7 +74,14 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
   };
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newState) => {
+      // Reset state when dialog closes
+      if (!newState) {
+        setIsSuccess(false);
+        setDirectPassword(null);
+      }
+      onOpenChange(newState);
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center">
@@ -81,9 +98,21 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
             <Alert className="bg-green-50 border-green-200">
               <Check className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-700">
-                Enviouse un correo electrónico co novo contrasinal.
+                {directPassword ? 
+                  "Contrasinal resetado correctamente." :
+                  "Enviouse un correo electrónico co novo contrasinal."}
               </AlertDescription>
             </Alert>
+            
+            {directPassword && (
+              <div className="mt-4 p-4 bg-gray-50 border rounded">
+                <Label className="font-medium text-sm text-gray-500">Novo contrasinal:</Label>
+                <p className="font-mono text-base mt-1 p-2 bg-white border rounded">{directPassword}</p>
+                <p className="text-xs text-amber-600 mt-2">
+                  Anota este contrasinal, non se volverá a mostrar.
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-4 py-4">
@@ -91,7 +120,9 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
               <Mail className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
               <div>
                 <Label className="font-medium">Usuario</Label>
-                <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {user.emailATSXPTPG || user.email}
+                </p>
               </div>
             </div>
             
@@ -112,7 +143,7 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
         )}
         
         <DialogFooter>
-          {!isSuccess && (
+          {!isSuccess ? (
             <>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
@@ -132,6 +163,10 @@ const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
                 )}
               </Button>
             </>
+          ) : (
+            <Button onClick={() => onOpenChange(false)}>
+              {directPassword ? "Pechar" : "Aceptar"}
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>
