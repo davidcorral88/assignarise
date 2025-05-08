@@ -163,7 +163,8 @@ router.post('/reset', async (req, res) => {
     }
 
     // Check if user exists and get their email
-    const userCheck = await pool.query('SELECT email, emailatsxptpg, name, email_notification FROM users WHERE id = $1', [userId]);
+    // Fix: Use correct column name case - "emailATSXPTPG" instead of "emailatsxptpg"
+    const userCheck = await pool.query('SELECT email, "emailATSXPTPG", name, email_notification FROM users WHERE id = $1', [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -189,7 +190,7 @@ router.post('/reset', async (req, res) => {
     }
     
     // Prefer emailATSXPTPG if available, otherwise use regular email
-    const recipientEmail = user.emailatsxptpg || user.email;
+    const recipientEmail = user.emailATSXPTPG || user.email;
 
     if (!recipientEmail) {
       return res.status(400).json({ error: 'User has no email address' });

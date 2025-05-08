@@ -90,8 +90,8 @@ router.post('/send-task-assignment', async (req, res) => {
     }
     const task = taskResult.rows[0];
     
-    // Get user details
-    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    // Get user details - Fix: Use correct column name case - "emailATSXPTPG" instead of "emailatsxptpg"
+    const userResult = await pool.query('SELECT id, name, email, "emailATSXPTPG", email_notification FROM users WHERE id = $1', [userId]);
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -101,7 +101,7 @@ router.post('/send-task-assignment', async (req, res) => {
       userId,
       name: user.name,
       email: user.email,
-      emailATSXPTPG: user.emailatsxptpg || 'No alternative email'
+      emailATSXPTPG: user.emailATSXPTPG || 'No alternative email'
     });
     
     // Check if user has email notification enabled (defaulted to true if not specified)
@@ -115,7 +115,7 @@ router.post('/send-task-assignment', async (req, res) => {
     }
     
     // Determine which email to use - prefer the ATSXPTPG email if available
-    const recipientEmail = user.emailatsxptpg || user.email;
+    const recipientEmail = user.emailATSXPTPG || user.email;
     
     // If user has no email, we can't send notification
     if (!recipientEmail) {
@@ -143,9 +143,9 @@ router.post('/send-task-assignment', async (req, res) => {
     // Include CC addresses if there are other users with emailATSXPTPG assigned to this task
     const ccAddresses = [];
     
-    // Get all users assigned to this task
+    // Get all users assigned to this task - Fix: Use correct column name case
     const assignmentsResult = await pool.query(
-      'SELECT u.id, u.name, u.email, u.emailatsxptpg FROM users u ' +
+      'SELECT u.id, u.name, u.email, u."emailATSXPTPG", u.email_notification FROM users u ' +
       'JOIN task_assignments ta ON u.id = ta.user_id ' +
       'WHERE ta.task_id = $1 AND u.id <> $2', // exclude current user
       [taskId, userId]
@@ -153,8 +153,8 @@ router.post('/send-task-assignment', async (req, res) => {
     
     // Add emailATSXPTPG addresses to CC if available
     assignmentsResult.rows.forEach(assignedUser => {
-      if (assignedUser.emailatsxptpg && assignedUser.email_notification !== false) {
-        ccAddresses.push(assignedUser.emailatsxptpg);
+      if (assignedUser.emailATSXPTPG && assignedUser.email_notification !== false) {
+        ccAddresses.push(assignedUser.emailATSXPTPG);
       }
     });
     
