@@ -1,8 +1,9 @@
+
 const nodemailer = require('nodemailer');
 
 // Lista de configuraciones SMTP ordenadas por preferencia
 const smtpConfigurations = [
-  // Opción 1: TLS en puerto 587 (recomendado para Gmail)
+  // Opción 1: TLS en puerto 587 (configuración recomendada para Gmail)
   {
     host: 'smtp.gmail.com',
     port: 587,
