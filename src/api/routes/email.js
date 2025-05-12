@@ -10,23 +10,10 @@ router.get('/test', async (req, res) => {
   try {
     const transporter = emailService.getTransporter();
     await transporter.verify();
-    
-    const configIndex = emailService.getCurrentConfigIndex();
-    const currentConfig = emailService.getCurrentConfig();
-    
-    const authType = currentConfig.auth?.type || 'basic';
-    
     res.json({ 
       status: 'Conexión con servidor de correo exitosa',
-      configuration: configIndex + 1,
-      authType: authType,
-      details: {
-        host: currentConfig.host || currentConfig.service,
-        port: currentConfig.port,
-        secure: currentConfig.secure,
-        requireTLS: currentConfig.requireTLS,
-        authType: authType
-      }
+      configuration: emailService.getCurrentConfigIndex() + 1,
+      details: emailService.getCurrentConfig()
     });
   } catch (error) {
     console.error('Error de conexión con servidor de correo:', error);
