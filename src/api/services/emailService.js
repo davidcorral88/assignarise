@@ -1,16 +1,8 @@
-
 const nodemailer = require('nodemailer');
 
-// List of SMTP configurations to try in order
+// Lista de configuraciones SMTP ordenadas por preferencia
 const smtpConfigurations = [
-  // Option 1: SSL on port 465 (most secure)
-  {
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    connectionTimeout: 30000, // reduce timeout to fail faster
-  },
-  // Option 2: TLS on port 587 (standard)
+  // Opción 1: TLS en puerto 587 (recomendado para Gmail)
   {
     host: 'smtp.gmail.com',
     port: 587,
@@ -18,18 +10,25 @@ const smtpConfigurations = [
     requireTLS: true,
     connectionTimeout: 30000,
   },
-  // Option 3: Direct Gmail API (as fallback)
+  // Opción 2: SSL en puerto 465 (alternativa)
+  {
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    connectionTimeout: 30000,
+  },
+  // Opción 3: Servicio directo de Gmail (como respaldo)
   {
     service: 'gmail',
     connectionTimeout: 30000,
   }
 ];
 
-// Track current configuration
+// Control de configuración actual
 let currentConfigIndex = 0;
 let transporter = null;
 
-// Initialize the transporter if it doesn't exist
+// Inicializa el transportador si no existe
 const initTransporter = () => {
   if (!transporter) {
     transporter = createTransporter(currentConfigIndex);
@@ -37,16 +36,17 @@ const initTransporter = () => {
   return transporter;
 };
 
-// Create transporter with the specified configuration
+// Crear transportador con la configuración especificada
 function createTransporter(configIndex = 0) {
-  // Ensure index is within bounds
+  // Asegurarse de que el índice esté dentro de los límites
   const index = Math.min(configIndex, smtpConfigurations.length - 1);
   const config = smtpConfigurations[index];
   
-  console.log(`Creating email transporter with configuration #${index + 1}:`, {
+  console.log(`Creando transportador de correo con configuración #${index + 1}:`, {
     host: config.host || config.service,
     port: config.port,
-    secure: config.secure
+    secure: config.secure,
+    requireTLS: config.requireTLS
   });
   
   return nodemailer.createTransport({
@@ -55,7 +55,7 @@ function createTransporter(configIndex = 0) {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
       pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
     },
-    // Common options
+    // Opciones comunes
     greetingTimeout: 30000,
     socketTimeout: 60000,
     pool: true,
@@ -64,21 +64,21 @@ function createTransporter(configIndex = 0) {
   });
 }
 
-// Switch to next configuration and recreate transporter
+// Cambiar a la siguiente configuración y recrear el transportador
 const switchToNextConfig = () => {
   currentConfigIndex = (currentConfigIndex + 1) % smtpConfigurations.length;
-  console.log(`Switching to email configuration #${currentConfigIndex + 1}`);
+  console.log(`Cambiando a configuración de correo #${currentConfigIndex + 1}`);
   transporter = createTransporter(currentConfigIndex);
   return transporter;
 };
 
-// Function to send email with retry and fallback logic
+// Función para enviar correo con reintento y lógica de respaldo
 async function sendEmailWithRetry(mailOptions, maxRetries = 3, maxConfigs = smtpConfigurations.length) {
   let retries = 0;
   let configAttempts = 0;
   let lastError = null;
 
-  // Ensure we have a transporter
+  // Asegurar que tenemos un transportador
   if (!transporter) {
     initTransporter();
   }
@@ -88,40 +88,40 @@ async function sendEmailWithRetry(mailOptions, maxRetries = 3, maxConfigs = smtp
     
     while (retries < maxRetries) {
       try {
-        // If we've had a previous error, recreate the transporter if needed
+        // Si hemos tenido un error previo, recrear el transportador si es necesario
         if (lastError && retries === 0 && configAttempts > 0) {
-          console.log(`Using email configuration #${currentConfigIndex + 1} for ${mailOptions.to}`);
+          console.log(`Usando configuración de correo #${currentConfigIndex + 1} para ${mailOptions.to}`);
         }
 
         const result = await transporter.sendMail(mailOptions);
-        console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
+        console.log(`Correo enviado con éxito a ${mailOptions.to}:`, result.messageId);
         return result;
       } catch (error) {
         retries++;
         lastError = error;
-        console.error(`Email sending attempt ${retries} with config #${currentConfigIndex + 1} failed:`, error.message);
+        console.error(`Intento ${retries} de envío con config #${currentConfigIndex + 1} falló:`, error.message);
         
-        // Wait before retrying (exponential backoff)
+        // Esperar antes de reintentar (backoff exponencial)
         if (retries < maxRetries) {
-          const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
-          console.log(`Waiting ${waitTime}ms before retry...`);
+          const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Máx 30 segundos
+          console.log(`Esperando ${waitTime}ms antes de reintentar...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
     }
     
-    // If all retries failed with current config, try next config
+    // Si todos los reintentos fallaron con la configuración actual, probar la siguiente
     configAttempts++;
     if (configAttempts < maxConfigs) {
       switchToNextConfig();
     }
   }
 
-  console.error(`All ${maxRetries * maxConfigs} attempts to send email to ${mailOptions.to} failed.`);
+  console.error(`Los ${maxRetries * maxConfigs} intentos de envío a ${mailOptions.to} fallaron.`);
   throw lastError;
 }
 
-// Helper function to generate random password
+// Función auxiliar para generar contraseñas aleatorias
 function generateRandomPassword(length = 12) {
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
   let password = '';
@@ -132,9 +132,9 @@ function generateRandomPassword(length = 12) {
   return password;
 }
 
-// Email templates
+// Plantillas de correo
 const templates = {
-  // Template for password reset email
+  // Template para password reset email
   passwordReset: ({user, password}) => {
     return `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
@@ -201,7 +201,7 @@ const templates = {
   }
 };
 
-// Public API
+// API pública
 module.exports = {
   getTransporter: initTransporter,
   createTransporter,
@@ -211,6 +211,6 @@ module.exports = {
   generateRandomPassword,
   switchToNextConfig,
   templates,
-  // Export configurations for potential direct access
+  // Exportar configuraciones para posible acceso directo
   smtpConfigurations
 };

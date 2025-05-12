@@ -5,26 +5,26 @@ const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 const emailService = require('../services/emailService');
 
-// Test email configuration
+// Prueba de configuración de correo
 router.get('/test', async (req, res) => {
   try {
     const transporter = emailService.getTransporter();
     await transporter.verify();
     res.json({ 
-      status: 'Email server connection successful',
+      status: 'Conexión con servidor de correo exitosa',
       configuration: emailService.getCurrentConfigIndex() + 1,
       details: emailService.getCurrentConfig()
     });
   } catch (error) {
-    console.error('Email server connection error:', error);
+    console.error('Error de conexión con servidor de correo:', error);
     
-    // Try next configuration immediately for the test endpoint
+    // Intentar siguiente configuración inmediatamente para el endpoint de prueba
     emailService.switchToNextConfig();
     
     res.status(500).json({ 
-      error: 'Email server connection failed', 
+      error: 'Falló la conexión con servidor de correo', 
       details: error.message,
-      nextAttempt: `Will try configuration #${emailService.getCurrentConfigIndex() + 1} on next request`
+      nextAttempt: `Se intentará con configuración #${emailService.getCurrentConfigIndex() + 1} en la próxima solicitud`
     });
   }
 });
