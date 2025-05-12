@@ -1,27 +1,60 @@
 
 const nodemailer = require('nodemailer');
 
+// OAuth2 configuration for Gmail
+const oauth2Config = {
+  service: 'gmail',
+  auth: {
+    type: 'OAuth2',
+    user: 'iplanmovilidad@gmail.com',
+    clientId: '474487070345-teqaj5kvhlkmevbh5us1b2js7j7dsh8f.apps.googleusercontent.com',
+    clientSecret: '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',
+    refreshToken: '1//04ol7zn9wj4vtCgYIARAAGAQSNwF-L9IrayXDqKjBKsIj6lWxixYkCTDcMhk9PUmjO1V8DWBRx1alvFqlQ25n4lMxbJ2wdKfEpnE',
+    accessToken: 'ya29.a0AW4Xtxg56EfYFzZxH4atvc-vLxY1bQIKFKBGNeZ9cDjswWPfumdPXszi6vKnsn3ovlKMdI_7A-ase8dhor20a1GmfkHZKS0yIXg9Dmdu_IHkjWvMRMqFyd8EvyHElMyCWonKBYmMNukt7M4q1ZSKnwdesvc1fJmJ43_QP33daCgYKAZMSARcSFQHGX2Mid1j6HTD0gaZzLwmx7r53kA0175',
+  },
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 60000,
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
+};
+
 // Lista de configuraciones SMTP ordenadas por preferencia
 const smtpConfigurations = [
-  // Opción 1: TLS en puerto 587 (configuración recomendada para Gmail)
+  // Opción 1: OAuth2 para Gmail (configuración principal)
+  oauth2Config,
+  // Opción 2: TLS en puerto 587 (configuración recomendada para Gmail)
   {
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
     requireTLS: true,
     connectionTimeout: 30000,
+    auth: {
+      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+      pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
+    },
   },
-  // Opción 2: SSL en puerto 465 (alternativa)
+  // Opción 3: SSL en puerto 465 (alternativa)
   {
     host: 'smtp.gmail.com',
     port: 465,
     secure: true,
     connectionTimeout: 30000,
+    auth: {
+      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+      pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
+    },
   },
-  // Opción 3: Servicio directo de Gmail (como respaldo)
+  // Opción 4: Servicio directo de Gmail (como respaldo)
   {
     service: 'gmail',
     connectionTimeout: 30000,
+    auth: {
+      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+      pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
+    },
   }
 ];
 
@@ -47,22 +80,12 @@ function createTransporter(configIndex = 0) {
     host: config.host || config.service,
     port: config.port,
     secure: config.secure,
-    requireTLS: config.requireTLS
+    requireTLS: config.requireTLS,
+    authType: config.auth?.type || 'basic'
   });
   
-  return nodemailer.createTransport({
-    ...config,
-    auth: {
-      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
-    },
-    // Opciones comunes
-    greetingTimeout: 30000,
-    socketTimeout: 60000,
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
-  });
+  // No es necesario agregar auth aquí si ya está en la configuración
+  return nodemailer.createTransport(config);
 }
 
 // Cambiar a la siguiente configuración y recrear el transportador
@@ -213,5 +236,7 @@ module.exports = {
   switchToNextConfig,
   templates,
   // Exportar configuraciones para posible acceso directo
-  smtpConfigurations
+  smtpConfigurations,
+  // Exportar configuración OAuth2 para uso directo si es necesario
+  oauth2Config
 };
