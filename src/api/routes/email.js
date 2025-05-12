@@ -1,130 +1,30 @@
+
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
-
-// List of SMTP configurations to try in order
-const smtpConfigurations = [
-  // Option 1: SSL on port 465 (most secure)
-  {
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    connectionTimeout: 30000, // reduce timeout to fail faster
-  },
-  // Option 2: TLS on port 587 (standard)
-  {
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    connectionTimeout: 30000,
-  },
-  // Option 3: Direct Gmail API (as fallback)
-  {
-    service: 'gmail',
-    connectionTimeout: 30000,
-  }
-];
-
-// Create transporter with the first configuration
-function createTransporter(configIndex = 0) {
-  // Ensure index is within bounds
-  const index = Math.min(configIndex, smtpConfigurations.length - 1);
-  const config = smtpConfigurations[index];
-  
-  console.log(`Trying email configuration #${index + 1}:`, {
-    host: config.host || config.service,
-    port: config.port,
-    secure: config.secure
-  });
-  
-  return nodemailer.createTransport({
-    ...config,
-    auth: {
-      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
-    },
-    // Common options
-    greetingTimeout: 30000,
-    socketTimeout: 60000,
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
-  });
-}
-
-// Initial transporter with first configuration
-let transporter = createTransporter(0);
-let currentConfigIndex = 0;
-
-// Function to send email with retry and fallback logic
-async function sendEmailWithRetry(mailOptions, maxRetries = 3, maxConfigs = smtpConfigurations.length) {
-  let retries = 0;
-  let configAttempts = 0;
-  let lastError = null;
-
-  while (configAttempts < maxConfigs) {
-    retries = 0;
-    
-    while (retries < maxRetries) {
-      try {
-        // If we've had a previous error, recreate the transporter if needed
-        if (lastError && retries === 0) {
-          console.log(`Using email configuration #${currentConfigIndex + 1} for ${mailOptions.to}`);
-        }
-
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
-        return result;
-      } catch (error) {
-        retries++;
-        lastError = error;
-        console.error(`Email sending attempt ${retries} with config #${currentConfigIndex + 1} failed:`, error.message);
-        
-        // Wait before retrying (exponential backoff)
-        if (retries < maxRetries) {
-          const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
-          console.log(`Waiting ${waitTime}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-        }
-      }
-    }
-    
-    // If all retries failed with current config, try next config
-    configAttempts++;
-    if (configAttempts < maxConfigs) {
-      currentConfigIndex = (currentConfigIndex + 1) % smtpConfigurations.length;
-      console.log(`Switching to email configuration #${currentConfigIndex + 1} after ${maxRetries} failed attempts`);
-      transporter = createTransporter(currentConfigIndex);
-    }
-  }
-
-  console.error(`All ${maxRetries * maxConfigs} attempts to send email to ${mailOptions.to} failed.`);
-  throw lastError;
-}
+const emailService = require('../services/emailService');
 
 // Test email configuration
 router.get('/test', async (req, res) => {
   try {
+    const transporter = emailService.getTransporter();
     await transporter.verify();
     res.json({ 
       status: 'Email server connection successful',
-      configuration: currentConfigIndex + 1,
-      details: smtpConfigurations[currentConfigIndex]
+      configuration: emailService.getCurrentConfigIndex() + 1,
+      details: emailService.getCurrentConfig()
     });
   } catch (error) {
     console.error('Email server connection error:', error);
     
     // Try next configuration immediately for the test endpoint
-    const nextConfigIndex = (currentConfigIndex + 1) % smtpConfigurations.length;
-    transporter = createTransporter(nextConfigIndex);
-    currentConfigIndex = nextConfigIndex;
+    emailService.switchToNextConfig();
     
     res.status(500).json({ 
       error: 'Email server connection failed', 
       details: error.message,
-      nextAttempt: `Will try configuration #${currentConfigIndex + 1} on next request`
+      nextAttempt: `Will try configuration #${emailService.getCurrentConfigIndex() + 1} on next request`
     });
   }
 });
@@ -217,45 +117,23 @@ router.post('/send-task-assignment', async (req, res) => {
     
     console.log(`Including ${ccAddresses.length} CC addresses:`, ccAddresses);
     
-    // Create email content
+    // Create email content - using template helper
     const mailOptions = {
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
       to: recipientEmail,
       cc: ccAddresses.length > 0 ? ccAddresses.join(',') : undefined,
       subject: emailSubject,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-          <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">${isNewTask ? 'Nova asignación de tarefa' : 'Actualización de tarefa asignada'}</h2>
-          <p>Ola ${user.name},</p>
-          <p>${introMessage}</p>
-          
-          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #333;">Detalles da tarefa</h3>
-            <p><strong>Título:</strong> ${task.title}</p>
-            <p><strong>Descrición:</strong> ${task.description || 'Non dispoñible'}</p>
-            <p><strong>Estado:</strong> ${task.status}</p>
-            <p><strong>Prioridade:</strong> ${task.priority}</p>
-            <p><strong>Data de inicio:</strong> ${startDate}</p>
-            <p><strong>Data de vencemento:</strong> ${dueDate}</p>
-            <p><strong>Etiquetas:</strong> ${tags}</p>
-            <p><strong>Categoría:</strong> ${task.category || 'Non definida'}</p>
-            <p><strong>Proxecto:</strong> ${task.project || 'Non definido'}</p>
-            <p><strong style="color: #2c7be5;">Horas asignadas:</strong> ${allocatedHours} horas</p>
-          </div>
-          
-          <p>Pode acceder á tarefa no sistema de xestión facendo clic no seguinte enlace:</p>
-          <p style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL || 'https://rexistrodetarefas.iplanmovilidad.com'}/tasks/${taskId}" 
-               style="display: inline-block; background-color: #2c7be5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
-              Ver detalles da tarefa
-            </a>
-          </p>
-          
-          <p style="color: #777; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
-            Esta é unha mensaxe automática do sistema de xestión de tarefas. Por favor, non responda a este correo electrónico.
-          </p>
-        </div>
-      `
+      html: emailService.templates.taskAssignment({
+        user,
+        task,
+        introMessage,
+        startDate,
+        dueDate,
+        tags,
+        allocatedHours,
+        isNewTask,
+        taskId
+      })
     };
     
     // Return success immediately without waiting for email to complete sending
@@ -268,7 +146,7 @@ router.post('/send-task-assignment', async (req, res) => {
     
     // Send email with retry using our enhanced function
     try {
-      await sendEmailWithRetry(mailOptions);
+      await emailService.sendEmailWithRetry(mailOptions);
       console.log(`Task assignment email successfully sent to ${recipientEmail}`);
     } catch (error) {
       console.error(`Final failure sending task assignment email to ${recipientEmail}:`, error);

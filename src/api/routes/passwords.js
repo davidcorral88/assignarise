@@ -2,122 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
-const nodemailer = require('nodemailer');
+const emailService = require('../services/emailService');
 
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
-
-// List of SMTP configurations to try in order
-const smtpConfigurations = [
-  // Option 1: SSL on port 465 (most secure)
-  {
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    connectionTimeout: 30000, // reduce timeout to fail faster
-  },
-  // Option 2: TLS on port 587 (standard)
-  {
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    connectionTimeout: 30000,
-  },
-  // Option 3: Direct Gmail API (as fallback)
-  {
-    service: 'gmail',
-    connectionTimeout: 30000,
-  }
-];
-
-// Create transporter with the first configuration
-function createTransporter(configIndex = 0) {
-  // Ensure index is within bounds
-  const index = Math.min(configIndex, smtpConfigurations.length - 1);
-  const config = smtpConfigurations[index];
-  
-  console.log(`Trying email configuration #${index + 1}:`, {
-    host: config.host || config.service,
-    port: config.port,
-    secure: config.secure
-  });
-  
-  return nodemailer.createTransport({
-    ...config,
-    auth: {
-      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
-    },
-    // Common options
-    greetingTimeout: 30000,
-    socketTimeout: 60000,
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
-  });
-}
-
-// Initial transporter with first configuration
-let transporter = createTransporter(0);
-let currentConfigIndex = 0;
-
-// Function to send email with retry and fallback logic
-async function sendEmailWithRetry(mailOptions, maxRetries = 3, maxConfigs = smtpConfigurations.length) {
-  let retries = 0;
-  let configAttempts = 0;
-  let lastError = null;
-
-  while (configAttempts < maxConfigs) {
-    retries = 0;
-    
-    while (retries < maxRetries) {
-      try {
-        // If we've had a previous error, recreate the transporter if needed
-        if (lastError && retries === 0) {
-          console.log(`Using email configuration #${currentConfigIndex + 1} for ${mailOptions.to}`);
-        }
-
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
-        return result;
-      } catch (error) {
-        retries++;
-        lastError = error;
-        console.error(`Email sending attempt ${retries} with config #${currentConfigIndex + 1} failed:`, error.message);
-        
-        // Wait before retrying (exponential backoff)
-        if (retries < maxRetries) {
-          const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
-          console.log(`Waiting ${waitTime}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-        }
-      }
-    }
-    
-    // If all retries failed with current config, try next config
-    configAttempts++;
-    if (configAttempts < maxConfigs) {
-      currentConfigIndex = (currentConfigIndex + 1) % smtpConfigurations.length;
-      console.log(`Switching to email configuration #${currentConfigIndex + 1} after ${maxRetries} failed attempts`);
-      transporter = createTransporter(currentConfigIndex);
-    }
-  }
-
-  console.error(`All ${maxRetries * maxConfigs} attempts to send email to ${mailOptions.to} failed.`);
-  throw lastError;
-}
-
-// Helper function to generate random password
-function generateRandomPassword(length = 12) {
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-  let password = '';
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    password += charset[randomIndex];
-  }
-  return password;
-}
 
 // Verify user password
 router.post('/verify', async (req, res) => {
@@ -220,7 +108,7 @@ router.post('/reset', async (req, res) => {
       console.log(`User ${userId} (${user.name}) has email notifications disabled.`);
       
       // Generate new random password without sending email
-      const newPassword = generateRandomPassword();
+      const newPassword = emailService.generateRandomPassword();
       
       // Update password in database
       await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
@@ -241,7 +129,7 @@ router.post('/reset', async (req, res) => {
     }
 
     // Generate new random password
-    const newPassword = generateRandomPassword();
+    const newPassword = emailService.generateRandomPassword();
 
     // Update password in database
     await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
@@ -253,41 +141,20 @@ router.post('/reset', async (req, res) => {
       message: 'Password reset successful and email sending in progress'
     });
     
-    // Create email content
+    // Create email content using template
     const mailOptions = {
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
       to: recipientEmail,
       subject: 'Reseteo de contrasinal - Sistema de Tarefas',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-          <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">Reseteo de contrasinal</h2>
-          <p>Ola ${user.name},</p>
-          <p>O seu contrasinal foi reseteado por un administrador no sistema de xestión de tarefas.</p>
-          
-          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p><strong>O seu novo contrasinal é:</strong> ${newPassword}</p>
-          </div>
-          
-          <p>Por razóns de seguridade, recomendámoslle que cambie este contrasinal a primeira vez que inicie sesión.</p>
-          
-          <p>Pode acceder ao sistema no seguinte enlace:</p>
-          <p style="text-align: center;">
-            <a href="${process.env.FRONTEND_URL || 'https://rexistrodetarefas.iplanmovilidad.com'}" 
-               style="display: inline-block; background-color: #2c7be5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
-              Acceder ao sistema
-            </a>
-          </p>
-          
-          <p style="color: #777; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
-            Esta é unha mensaxe automática do sistema de xestión de tarefas. Por favor, non responda a este correo electrónico.
-          </p>
-        </div>
-      `
+      html: emailService.templates.passwordReset({
+        user,
+        password: newPassword
+      })
     };
     
     // Send email with retry using our enhanced function
     try {
-      await sendEmailWithRetry(mailOptions);
+      await emailService.sendEmailWithRetry(mailOptions);
       console.log(`Password reset email successfully sent to ${recipientEmail}`);
     } catch (error) {
       console.error(`Final failure sending password reset email to ${recipientEmail}:`, error);
