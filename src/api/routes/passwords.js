@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -6,12 +7,11 @@ const nodemailer = require('nodemailer');
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
 
-// Enhanced transporter configuration with retry logic
+// Enhanced transporter configuration with Gmail service approach
 function createTransporter() {
+  // Using the 'service' option instead of direct host/port configuration
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Use SSL/TLS
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
       pass: process.env.EMAIL_PASS || 'pvgz mlke rrxw ttqb',
@@ -23,6 +23,7 @@ function createTransporter() {
     pool: true,             // Use connection pooling
     maxConnections: 5,      // Limit connections to avoid overload
     maxMessages: 100,       // Limit messages per connection
+    debug: true,            // Enable debug logs for troubleshooting
   });
 }
 

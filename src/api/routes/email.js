@@ -4,12 +4,12 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 
-// Enhanced transporter configuration with retry logic
+// Enhanced transporter configuration with Gmail OAuth2
 function createTransporter() {
+  // For Gmail, sometimes direct SSL can be problematic in some environments
+  // Using the 'service' option often works better than direct host/port settings
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
       pass: process.env.EMAIL_PASS || 'pvgz mlke rrxw ttqb',
@@ -21,6 +21,7 @@ function createTransporter() {
     pool: true,             // Use connection pooling
     maxConnections: 5,      // Limit connections to avoid overload
     maxMessages: 100,       // Limit messages per connection
+    debug: true,            // Enable debug logs for troubleshooting
   });
 }
 
