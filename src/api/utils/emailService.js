@@ -18,6 +18,9 @@ const createEmailTransporter = (configIndex = 0) => {
       connectionTimeout: 10000, // Reduced timeout to 10 seconds for faster retries
       greetingTimeout: 5000,    // Reduced greeting timeout
       socketTimeout: 10000,     // Reduced socket timeout
+      pool: false,              // Disable connection pooling to prevent hanging connections
+      maxConnections: 1,        // Limit to one connection at a time
+      maxMessages: 1            // Send only one message per connection
     },
     // Configuration 2: Gmail with STARTTLS on port 587
     {
@@ -32,6 +35,9 @@ const createEmailTransporter = (configIndex = 0) => {
       connectionTimeout: 10000,
       greetingTimeout: 5000,
       socketTimeout: 10000,
+      pool: false,               // Disable connection pooling
+      maxConnections: 1,         // Limit to one connection at a time
+      maxMessages: 1             // Send only one message per connection
     },
     // Configuration 3: Original server as fallback
     {
@@ -45,6 +51,9 @@ const createEmailTransporter = (configIndex = 0) => {
       connectionTimeout: 10000,
       greetingTimeout: 5000,
       socketTimeout: 10000,
+      pool: false,               // Disable connection pooling
+      maxConnections: 1,         // Limit to one connection at a time
+      maxMessages: 1,            // Send only one message per connection
       tls: {
         rejectUnauthorized: false
       }
@@ -72,6 +81,17 @@ let currentConfigIndex = 0;
 const tryNextConfiguration = () => {
   currentConfigIndex = (currentConfigIndex + 1) % 3; // Cycle through 3 configurations
   console.log(`Switching to email configuration #${currentConfigIndex + 1}`);
+  
+  // Explicitly close previous transporter if possible
+  if (currentTransporter && typeof currentTransporter.close === 'function') {
+    try {
+      currentTransporter.close();
+      console.log('Successfully closed previous email transport connection');
+    } catch (error) {
+      console.error('Error closing previous email transport:', error.message);
+    }
+  }
+  
   return createEmailTransporter(currentConfigIndex);
 };
 
@@ -95,11 +115,14 @@ const sendEmail = async (mailOptions, maxRetries = 2) => {
       try {
         console.log(`Attempt ${retries + 1} with configuration #${currentConfigIndex + 1} to send email to ${mailOptions.to}`);
         
+        // Create a fresh transporter for each attempt to avoid stale connections
+        const transporter = createEmailTransporter(currentConfigIndex);
+        
         // Add logging info to help with debugging
         console.log(`Current email transport settings:`);
-        console.log(`- Host: ${currentTransporter.transporter.options.host || currentTransporter.transporter.options.service}`);
-        console.log(`- Port: ${currentTransporter.transporter.options.port}`);
-        console.log(`- Secure: ${currentTransporter.transporter.options.secure}`);
+        console.log(`- Host: ${transporter.transporter.options.host || transporter.transporter.options.service}`);
+        console.log(`- Port: ${transporter.transporter.options.port}`);
+        console.log(`- Secure: ${transporter.transporter.options.secure}`);
         
         // Set a timeout for the entire email sending operation
         const timeoutPromise = new Promise((_, reject) => {
@@ -108,22 +131,34 @@ const sendEmail = async (mailOptions, maxRetries = 2) => {
         
         // Race between the email sending and the timeout
         const result = await Promise.race([
-          currentTransporter.sendMail(mailOptions),
+          transporter.sendMail(mailOptions),
           timeoutPromise
         ]);
+        
+        // Close the transporter to release resources
+        if (typeof transporter.close === 'function') {
+          try {
+            transporter.close();
+            console.log('Successfully closed email transport connection');
+          } catch (closeError) {
+            console.error('Error closing email transport:', closeError.message);
+          }
+        }
         
         console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
         return result;
       } catch (error) {
         retries++;
         lastError = error;
-        console.error(`Email sending attempt ${retries} with configuration #${currentConfigIndex + 1} failed:`, error.message);
+        console.error(`Email sending attempt ${retries} with configuration #${currentConfigIndex + 1} failed: ${error.message}`);
         
         // Check for network connectivity issues
         const isNetworkError = error.code === 'ETIMEDOUT' || 
                               error.code === 'ECONNREFUSED' || 
                               error.code === 'ENOTFOUND' || 
-                              error.code === 'ENETUNREACH';
+                              error.code === 'ENETUNREACH' ||
+                              error.message === 'Email sending timed out' ||
+                              error.message.includes('timeout');
         
         if (isNetworkError) {
           console.log('Network connectivity issue detected. Trying next configuration immediately.');
@@ -159,6 +194,35 @@ const sendEmail = async (mailOptions, maxRetries = 2) => {
   };
 };
 
+// Test mail service connection during startup
+const testMailService = async () => {
+  console.log('Testing mail service connectivity...');
+  
+  for (let configIndex = 0; configIndex < 3; configIndex++) {
+    try {
+      const transporter = createEmailTransporter(configIndex);
+      await transporter.verify();
+      console.log(`✓ Mail configuration #${configIndex + 1} verified successfully!`);
+      
+      // Close the connection
+      if (typeof transporter.close === 'function') {
+        try {
+          transporter.close();
+        } catch (closeError) {
+          console.error(`Error closing test connection for config #${configIndex + 1}:`, closeError.message);
+        }
+      }
+      
+      return transporter; // Return the working transporter
+    } catch (error) {
+      console.error(`✗ Mail configuration #${configIndex + 1} failed verification:`, error.message);
+    }
+  }
+  
+  console.warn('No mail configurations could be verified. Email functionality may be limited.');
+  return null;
+};
+
 // Function to test email connectivity
 const testEmailConnectivity = async () => {
   try {
@@ -181,9 +245,18 @@ const testEmailConnectivity = async () => {
   }
 };
 
+// Test mail service during startup
+testMailService().then(transporter => {
+  if (transporter) {
+    currentTransporter = transporter;
+    console.log('Using mail configuration that passed connectivity test');
+  }
+});
+
 module.exports = {
   sendEmail,
   createEmailTransporter,
   tryNextConfiguration,
-  testEmailConnectivity
+  testEmailConnectivity,
+  testMailService
 };
