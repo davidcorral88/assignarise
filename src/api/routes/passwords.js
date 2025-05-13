@@ -143,7 +143,7 @@ router.post('/reset', async (req, res) => {
     
     // Create email content using template
     const mailOptions = {
-      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
+      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <rexistrodetarefas@gmail.com>',
       to: recipientEmail,
       subject: 'Reseteo de contrasinal - Sistema de Tarefas',
       html: emailService.templates.passwordReset({

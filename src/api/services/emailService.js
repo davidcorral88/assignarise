@@ -16,8 +16,8 @@ const createTransporter = () => {
     secure: false,
     requireTLS: true,
     auth: {
-      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
+      user: process.env.EMAIL_USER || 'rexistrodetarefas@gmail.com',
+      pass: process.env.EMAIL_PASS || 'eotw yyye yekr lqtd',
     },
     connectionTimeout: 30000,
     greetingTimeout: 30000,

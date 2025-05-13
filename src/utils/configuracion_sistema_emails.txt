@@ -22,6 +22,7 @@ El sistema de correo está diseñado para ser:
 ### 3.1 Crear una cuenta de Gmail dedicada
 
 Si aún no la tiene, cree una cuenta de Gmail dedicada para el envío de correos desde la aplicación.
+La cuenta actual configurada es: rexistrodetarefas@gmail.com
 
 ### 3.2 Configurar contraseña de aplicación (RECOMENDADO)
 
@@ -50,8 +51,8 @@ Si no puede usar contraseñas de aplicación, puede permitir el acceso de aplica
 Configure las siguientes variables de entorno en el servidor donde se ejecuta la API:
 
 ```
-EMAIL_USER=su_correo@gmail.com
-EMAIL_PASS=su_contraseña_de_aplicación
+EMAIL_USER=rexistrodetarefas@gmail.com
+EMAIL_PASS=eotw yyye yekr lqtd
 FRONTEND_URL=https://su-dominio-de-aplicacion.com
 ```
 

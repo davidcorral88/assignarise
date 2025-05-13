@@ -112,7 +112,7 @@ router.post('/send-task-assignment', async (req, res) => {
     
     // Create email content - using template helper
     const mailOptions = {
-      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <iplanmovilidad@gmail.com>',
+      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <rexistrodetarefas@gmail.com>',
       to: recipientEmail,
       cc: ccAddresses.length > 0 ? ccAddresses.join(',') : undefined,
       subject: emailSubject,
