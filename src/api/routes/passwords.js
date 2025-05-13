@@ -2,7 +2,6 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
-const emailService = require('../services/emailService');
 
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
@@ -85,7 +84,7 @@ router.post('/change', async (req, res) => {
   }
 });
 
-// Reset user password (admin function)
+// Reset user password (admin function) - No email functionality
 router.post('/reset', async (req, res) => {
   try {
     const { userId } = req.body;
@@ -94,77 +93,41 @@ router.post('/reset', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Check if user exists and get their email
-    // Use correct column name case - "emailATSXPTPG"
-    const userCheck = await pool.query('SELECT email, "emailATSXPTPG", name, email_notification FROM users WHERE id = $1', [userId]);
+    // Check if user exists
+    const userCheck = await pool.query('SELECT name FROM users WHERE id = $1', [userId]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = userCheck.rows[0];
-    
-    // Check if user has explicitly disabled email notifications
-    if (user.email_notification === false) {
-      console.log(`User ${userId} (${user.name}) has email notifications disabled.`);
-      
-      // Generate new random password without sending email
-      const newPassword = emailService.generateRandomPassword();
-      
-      // Update password in database
-      await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
-      await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
-      
-      return res.json({
-        success: true,
-        message: 'Password reset successful. User has email notifications disabled, returning password directly.',
-        password: newPassword // Return password since email won't be sent
-      });
-    }
-    
-    // Prefer emailATSXPTPG if available, otherwise use regular email
-    const recipientEmail = user.emailATSXPTPG || user.email;
-
-    if (!recipientEmail) {
-      return res.status(400).json({ error: 'User has no email address' });
-    }
-
-    // Generate new random password
-    const newPassword = emailService.generateRandomPassword();
+    // Generate a simple random password
+    const newPassword = generateRandomPassword();
 
     // Update password in database
     await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
     await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
-
-    // Return success immediately without waiting for email to complete sending
-    res.json({ 
+    
+    // Return the new password directly - since we're not sending emails
+    res.json({
       success: true,
-      message: 'Password reset successful and email sending in progress'
+      message: 'Password reset successful',
+      password: newPassword // Return password directly
     });
-    
-    // Create email content using template
-    const mailOptions = {
-      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <rexistrodetarefas@gmail.com>',
-      to: recipientEmail,
-      subject: 'Reseteo de contrasinal - Sistema de Tarefas',
-      html: emailService.templates.passwordReset({
-        user,
-        password: newPassword
-      })
-    };
-    
-    // Send email with retry using our enhanced function
-    try {
-      await emailService.sendEmailWithRetry(mailOptions);
-      console.log(`Password reset email successfully sent to ${recipientEmail}`);
-    } catch (error) {
-      console.error(`Final failure sending password reset email to ${recipientEmail}:`, error);
-      // We don't propagate this error since the API already responded
-    }
     
   } catch (error) {
     console.error('Error resetting password:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
+
+// Helper function to generate random password
+const generateRandomPassword = (length = 12) => {
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+  return password;
+};
 
 module.exports = router;
