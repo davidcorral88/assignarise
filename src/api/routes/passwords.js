@@ -2,77 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
-const nodemailer = require('nodemailer');
+const { sendEmail } = require('../utils/emailService');
 
 // Default password - defined directly to avoid dependency issues
 const DEFAULT_PASSWORD = 'dc0rralIplan';
-
-// Email configuration with custom mail server
-function createTransporter() {
-  console.log('Creating email transporter with following settings:');
-  console.log('- Host:', process.env.EMAIL_SERVER || 'mail.temagc.com');
-  console.log('- Port:', process.env.EMAIL_PORT || 465);
-  console.log('- Secure:', process.env.EMAIL_SECURE !== 'false');
-  console.log('- User:', process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com');
-  
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_SERVER || 'mail.temagc.com',
-    port: parseInt(process.env.EMAIL_PORT || '465'),
-    secure: process.env.EMAIL_SECURE !== 'false', // Use SSL by default unless explicitly disabled
-    auth: {
-      user: process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com',
-      pass: process.env.EMAIL_PASS || 'H4.4n0iKuxkA',
-    },
-    connectionTimeout: 60000, // 1 minute connection timeout
-    greetingTimeout: 30000,   // 30 seconds for SMTP greeting
-    socketTimeout: 60000,     // 1 minute socket timeout
-    // Add a retry strategy
-    pool: true,               // Use connection pooling
-    maxConnections: 3,        // Reduce connections to avoid overload
-    maxMessages: 50,         // Limit messages per connection
-    debug: true,              // Enable debug logs for troubleshooting
-    tls: {
-      rejectUnauthorized: false // Allow self-signed certificates and older TLS versions
-    }
-  });
-}
-
-// Create initial transporter
-let transporter = createTransporter();
-
-// Function to send email with retry logic
-async function sendEmailWithRetry(mailOptions, maxRetries = 3) {
-  let retries = 0;
-  let lastError = null;
-
-  while (retries < maxRetries) {
-    try {
-      // If we've had a previous error, recreate the transporter
-      if (lastError) {
-        console.log(`Retry attempt ${retries + 1} for email to ${mailOptions.to}`);
-        transporter = createTransporter();
-      }
-
-      const result = await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
-      return result;
-    } catch (error) {
-      retries++;
-      lastError = error;
-      console.error(`Email sending attempt ${retries} failed:`, error);
-      
-      // Wait before retrying (exponential backoff)
-      if (retries < maxRetries) {
-        const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
-        console.log(`Waiting ${waitTime}ms before retry...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-      }
-    }
-  }
-
-  console.error(`All ${maxRetries} attempts to send email to ${mailOptions.to} failed.`);
-  throw lastError;
-}
 
 // Helper function to generate random password
 function generateRandomPassword(length = 12) {
@@ -251,9 +184,9 @@ router.post('/reset', async (req, res) => {
       `
     };
     
-    // Send email with retry using our enhanced function
+    // Send email with our enhanced email service
     try {
-      await sendEmailWithRetry(mailOptions);
+      await sendEmail(mailOptions);
       console.log(`Password reset email successfully sent to ${recipientEmail}`);
     } catch (error) {
       console.error(`Final failure sending password reset email to ${recipientEmail}:`, error);

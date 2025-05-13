@@ -1,81 +1,29 @@
 
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
-
-// Email configuration with custom mail server
-function createTransporter() {
-  console.log('Creating email transporter with following settings:');
-  console.log('- Host:', process.env.EMAIL_SERVER || 'mail.temagc.com');
-  console.log('- Port:', process.env.EMAIL_PORT || 465);
-  console.log('- Secure:', process.env.EMAIL_SECURE !== 'false');
-  console.log('- User:', process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com');
-  
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_SERVER || 'mail.temagc.com',
-    port: parseInt(process.env.EMAIL_PORT || '465'),
-    secure: process.env.EMAIL_SECURE !== 'false', // Use SSL by default unless explicitly disabled
-    auth: {
-      user: process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com',
-      pass: process.env.EMAIL_PASS || 'H4.4n0iKuxkA',
-    },
-    connectionTimeout: 60000, // 1 minute connection timeout
-    greetingTimeout: 30000,   // 30 seconds for SMTP greeting
-    socketTimeout: 60000,     // 1 minute socket timeout
-    // Add a retry strategy
-    pool: true,               // Use connection pooling
-    maxConnections: 3,        // Reduce connections to avoid overload
-    maxMessages: 50,         // Limit messages per connection
-    debug: true,              // Enable debug logs for troubleshooting
-    tls: {
-      rejectUnauthorized: false // Allow self-signed certificates and older TLS versions
-    }
-  });
-}
-
-// Create initial transporter
-let transporter = createTransporter();
-
-// Function to send email with retry logic
-async function sendEmailWithRetry(mailOptions, maxRetries = 3) {
-  let retries = 0;
-  let lastError = null;
-
-  while (retries < maxRetries) {
-    try {
-      // If we've had a previous error, recreate the transporter
-      if (lastError) {
-        console.log(`Retry attempt ${retries + 1} for email to ${mailOptions.to}`);
-        transporter = createTransporter();
-      }
-
-      const result = await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
-      return result;
-    } catch (error) {
-      retries++;
-      lastError = error;
-      console.error(`Email sending attempt ${retries} failed:`, error);
-      
-      // Wait before retrying (exponential backoff)
-      if (retries < maxRetries) {
-        const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Max 30 seconds
-        console.log(`Waiting ${waitTime}ms before retry...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-      }
-    }
-  }
-
-  console.error(`All ${maxRetries} attempts to send email to ${mailOptions.to} failed.`);
-  throw lastError;
-}
+const { sendEmail } = require('../utils/emailService');
 
 // Test email configuration
 router.get('/test', async (req, res) => {
   try {
-    await transporter.verify();
-    res.json({ status: 'Email server connection successful' });
+    const testMailOptions = {
+      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <atsxptpg_tecnoloxico@iplanmovilidad.com>',
+      to: process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com',
+      subject: 'Test Email Connection',
+      text: 'This is a test email to verify the email server connection is working.',
+      html: '<p>This is a test email to verify the email server connection is working.</p>'
+    };
+    
+    try {
+      const result = await sendEmail(testMailOptions, 2); // Only try 2 times for testing
+      res.json({ 
+        status: 'Email server connection successful', 
+        messageId: result.messageId 
+      });
+    } catch (error) {
+      throw new Error(`Sending test email failed: ${error.message}`);
+    }
   } catch (error) {
     console.error('Email server connection error:', error);
     res.status(500).json({ error: 'Email server connection failed', details: error.message });
@@ -106,13 +54,6 @@ router.post('/send-task-assignment', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     const user = userResult.rows[0];
-    
-    console.log(`Found user for notification:`, {
-      userId,
-      name: user.name,
-      email: user.email,
-      emailATSXPTPG: user.emailATSXPTPG || 'No alternative email'
-    });
     
     // Check if user has email notification enabled (defaulted to true if not specified)
     if (user.email_notification === false) {
@@ -168,11 +109,9 @@ router.post('/send-task-assignment', async (req, res) => {
       }
     });
     
-    console.log(`Including ${ccAddresses.length} CC addresses:`, ccAddresses);
-    
     // Create email content
     const mailOptions = {
-      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <iplanmovilidad@gmail.com>',
+      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <atsxptpg_tecnoloxico@iplanmovilidad.com>',
       to: recipientEmail,
       cc: ccAddresses.length > 0 ? ccAddresses.join(',') : undefined,
       subject: emailSubject,
@@ -219,9 +158,9 @@ router.post('/send-task-assignment', async (req, res) => {
       async: true
     });
     
-    // Send email with retry using our enhanced function
+    // Send email using our enhanced email service
     try {
-      await sendEmailWithRetry(mailOptions);
+      await sendEmail(mailOptions);
       console.log(`Task assignment email successfully sent to ${recipientEmail}`);
     } catch (error) {
       console.error(`Final failure sending task assignment email to ${recipientEmail}:`, error);
