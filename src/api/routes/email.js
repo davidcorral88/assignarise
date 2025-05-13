@@ -2,31 +2,33 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
-const { sendEmail } = require('../utils/emailService');
+const { sendEmail, testEmailConnectivity } = require('../utils/emailService');
 
 // Test email configuration
 router.get('/test', async (req, res) => {
   try {
-    const testMailOptions = {
-      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <atsxptpg_tecnoloxico@iplanmovilidad.com>',
-      to: process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com',
-      subject: 'Test Email Connection',
-      text: 'This is a test email to verify the email server connection is working.',
-      html: '<p>This is a test email to verify the email server connection is working.</p>'
-    };
+    console.log('Testing email connectivity...');
+    const result = await testEmailConnectivity();
     
-    try {
-      const result = await sendEmail(testMailOptions, 2); // Only try 2 times for testing
-      res.json({ 
-        status: 'Email server connection successful', 
-        messageId: result.messageId 
+    if (result.success === false) {
+      return res.status(500).json({ 
+        error: 'Email server connection failed', 
+        details: result.error,
+        message: 'The system will continue to operate without email notifications.'
       });
-    } catch (error) {
-      throw new Error(`Sending test email failed: ${error.message}`);
     }
+    
+    res.json({ 
+      status: 'Email server connection successful', 
+      messageId: result.messageId 
+    });
   } catch (error) {
     console.error('Email server connection error:', error);
-    res.status(500).json({ error: 'Email server connection failed', details: error.message });
+    res.status(500).json({ 
+      error: 'Email server connection failed', 
+      details: error.message,
+      message: 'The system will continue to operate without email notifications.'
+    });
   }
 });
 
@@ -65,18 +67,24 @@ router.post('/send-task-assignment', async (req, res) => {
       });
     }
     
-    // MODIFICACIÓN: Usar siempre el email principal como destinatario
+    // Use primary email as recipient
     const recipientEmail = user.email;
     
-    // Si no hay email principal, no podemos enviar notificación
+    // If no primary email, we can't send a notification
     if (!recipientEmail) {
-      return res.status(400).json({ error: 'User has no email address' });
+      console.log(`User ${userId} (${user.name}) has no email address. Skipping notification.`);
+      return res.json({ 
+        message: 'Email notification skipped - user has no email address',
+        userId,
+        userName: user.name
+      });
     }
     
-    // MODIFICACIÓN: Agregar el emailATSXPTPG como CC solo si existe
+    // Add secondary email as CC only if it exists
     const ccAddresses = [];
     if (user.emailATSXPTPG) {
       ccAddresses.push(user.emailATSXPTPG);
+      console.log(`Adding secondary email ${user.emailATSXPTPG} as CC for user ${user.name}`);
     }
     
     // Format dates for better readability
@@ -97,24 +105,9 @@ router.post('/send-task-assignment', async (req, res) => {
       ? `Asignóusevos unha nova tarefa no sistema de xestión.`
       : `Actualizouse a vosa asignación dunha tarefa no sistema de xestión.`;
     
-    // Get all users assigned to this task - CC a sus emails secundarios
-    const assignmentsResult = await pool.query(
-      'SELECT u.id, u.name, u.email, u."emailATSXPTPG", u.email_notification FROM users u ' +
-      'JOIN task_assignments ta ON u.id = ta.user_id ' +
-      'WHERE ta.task_id = $1 AND u.id <> $2', // exclude current user
-      [taskId, userId]
-    );
-    
-    // Add emailATSXPTPG addresses to CC if available
-    assignmentsResult.rows.forEach(assignedUser => {
-      if (assignedUser.emailATSXPTPG && assignedUser.email_notification !== false) {
-        ccAddresses.push(assignedUser.emailATSXPTPG);
-      }
-    });
-    
     // Create email content
     const mailOptions = {
-      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <atsxptpg_tecnoloxico@iplanmovilidad.com>',
+      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
       to: recipientEmail,
       cc: ccAddresses.length > 0 ? ccAddresses.join(',') : undefined,
       subject: emailSubject,
@@ -153,23 +146,39 @@ router.post('/send-task-assignment', async (req, res) => {
       `
     };
     
-    // Return success immediately without waiting for email to complete sending
-    res.json({ 
-      message: 'Task assignment email sending in progress',
-      to: recipientEmail,
-      cc: ccAddresses.length > 0 ? ccAddresses : undefined,
-      async: true
-    });
-    
-    // Send email using our enhanced email service
     try {
-      await sendEmail(mailOptions);
+      // Attempt to send email
+      const emailResult = await sendEmail(mailOptions);
+      
+      // Return response with email status
+      if (emailResult && emailResult.success === false) {
+        console.log(`Task assignment email failed to send: ${emailResult.error}`);
+        return res.json({ 
+          message: 'Task assignment registered but email notification failed',
+          to: recipientEmail,
+          cc: ccAddresses.length > 0 ? ccAddresses : undefined,
+          emailSent: false,
+          error: emailResult.error
+        });
+      }
+      
       console.log(`Task assignment email successfully sent to ${recipientEmail}`);
+      return res.json({ 
+        message: 'Task assignment email sent successfully',
+        to: recipientEmail,
+        cc: ccAddresses.length > 0 ? ccAddresses : undefined,
+        emailSent: true
+      });
     } catch (error) {
-      console.error(`Final failure sending task assignment email to ${recipientEmail}:`, error);
-      // We don't propagate this error since the API already responded
+      console.error(`Error sending task assignment email:`, error);
+      return res.json({ 
+        message: 'Task assignment registered but email notification encountered an error',
+        to: recipientEmail,
+        cc: ccAddresses.length > 0 ? ccAddresses : undefined,
+        emailSent: false,
+        error: error.message
+      });
     }
-    
   } catch (error) {
     console.error('Error processing task assignment email:', error);
     res.status(500).json({ error: 'Failed to process email', details: error.message });

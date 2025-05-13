@@ -15,9 +15,9 @@ const createEmailTransporter = (configIndex = 0) => {
         user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
         pass: process.env.EMAIL_PASS || 'pvgz mlke rrxw ttqb', // App password for Gmail
       },
-      connectionTimeout: 30000, // 30 seconds connection timeout
-      greetingTimeout: 15000,   // 15 seconds for SMTP greeting
-      socketTimeout: 30000,     // 30 seconds socket timeout
+      connectionTimeout: 10000, // Reduced timeout to 10 seconds for faster retries
+      greetingTimeout: 5000,    // Reduced greeting timeout
+      socketTimeout: 10000,     // Reduced socket timeout
     },
     // Configuration 2: Gmail with STARTTLS on port 587
     {
@@ -29,9 +29,9 @@ const createEmailTransporter = (configIndex = 0) => {
         user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
         pass: process.env.EMAIL_PASS || 'pvgz mlke rrxw ttqb', // App password for Gmail
       },
-      connectionTimeout: 30000,
-      greetingTimeout: 15000,
-      socketTimeout: 30000,
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
     },
     // Configuration 3: Original server as fallback
     {
@@ -42,9 +42,9 @@ const createEmailTransporter = (configIndex = 0) => {
         user: 'atsxptpg_tecnoloxico@iplanmovilidad.com',
         pass: 'H4.4n0iKuxkA',
       },
-      connectionTimeout: 30000,
-      greetingTimeout: 15000,
-      socketTimeout: 30000,
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
       tls: {
         rejectUnauthorized: false
       }
@@ -76,11 +76,17 @@ const tryNextConfiguration = () => {
 };
 
 // Enhanced send function with retry logic and configuration switching
-const sendEmail = async (mailOptions, maxRetries = 3) => {
+const sendEmail = async (mailOptions, maxRetries = 2) => {
   let retries = 0;
   let lastError = null;
   let configurationAttempts = 0;
   const maxConfigAttempts = 3; // Try all 3 configurations
+  
+  // Log the destination address for troubleshooting
+  console.log(`Attempting to send email to: ${mailOptions.to}`);
+  if (mailOptions.cc) {
+    console.log(`With CC to: ${mailOptions.cc}`);
+  }
 
   while (configurationAttempts < maxConfigAttempts) {
     retries = 0; // Reset retries for each configuration
@@ -95,7 +101,17 @@ const sendEmail = async (mailOptions, maxRetries = 3) => {
         console.log(`- Port: ${currentTransporter.transporter.options.port}`);
         console.log(`- Secure: ${currentTransporter.transporter.options.secure}`);
         
-        const result = await currentTransporter.sendMail(mailOptions);
+        // Set a timeout for the entire email sending operation
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Email sending timed out')), 15000);
+        });
+        
+        // Race between the email sending and the timeout
+        const result = await Promise.race([
+          currentTransporter.sendMail(mailOptions),
+          timeoutPromise
+        ]);
+        
         console.log(`Email sent successfully to ${mailOptions.to}:`, result.messageId);
         return result;
       } catch (error) {
@@ -103,9 +119,20 @@ const sendEmail = async (mailOptions, maxRetries = 3) => {
         lastError = error;
         console.error(`Email sending attempt ${retries} with configuration #${currentConfigIndex + 1} failed:`, error.message);
         
-        // Wait before retrying (linear backoff)
+        // Check for network connectivity issues
+        const isNetworkError = error.code === 'ETIMEDOUT' || 
+                              error.code === 'ECONNREFUSED' || 
+                              error.code === 'ENOTFOUND' || 
+                              error.code === 'ENETUNREACH';
+        
+        if (isNetworkError) {
+          console.log('Network connectivity issue detected. Trying next configuration immediately.');
+          break; // Exit the retry loop for this config and try next one immediately
+        }
+        
+        // Wait before retrying (shorter linear backoff)
         if (retries < maxRetries) {
-          const waitTime = 2000 * retries; // 2s, 4s, 6s
+          const waitTime = 1000 * retries; // 1s, 2s
           console.log(`Waiting ${waitTime}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
@@ -120,12 +147,43 @@ const sendEmail = async (mailOptions, maxRetries = 3) => {
     }
   }
 
+  // If all configurations failed, log and gracefully degrade
   console.error(`Failed to send email to ${mailOptions.to} after trying all configurations.`);
-  throw new Error(`Failed to send email after exhausting all options: ${lastError?.message}`);
+  const errorMessage = `Failed to send email after exhausting all options: ${lastError?.message}`;
+  
+  // Log the failure but don't throw - return failure status instead
+  return {
+    success: false,
+    error: errorMessage,
+    message: 'Email delivery failed due to connectivity issues. The system will continue to operate.'
+  };
+};
+
+// Function to test email connectivity
+const testEmailConnectivity = async () => {
+  try {
+    const testMailOptions = {
+      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
+      to: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+      subject: 'Test Email Connection',
+      text: 'This is a test email to verify the email server connection is working.',
+      html: '<p>This is a test email to verify the email server connection is working.</p>'
+    };
+    
+    const result = await sendEmail(testMailOptions, 1);
+    return result;
+  } catch (error) {
+    console.error('Email connectivity test failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
 };
 
 module.exports = {
   sendEmail,
   createEmailTransporter,
-  tryNextConfiguration
+  tryNextConfiguration,
+  testEmailConnectivity
 };

@@ -131,7 +131,7 @@ router.post('/reset', async (req, res) => {
       });
     }
     
-    // MODIFICACIÓN: Usar solo el email principal para reseteos de contraseña
+    // Use only the primary email for password resets
     const recipientEmail = user.email;
 
     if (!recipientEmail) {
@@ -145,12 +145,6 @@ router.post('/reset', async (req, res) => {
     await pool.query('DELETE FROM user_passwords WHERE user_id = $1', [userId]);
     await pool.query('INSERT INTO user_passwords (user_id, password_hash) VALUES ($1, $2)', [userId, newPassword]);
 
-    // Return success immediately without waiting for email to complete sending
-    res.json({ 
-      success: true,
-      message: 'Password reset successful and email sending in progress'
-    });
-    
     // Create email content
     const mailOptions = {
       from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
@@ -182,16 +176,40 @@ router.post('/reset', async (req, res) => {
         </div>
       `
     };
-    
-    // Send email with our enhanced email service
+
     try {
-      await sendEmail(mailOptions);
-      console.log(`Password reset email successfully sent to ${recipientEmail}`);
+      // Attempt to send email, but continue regardless of result
+      const emailResult = await sendEmail(mailOptions);
+      
+      if (emailResult && emailResult.success === false) {
+        // Email sending failed but password was reset - return the password to the admin
+        console.log(`Email sending failed. Returning password in response.`);
+        return res.json({
+          success: true,
+          message: 'Password reset successful but email delivery failed. Password is included in this response.',
+          password: newPassword,
+          emailSent: false,
+          emailError: emailResult.error
+        });
+      }
+      
+      // Email sent successfully or at least no explicit failure was reported
+      return res.json({ 
+        success: true,
+        message: 'Password reset successful and email sent to user.',
+        emailSent: true
+      });
     } catch (error) {
-      console.error(`Final failure sending password reset email to ${recipientEmail}:`, error);
-      // We don't propagate this error since the API already responded
+      // In case of any unexpected errors, still return success with the password
+      console.error(`Error in email process:`, error);
+      return res.json({
+        success: true,
+        message: 'Password reset successful but email sending encountered an error. Password is included in this response.',
+        password: newPassword,
+        emailSent: false,
+        emailError: error.message
+      });
     }
-    
   } catch (error) {
     console.error('Error resetting password:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
