@@ -1,4 +1,3 @@
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -11,11 +10,11 @@ const DEFAULT_PASSWORD = 'dc0rralIplan';
 function createTransporter() {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true, // Use SSL/TLS
     auth: {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'tbpb iqtt ehqz lwdy',
+      pass: process.env.EMAIL_PASS || 'pvgz mlke rrxw ttqb',
     },
     connectionTimeout: 60000, // 1 minute connection timeout
     greetingTimeout: 30000, // 30 seconds for SMTP greeting
