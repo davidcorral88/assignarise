@@ -1,7 +1,6 @@
 
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 const emailService = require('../services/emailService');
 
@@ -12,19 +11,13 @@ router.get('/test', async (req, res) => {
     await transporter.verify();
     res.json({ 
       status: 'Conexión con servidor de correo exitosa',
-      configuration: emailService.getCurrentConfigIndex() + 1,
-      details: emailService.getCurrentConfig()
+      details: 'Servidor configurado correctamente y listo para enviar correos'
     });
   } catch (error) {
     console.error('Error de conexión con servidor de correo:', error);
-    
-    // Intentar siguiente configuración inmediatamente para el endpoint de prueba
-    emailService.switchToNextConfig();
-    
     res.status(500).json({ 
       error: 'Falló la conexión con servidor de correo', 
-      details: error.message,
-      nextAttempt: `Se intentará con configuración #${emailService.getCurrentConfigIndex() + 1} en la próxima solicitud`
+      details: error.message
     });
   }
 });
@@ -119,7 +112,7 @@ router.post('/send-task-assignment', async (req, res) => {
     
     // Create email content - using template helper
     const mailOptions = {
-      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
+      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <iplanmovilidad@gmail.com>',
       to: recipientEmail,
       cc: ccAddresses.length > 0 ? ccAddresses.join(',') : undefined,
       subject: emailSubject,

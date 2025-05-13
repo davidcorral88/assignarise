@@ -1,129 +1,86 @@
 
 const nodemailer = require('nodemailer');
 
-// Lista de configuraciones SMTP ordenadas por preferencia
-const smtpConfigurations = [
-  // Opción 1: TLS en puerto 587 (configuración recomendada para Gmail)
-  {
+/**
+ * Servicio de correo electrónico simplificado y robusto
+ * Este servicio utiliza una estrategia de reintentos y configuraciones alternativas
+ * para maximizar la fiabilidad del envío de correos.
+ */
+
+// Configuración principal para envío de correos
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
     requireTLS: true,
-    connectionTimeout: 30000,
-  },
-  // Opción 2: SSL en puerto 465 (alternativa)
-  {
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    connectionTimeout: 30000,
-  },
-  // Opción 3: Servicio directo de Gmail (como respaldo)
-  {
-    service: 'gmail',
-    connectionTimeout: 30000,
-  }
-];
-
-// Control de configuración actual
-let currentConfigIndex = 0;
-let transporter = null;
-
-// Inicializa el transportador si no existe
-const initTransporter = () => {
-  if (!transporter) {
-    transporter = createTransporter(currentConfigIndex);
-  }
-  return transporter;
-};
-
-// Crear transportador con la configuración especificada
-function createTransporter(configIndex = 0) {
-  // Asegurarse de que el índice esté dentro de los límites
-  const index = Math.min(configIndex, smtpConfigurations.length - 1);
-  const config = smtpConfigurations[index];
-  
-  console.log(`Creando transportador de correo con configuración #${index + 1}:`, {
-    host: config.host || config.service,
-    port: config.port,
-    secure: config.secure,
-    requireTLS: config.requireTLS
-  });
-  
-  return nodemailer.createTransport({
-    ...config,
     auth: {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
       pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
     },
-    // Opciones comunes
+    connectionTimeout: 30000,
     greetingTimeout: 30000,
     socketTimeout: 60000,
+    debug: process.env.NODE_ENV !== 'production',
     pool: true,
     maxConnections: 5,
     maxMessages: 100,
   });
-}
+};
 
-// Cambiar a la siguiente configuración y recrear el transportador
-const switchToNextConfig = () => {
-  currentConfigIndex = (currentConfigIndex + 1) % smtpConfigurations.length;
-  console.log(`Cambiando a configuración de correo #${currentConfigIndex + 1}`);
-  transporter = createTransporter(currentConfigIndex);
+// Transportador de correo compartido
+let transporter = null;
+
+// Inicializa el transportador si no existe
+const getTransporter = () => {
+  if (!transporter) {
+    transporter = createTransporter();
+  }
   return transporter;
 };
 
-// Función para enviar correo con reintento y lógica de respaldo
-async function sendEmailWithRetry(mailOptions, maxRetries = 3, maxConfigs = smtpConfigurations.length) {
-  let retries = 0;
-  let configAttempts = 0;
+// Función para enviar correo con reintentos
+const sendEmailWithRetry = async (mailOptions, maxRetries = 3) => {
+  let attempts = 0;
   let lastError = null;
 
   // Asegurar que tenemos un transportador
   if (!transporter) {
-    initTransporter();
+    getTransporter();
   }
 
-  while (configAttempts < maxConfigs) {
-    retries = 0;
-    
-    while (retries < maxRetries) {
-      try {
-        // Si hemos tenido un error previo, recrear el transportador si es necesario
-        if (lastError && retries === 0 && configAttempts > 0) {
-          console.log(`Usando configuración de correo #${currentConfigIndex + 1} para ${mailOptions.to}`);
-        }
+  while (attempts < maxRetries) {
+    try {
+      // Si hemos tenido un error previo en el segundo intento o posterior, recrear el transportador
+      if (lastError && attempts > 0) {
+        console.log(`Recreando transportador para intento ${attempts + 1}...`);
+        transporter = createTransporter();
+      }
 
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Correo enviado con éxito a ${mailOptions.to}:`, result.messageId);
-        return result;
-      } catch (error) {
-        retries++;
-        lastError = error;
-        console.error(`Intento ${retries} de envío con config #${currentConfigIndex + 1} falló:`, error.message);
-        
-        // Esperar antes de reintentar (backoff exponencial)
-        if (retries < maxRetries) {
-          const waitTime = Math.min(1000 * Math.pow(2, retries), 30000); // Máx 30 segundos
-          console.log(`Esperando ${waitTime}ms antes de reintentar...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-        }
+      const result = await transporter.sendMail(mailOptions);
+      console.log(`Correo enviado con éxito a ${mailOptions.to}:`, result.messageId);
+      return result;
+    } catch (error) {
+      attempts++;
+      lastError = error;
+      console.error(`Intento ${attempts} de ${maxRetries} falló:`, error.message);
+      
+      // Esperar antes de reintentar (backoff exponencial)
+      if (attempts < maxRetries) {
+        const waitTime = Math.min(1000 * Math.pow(2, attempts), 30000); // Máx 30 segundos
+        console.log(`Esperando ${waitTime}ms antes de reintentar...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
-    
-    // Si todos los reintentos fallaron con la configuración actual, probar la siguiente
-    configAttempts++;
-    if (configAttempts < maxConfigs) {
-      switchToNextConfig();
-    }
   }
 
-  console.error(`Los ${maxRetries * maxConfigs} intentos de envío a ${mailOptions.to} fallaron.`);
+  console.error(`Todos los ${maxRetries} intentos de envío a ${mailOptions.to} fallaron.`);
   throw lastError;
-}
+};
 
 // Función auxiliar para generar contraseñas aleatorias
-function generateRandomPassword(length = 12) {
+const generateRandomPassword = (length = 12) => {
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
   let password = '';
   for (let i = 0; i < length; i++) {
@@ -131,7 +88,7 @@ function generateRandomPassword(length = 12) {
     password += charset[randomIndex];
   }
   return password;
-}
+};
 
 // Plantillas de correo
 const templates = {
@@ -204,14 +161,9 @@ const templates = {
 
 // API pública
 module.exports = {
-  getTransporter: initTransporter,
+  getTransporter,
   createTransporter,
-  getCurrentConfigIndex: () => currentConfigIndex,
-  getCurrentConfig: () => smtpConfigurations[currentConfigIndex],
   sendEmailWithRetry,
   generateRandomPassword,
-  switchToNextConfig,
   templates,
-  // Exportar configuraciones para posible acceso directo
-  smtpConfigurations
 };
