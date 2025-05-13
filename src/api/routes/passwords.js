@@ -9,10 +9,16 @@ const DEFAULT_PASSWORD = 'dc0rralIplan';
 
 // Email configuration with custom mail server
 function createTransporter() {
+  console.log('Creating email transporter with following settings:');
+  console.log('- Host:', process.env.EMAIL_SERVER || 'mail.temagc.com');
+  console.log('- Port:', process.env.EMAIL_PORT || 465);
+  console.log('- Secure:', process.env.EMAIL_SECURE !== 'false');
+  console.log('- User:', process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com');
+  
   return nodemailer.createTransport({
-    host: 'mail.temagc.com',
-    port: 465,
-    secure: true, // Use SSL for port 465
+    host: process.env.EMAIL_SERVER || 'mail.temagc.com',
+    port: parseInt(process.env.EMAIL_PORT || '465'),
+    secure: process.env.EMAIL_SECURE !== 'false', // Use SSL by default unless explicitly disabled
     auth: {
       user: process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com',
       pass: process.env.EMAIL_PASS || 'H4.4n0iKuxkA',
@@ -22,11 +28,11 @@ function createTransporter() {
     socketTimeout: 60000,     // 1 minute socket timeout
     // Add a retry strategy
     pool: true,               // Use connection pooling
-    maxConnections: 5,        // Limit connections to avoid overload
-    maxMessages: 100,         // Limit messages per connection
+    maxConnections: 3,        // Reduce connections to avoid overload
+    maxMessages: 50,         // Limit messages per connection
     debug: true,              // Enable debug logs for troubleshooting
     tls: {
-      rejectUnauthorized: false // Allow self-signed certificates
+      rejectUnauthorized: false // Allow self-signed certificates and older TLS versions
     }
   });
 }
