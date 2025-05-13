@@ -5,46 +5,42 @@ const nodemailer = require('nodemailer');
 const createEmailTransporter = (configIndex = 0) => {
   // Array of possible configurations to try
   const configurations = [
-    // Configuration 1: Default with SSL on port 465
+    // Configuration 1: Gmail with OAuth2 (most reliable)
     {
-      host: process.env.EMAIL_SERVER || 'mail.temagc.com',
-      port: parseInt(process.env.EMAIL_PORT || '465'),
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
       secure: true,
       auth: {
-        user: process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com',
-        pass: process.env.EMAIL_PASS || 'H4.4n0iKuxkA',
+        user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+        pass: process.env.EMAIL_PASS || 'pvgz mlke rrxw ttqb', // App password for Gmail
       },
-      connectionTimeout: 30000, // 30 seconds connection timeout - reduced from 60s
-      greetingTimeout: 15000,   // 15 seconds for SMTP greeting - reduced from 30s
-      socketTimeout: 30000,     // 30 seconds socket timeout - reduced from 60s
-      tls: {
-        rejectUnauthorized: false // Allow self-signed certificates and older TLS versions
-      }
+      connectionTimeout: 30000, // 30 seconds connection timeout
+      greetingTimeout: 15000,   // 15 seconds for SMTP greeting
+      socketTimeout: 30000,     // 30 seconds socket timeout
     },
-    // Configuration 2: STARTTLS on port 587
+    // Configuration 2: Gmail with STARTTLS on port 587
     {
-      host: process.env.EMAIL_SERVER || 'mail.temagc.com',
+      service: 'gmail',
+      host: 'smtp.gmail.com',
       port: 587,
       secure: false, // STARTTLS
       auth: {
-        user: process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com',
-        pass: process.env.EMAIL_PASS || 'H4.4n0iKuxkA',
+        user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
+        pass: process.env.EMAIL_PASS || 'pvgz mlke rrxw ttqb', // App password for Gmail
       },
       connectionTimeout: 30000,
       greetingTimeout: 15000,
       socketTimeout: 30000,
-      tls: {
-        rejectUnauthorized: false
-      }
     },
-    // Configuration 3: Plain connection on port 25
+    // Configuration 3: Original server as fallback
     {
-      host: process.env.EMAIL_SERVER || 'mail.temagc.com',
-      port: 25,
-      secure: false,
+      host: 'mail.temagc.com',
+      port: 465,
+      secure: true,
       auth: {
-        user: process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com',
-        pass: process.env.EMAIL_PASS || 'H4.4n0iKuxkA',
+        user: 'atsxptpg_tecnoloxico@iplanmovilidad.com',
+        pass: 'H4.4n0iKuxkA',
       },
       connectionTimeout: 30000,
       greetingTimeout: 15000,
@@ -59,7 +55,7 @@ const createEmailTransporter = (configIndex = 0) => {
   const config = configIndex < configurations.length ? configurations[configIndex] : configurations[0];
   
   console.log('Trying email configuration #' + (configIndex + 1) + ':');
-  console.log('- Host:', config.host);
+  console.log('- Host:', config.host || config.service);
   console.log('- Port:', config.port);
   console.log('- Secure:', config.secure);
   console.log('- User:', config.auth.user);
@@ -95,7 +91,7 @@ const sendEmail = async (mailOptions, maxRetries = 3) => {
         
         // Add logging info to help with debugging
         console.log(`Current email transport settings:`);
-        console.log(`- Host: ${currentTransporter.transporter.options.host}`);
+        console.log(`- Host: ${currentTransporter.transporter.options.host || currentTransporter.transporter.options.service}`);
         console.log(`- Port: ${currentTransporter.transporter.options.port}`);
         console.log(`- Secure: ${currentTransporter.transporter.options.secure}`);
         

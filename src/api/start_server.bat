@@ -3,13 +3,13 @@
 echo Setting email environment variables...
 
 REM Email server configuration
-set EMAIL_USER=atsxptpg_tecnoloxico@iplanmovilidad.com
-set EMAIL_PASS=H4.4n0iKuxkA
-set EMAIL_SERVER=mail.temagc.com
+set EMAIL_USER=iplanmovilidad@gmail.com
+set EMAIL_PASS=pvgz mlke rrxw ttqb
+set EMAIL_SERVER=smtp.gmail.com
 
-REM First try port 587 with STARTTLS
-set EMAIL_PORT=587
-set EMAIL_SECURE=false
+REM Use Gmail with SSL on port 465
+set EMAIL_PORT=465
+set EMAIL_SECURE=true
 
 REM Frontend URL for links in emails
 set FRONTEND_URL=https://rexistrodetarefas.iplanmovilidad.com

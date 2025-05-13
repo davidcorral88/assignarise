@@ -2,13 +2,13 @@
 #!/bin/bash
 
 # Set email environment variables
-export EMAIL_USER=atsxptpg_tecnoloxico@iplanmovilidad.com
-export EMAIL_PASS="H4.4n0iKuxkA"
-export EMAIL_SERVER=mail.temagc.com
+export EMAIL_USER=iplanmovilidad@gmail.com
+export EMAIL_PASS="pvgz mlke rrxw ttqb"
+export EMAIL_SERVER=smtp.gmail.com
 
-# First try port 587 with STARTTLS
-export EMAIL_PORT=587
-export EMAIL_SECURE=false
+# Use Gmail with SSL on port 465
+export EMAIL_PORT=465
+export EMAIL_SECURE=true
 
 # Frontend URL for links in emails
 export FRONTEND_URL=https://rexistrodetarefas.iplanmovilidad.com
