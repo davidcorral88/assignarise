@@ -4,24 +4,27 @@ const router = express.Router();
 const nodemailer = require('nodemailer');
 const pool = require('../db/connection');
 
-// Enhanced transporter configuration with Gmail OAuth2
+// Email configuration with custom mail server
 function createTransporter() {
-  // For Gmail, sometimes direct SSL can be problematic in some environments
-  // Using the 'service' option often works better than direct host/port settings
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'mail.temagc.com',
+    port: 465,
+    secure: true, // Use SSL for port 465
     auth: {
-      user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'pvgz mlke rrxw ttqb',
+      user: process.env.EMAIL_USER || 'atsxptpg_tecnoloxico@iplanmovilidad.com',
+      pass: process.env.EMAIL_PASS || 'H4.4n0iKuxkA',
     },
     connectionTimeout: 60000, // 1 minute connection timeout
-    greetingTimeout: 30000, // 30 seconds for SMTP greeting
-    socketTimeout: 60000,   // 1 minute socket timeout
+    greetingTimeout: 30000,   // 30 seconds for SMTP greeting
+    socketTimeout: 60000,     // 1 minute socket timeout
     // Add a retry strategy
-    pool: true,             // Use connection pooling
-    maxConnections: 5,      // Limit connections to avoid overload
-    maxMessages: 100,       // Limit messages per connection
-    debug: true,            // Enable debug logs for troubleshooting
+    pool: true,               // Use connection pooling
+    maxConnections: 5,        // Limit connections to avoid overload
+    maxMessages: 100,         // Limit messages per connection
+    debug: true,              // Enable debug logs for troubleshooting
+    tls: {
+      rejectUnauthorized: false // Allow self-signed certificates
+    }
   });
 }
 
