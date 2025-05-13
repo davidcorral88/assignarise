@@ -26,5 +26,10 @@ export default defineConfig(({ mode }) => ({
       // Use HTTPS if the page is served over HTTPS
       protocol: undefined,
     },
+    // Add the hostname to the allowed hosts list
+    allowedHosts: [
+      '0f265366-e038-45a6-a60a-605d7faf18ea.lovableproject.com',
+      'localhost',
+    ]
   }
 }))
