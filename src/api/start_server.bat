@@ -2,7 +2,7 @@
 @echo off
 echo Setting email environment variables...
 
-REM Email server configuration for Gmail
+REM Email server configuration
 set EMAIL_USER=iplanmovilidad@gmail.com
 set EMAIL_PASS=pvgz mlke rrxw ttqb
 set EMAIL_SERVER=smtp.gmail.com
@@ -21,10 +21,5 @@ echo - Secure: %EMAIL_SECURE%
 echo - User: %EMAIL_USER%
 echo - Frontend URL: %FRONTEND_URL%
 
-REM Set NODE_TLS_REJECT_UNAUTHORIZED to 0 only during development to bypass SSL issues
-REM IMPORTANT: This should be removed in production!
-set NODE_TLS_REJECT_UNAUTHORIZED=0
-
 echo Starting API server on port 3000...
 node server.js
-
