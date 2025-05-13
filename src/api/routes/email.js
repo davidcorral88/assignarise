@@ -8,11 +8,11 @@ const pool = require('../db/connection');
 function createTransporter() {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_USER || 'iplanmovilidad@gmail.com',
-      pass: process.env.EMAIL_PASS || 'uvbg gqwi oosj ehzq',
+      pass: process.env.EMAIL_PASS || 'pvgz mlke rrxw ttqb',
     },
     connectionTimeout: 60000, // 1 minute connection timeout
     greetingTimeout: 30000, // 30 seconds for SMTP greeting
@@ -162,7 +162,7 @@ router.post('/send-task-assignment', async (req, res) => {
     
     // Create email content
     const mailOptions = {
-      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <notificacions@iplanmovilidad.com>',
+      from: process.env.EMAIL_USER || '"Sistema de Tarefas" <iplanmovilidad@gmail.com>',
       to: recipientEmail,
       cc: ccAddresses.length > 0 ? ccAddresses.join(',') : undefined,
       subject: emailSubject,
