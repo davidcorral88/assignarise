@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils";
 
 interface TimePickerProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> {
   onChange?: (value: string) => void;
+  value?: string;
 }
 
 const TimePicker = React.forwardRef<HTMLInputElement, TimePickerProps>(
-  ({ className, onChange, ...props }, ref) => {
+  ({ className, onChange, value, ...props }, ref) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       if (onChange) {
@@ -24,6 +25,7 @@ const TimePicker = React.forwardRef<HTMLInputElement, TimePickerProps>(
           ref={ref}
           className={cn("pl-8", className)}
           onChange={handleChange}
+          value={value}
           {...props}
         />
         <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

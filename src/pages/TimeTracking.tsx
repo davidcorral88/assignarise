@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
+import { cn, decimalToTimeFormat } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -256,14 +256,8 @@ const TimeTracking = () => {
   
   console.log(`Filtered user tasks: ${userTasks.length}`);
   
-  const formatHoursToDecimal = (hours: number): string => {
-    return hours.toFixed(1);
-  };
-  
   const formatHoursToTimeFormat = (hours: number): string => {
-    const wholeHours = Math.floor(hours);
-    const minutes = Math.round((hours - wholeHours) * 60);
-    return `${wholeHours}:${minutes.toString().padStart(2, '0')}`;
+    return decimalToTimeFormat(hours);
   };
   
   return (
@@ -336,6 +330,9 @@ const TimeTracking = () => {
                         return tId === taskId;
                       });
                       
+                      // Usar el formato guardado o convertir desde decimal
+                      const hoursDisplay = entry.timeFormat || formatHoursToTimeFormat(entry.hours);
+                      
                       return (
                         <TableRow key={entry.id}>
                           <TableCell className="font-medium">
@@ -345,7 +342,7 @@ const TimeTracking = () => {
                             </div>
                           </TableCell>
                           <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy')}</TableCell>
-                          <TableCell>{formatHoursToTimeFormat(entry.hours)}</TableCell>
+                          <TableCell>{hoursDisplay}</TableCell>
                           <TableCell>
                             <span className="truncate block max-w-[200px]">
                               {entry.notes || '—'}
