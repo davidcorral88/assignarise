@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,6 @@ import { Progress } from '@/components/ui/progress';
 import { Clock, Eye, Search } from 'lucide-react';
 import { Task } from '@/utils/types';
 import { useNavigate } from 'react-router-dom';
-import { getTimeEntriesByUserId, getTimeEntriesByTaskId } from '@/utils/dataService';
 
 interface TaskProgress {
   worked: number;
@@ -29,82 +28,12 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
 }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [userTaskProgress, setUserTaskProgress] = useState<Record<string, TaskProgress>>({});
-  const [loading, setLoading] = useState(true);
-
-  // Get current user from local storage
-  const currentUserDataString = localStorage.getItem('currentUser');
-  const currentUser = currentUserDataString ? JSON.parse(currentUserDataString) : null;
-  const userId = currentUser?.id;
-
-  useEffect(() => {
-    const calculateUserTaskProgress = async () => {
-      if (!userId || !tasks.length) return;
-      
-      setLoading(true);
-      const userProgress: Record<string, TaskProgress> = {};
-      
-      try {
-        // Get all user's time entries
-        const userTimeEntries = await getTimeEntriesByUserId(userId);
-        
-        // Calculate progress for each task
-        for (const task of tasks) {
-          const taskId = typeof task.id === 'string' ? task.id : String(task.id);
-          const globalProgress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
-          
-          // Filter time entries for this specific task and user
-          const taskEntries = userTimeEntries.filter(entry => {
-            const entryTaskId = typeof entry.task_id === 'string' ? entry.task_id : String(entry.task_id);
-            return entryTaskId === taskId;
-          });
-          
-          // Calculate total hours worked by the user on this task
-          const userWorkedHours = taskEntries.reduce((total, entry) => total + entry.hours, 0);
-          
-          // Find the user's allocation for this task
-          const userAssignment = task.assignments?.find(assignment => {
-            const assignmentUserId = typeof assignment.user_id === 'string' 
-              ? parseInt(assignment.user_id, 10) 
-              : assignment.user_id;
-            
-            const userIdInt = typeof userId === 'string' 
-              ? parseInt(userId, 10) 
-              : userId;
-              
-            return assignmentUserId === userIdInt;
-          });
-          
-          const userAllocatedHours = userAssignment?.allocatedHours || 0;
-          
-          // Calculate percentage
-          const progressPercentage = userAllocatedHours > 0 
-            ? Math.min(Math.round((userWorkedHours / userAllocatedHours) * 100), 100) 
-            : 0;
-            
-          userProgress[taskId] = {
-            worked: userWorkedHours,
-            allocated: userAllocatedHours,
-            percentage: progressPercentage
-          };
-        }
-        
-        setUserTaskProgress(userProgress);
-      } catch (error) {
-        console.error('Error calculating user task progress:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    calculateUserTaskProgress();
-  }, [tasks, taskProgress, userId]);
 
   // Sort tasks by hours worked and take top 10
   const sortedTasks = tasks
     .sort((a, b) => {
-      const aProgress = userTaskProgress[typeof a.id === 'string' ? a.id : String(a.id)]?.worked || 0;
-      const bProgress = userTaskProgress[typeof b.id === 'string' ? b.id : String(b.id)]?.worked || 0;
+      const aProgress = taskProgress[typeof a.id === 'string' ? a.id : String(a.id)]?.worked || 0;
+      const bProgress = taskProgress[typeof b.id === 'string' ? b.id : String(b.id)]?.worked || 0;
       return bProgress - aProgress;
     })
     .slice(0, 10);
@@ -141,14 +70,10 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {loading ? (
-            <div className="flex justify-center py-6">
-              <Clock className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : displayedTasks.length > 0 ? (
+          {displayedTasks.length > 0 ? (
             displayedTasks.map(task => {
               const taskId = typeof task.id === 'string' ? task.id : String(task.id);
-              const progress = userTaskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
+              const progress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
               
               return (
                 <div key={task.id} className="p-4 rounded-lg border bg-muted/30">
@@ -175,7 +100,7 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
                   
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Progreso (as túas horas): {progress.percentage}%</span>
+                      <span>Progreso: {progress.percentage}%</span>
                       <span>
                         {formatHoursToDecimal(progress.worked)} / 
                         {formatHoursToDecimal(progress.allocated)} horas
