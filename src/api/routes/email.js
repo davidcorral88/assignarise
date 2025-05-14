@@ -48,7 +48,7 @@ router.post('/send-task-assignment', async (req, res) => {
     }
     const task = taskResult.rows[0];
     
-    // Get user details - Fix: Use correct column name case - "emailATSXPTPG" instead of "emailatsxptpg"
+    // Get user details
     const userResult = await pool.query('SELECT id, name, email, "emailATSXPTPG", email_notification FROM users WHERE id = $1', [userId]);
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -65,8 +65,8 @@ router.post('/send-task-assignment', async (req, res) => {
       });
     }
     
-    // Determine which email to use - prefer the ATSXPTPG email if available
-    const recipientEmail = user.emailATSXPTPG || user.email;
+    // Use the primary email as the main recipient
+    const recipientEmail = user.email;
     
     // If user has no email, we can't send notification
     if (!recipientEmail) {
@@ -91,10 +91,13 @@ router.post('/send-task-assignment', async (req, res) => {
       ? `Asignóusevos unha nova tarefa no sistema de xestión.`
       : `Actualizouse a vosa asignación dunha tarefa no sistema de xestión.`;
     
-    // Include CC addresses if there are other users with emailATSXPTPG assigned to this task
+    // Add user's own emailATSXPTPG as CC if it exists and is different from the primary
     const ccAddresses = [];
+    if (user.emailATSXPTPG && user.emailATSXPTPG !== user.email) {
+      ccAddresses.push(user.emailATSXPTPG);
+    }
     
-    // Get all users assigned to this task - Fix: Use correct column name case
+    // Get all users assigned to this task (for CC)
     const assignmentsResult = await pool.query(
       'SELECT u.id, u.name, u.email, u."emailATSXPTPG", u.email_notification FROM users u ' +
       'JOIN task_assignments ta ON u.id = ta.user_id ' +
@@ -102,7 +105,7 @@ router.post('/send-task-assignment', async (req, res) => {
       [taskId, userId]
     );
     
-    // Add emailATSXPTPG addresses to CC if available
+    // Add other assigned users' emailATSXPTPG to CC list if available
     assignmentsResult.rows.forEach(assignedUser => {
       if (assignedUser.emailATSXPTPG && assignedUser.email_notification !== false) {
         ccAddresses.push(assignedUser.emailATSXPTPG);
