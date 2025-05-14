@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -70,6 +71,12 @@ export const Header: React.FC = () => {
       show: true
     },
     {
+      to: '/time-tracking',
+      icon: <Clock className="mr-2 h-4 w-4" />,
+      label: 'Rexistro de Horas',
+      show: true
+    },
+    {
       to: '/users',
       icon: <Users className="mr-2 h-4 w-4" />,
       label: 'Usuarios',
@@ -80,12 +87,6 @@ export const Header: React.FC = () => {
       icon: <Calendar className="mr-2 h-4 w-4" />,
       label: 'Calendarios',
       show: true // All users can see Calendars
-    },
-    {
-      to: '/time-tracking',
-      icon: <Clock className="mr-2 h-4 w-4" />,
-      label: 'Rexistro de Horas',
-      show: true
     },
     {
       to: '/help',
