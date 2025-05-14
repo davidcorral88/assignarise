@@ -21,9 +21,10 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { cn, timeFormatToHours, hoursToTimeFormat } from '@/lib/utils';
 import { addTimeEntry } from '@/utils/dataService';
 import { Task, TimeEntry } from '@/utils/types';
+import { TimePicker } from '@/components/ui/time-picker';
 
 interface TimeTrackingFormProps {
   tasks: Task[];
@@ -40,6 +41,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
 }) => {
   const [selectedTask, setSelectedTask] = useState<string>('');
   const [hours, setHours] = useState<number>(1);
+  const [timeFormat, setTimeFormat] = useState<string>('01:00');
   const [date, setDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
@@ -77,7 +79,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedTask || hours <= 0 || !date) {
+    if (!selectedTask || !timeFormat || !date) {
       toast({
         title: 'Campos incompletos',
         description: 'Por favor complete todos os campos requeridos',
@@ -89,6 +91,9 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
     setSubmitting(true);
     
     try {
+      // Convert time format to decimal hours
+      const decimalHours = timeFormatToHours(timeFormat);
+      
       // Ensure task_id is properly formatted - convert to string as required by TimeEntry type
       const taskId = parseInt(selectedTask, 10);
       
@@ -99,9 +104,10 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
       const timeEntry: Partial<TimeEntry> = {
         task_id: taskId,           // Use NUMBER as TimeEntry expects number
         user_id: userId,           // Use NUMBER as TimeEntry expects number
-        hours: hours,              // NUMBER
+        hours: decimalHours,       // Convert from time format to decimal hours
         date: format(date, 'yyyy-MM-dd'), // STRING in YYYY-MM-DD format
         notes: notes || '',        // STRING
+        timeFormat: timeFormat,    // Store the original time format
       };
       
       console.log('Enviando registro de tempo:', JSON.stringify(timeEntry));
@@ -174,13 +180,10 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="hours">Horas traballadas *</Label>
-              <Input
+              <TimePicker
                 id="hours"
-                type="number"
-                min="0.1"
-                step="0.1"
-                value={hours || ''}
-                onChange={(e) => setHours(Number(e.target.value))}
+                value={timeFormat}
+                onChange={(value) => setTimeFormat(value)}
                 required
               />
             </div>
