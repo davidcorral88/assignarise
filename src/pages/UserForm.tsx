@@ -5,6 +5,7 @@ import { Layout } from '../components/layout/Layout';
 import { getUserById, addUser, updateUser, getNextUserId } from '../utils/dataService';
 import { User, UserRole } from '../utils/types';
 import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '../components/auth/useAuth';
 
 type OrganizationType = 'Xunta' | 'iPlan' | undefined;
 
@@ -12,6 +13,8 @@ const UserForm = () => {
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
   
   // Form state
   const [name, setName] = useState('');
@@ -254,17 +257,27 @@ const UserForm = () => {
             <label htmlFor="role" className="block text-gray-700 text-sm font-bold mb-2">
               Rol:
             </label>
-            <select
-              id="role"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={role}
-              onChange={(e) => setRole(e.target.value as UserRole)}
-              required
-            >
-              <option value="admin">Admin</option>
-              <option value="director">Director</option>
-              <option value="worker">Worker</option>
-            </select>
+            {isAdmin ? (
+              <select
+                id="role"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                value={role}
+                onChange={(e) => setRole(e.target.value as UserRole)}
+                required
+              >
+                <option value="admin">Admin</option>
+                <option value="director">Director</option>
+                <option value="worker">Worker</option>
+              </select>
+            ) : (
+              <input
+                type="text"
+                id="role"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight"
+                value={role === 'admin' ? 'Admin' : role === 'director' ? 'Director' : 'Worker'}
+                readOnly
+              />
+            )}
           </div>
           
           <div className="mb-4">
