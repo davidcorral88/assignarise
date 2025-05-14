@@ -22,8 +22,6 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import { Task, TimeEntry } from '@/utils/types';
 import { addTimeEntry, updateTimeEntry, deleteTimeEntry } from '@/utils/dataService';
-import { TimePicker } from '@/components/ui/time-picker';
-import { decimalToTimeFormat, timeFormatToDecimal } from '@/lib/utils';
 
 interface WeeklyHoursProps {
   tasks: Task[];
@@ -77,53 +75,55 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     });
   };
 
-  const updateHours = (taskId: string, dayDate: string, timeValue: string) => {
+  const updateHours = (taskId: string, dayDate: string, hours: string) => {
+    if (isNaN(parseFloat(hours)) && hours !== '') return;
+    
     setTaskHours(prev => ({
       ...prev,
       [taskId]: {
         ...prev[taskId],
-        [dayDate]: timeValue
+        [dayDate]: hours
       }
     }));
   };
 
   const calculateTaskTotal = (taskId: string): string => {
-    if (!taskHours[taskId]) return '00:00';
+    if (!taskHours[taskId]) return '0:00';
     
-    let totalDecimal = Object.values(taskHours[taskId])
-      .reduce((sum, timeStr) => {
-        const hoursNum = timeStr ? timeFormatToDecimal(timeStr) : 0;
+    const total = Object.values(taskHours[taskId])
+      .reduce((sum, hours) => {
+        const hoursNum = hours ? parseFloat(hours) : 0;
         return sum + hoursNum;
       }, 0);
     
-    return decimalToTimeFormat(totalDecimal);
+    return formatHoursToTimeFormat(total);
   };
 
   const calculateDayTotal = (dayIndex: number): string => {
     const dayDate = format(addDays(selectedWeek, dayIndex), 'yyyy-MM-dd');
     
-    let totalDecimal = 0;
+    let total = 0;
     Object.keys(taskHours).forEach(taskId => {
       if (taskHours[taskId][dayDate]) {
-        totalDecimal += timeFormatToDecimal(taskHours[taskId][dayDate]);
+        total += parseFloat(taskHours[taskId][dayDate]) || 0;
       }
     });
     
-    return decimalToTimeFormat(totalDecimal);
+    return formatHoursToTimeFormat(total);
   };
 
   const calculateWeekTotal = (): string => {
-    let totalDecimal = 0;
+    let total = 0;
     
     Object.keys(taskHours).forEach(taskId => {
-      Object.values(taskHours[taskId]).forEach(timeStr => {
-        if (timeStr) {
-          totalDecimal += timeFormatToDecimal(timeStr);
+      Object.values(taskHours[taskId]).forEach(hours => {
+        if (hours) {
+          total += parseFloat(hours) || 0;
         }
       });
     });
     
-    return decimalToTimeFormat(totalDecimal);
+    return formatHoursToTimeFormat(total);
   };
 
   const formatHoursToTimeFormat = (hours: number): string => {
@@ -145,15 +145,19 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
   };
 
   const saveHours = async (taskId: string, dayDate: string) => {
-    if (!taskHours[taskId][dayDate]) return;
+    if (!taskHours[taskId][dayDate] || taskHours[taskId][dayDate] === '0') return;
 
     setIsLoading(true);
     try {
-      const timeString = taskHours[taskId][dayDate];
-      const hours = timeFormatToDecimal(timeString);
+      const hours = parseFloat(taskHours[taskId][dayDate]);
       
-      if (hours === 0) {
-        return; // No guardar si las horas son 0
+      if (isNaN(hours)) {
+        toast({
+          title: 'Erro',
+          description: 'O valor de horas non é válido',
+          variant: 'destructive',
+        });
+        return;
       }
 
       const userIdAsNumber = typeof userId === 'string' ? parseInt(userId, 10) : userId;
@@ -172,7 +176,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
           category: existingEntry.category,
           project: existingEntry.project,
           activity: existingEntry.activity,
-          timeFormat: taskHours[taskId][dayDate] // Gardamos tamén o formato de hora orixinal
+          timeFormat: existingEntry.timeFormat
         });
         
         toast({
@@ -185,8 +189,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
           user_id: userIdAsNumber,
           hours,
           date: dayDate,
-          notes: `Rexistro semanal - ${format(parseISO(dayDate), 'EEEE', { locale: gl })}`,
-          timeFormat: taskHours[taskId][dayDate] // Gardamos tamén o formato de hora orixinal
+          notes: `Rexistro semanal - ${format(parseISO(dayDate), 'EEEE', { locale: gl })}`
         });
         
         toast({
@@ -249,12 +252,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
           }
         }
         
-        // Usar el formato de tiempo guardado o convertir desde el decimal
-        if (entry.timeFormat) {
-          hoursData[taskId][entryDate] = entry.timeFormat;
-        } else {
-          hoursData[taskId][entryDate] = decimalToTimeFormat(entry.hours);
-        }
+        hoursData[taskId][entryDate] = String(entry.hours);
       }
     });
     
@@ -387,11 +385,15 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                       return (
                         <td key={day.date} className="p-2 text-center">
                           <div className="flex items-center justify-center">
-                            <TimePicker
+                            <Input
                               className={`w-20 text-center ${hasEntry ? 'bg-green-50' : ''}`}
                               value={taskHours[taskId]?.[day.date] || ''}
-                              onChange={(value) => updateHours(taskId, day.date, value)}
+                              onChange={(e) => updateHours(taskId, day.date, e.target.value)}
                               onBlur={() => saveHours(taskId, day.date)}
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              placeholder="0.0"
                             />
                           </div>
                         </td>

@@ -131,7 +131,7 @@ router.get('/task/:taskId', async (req, res) => {
 // Create time entry
 router.post('/', async (req, res) => {
   try {
-    const { task_id, user_id, hours, date, notes, category, project, activity, timeFormat } = req.body;
+    const { task_id, user_id, hours, date, notes, category, project, activity, time_format } = req.body;
     
     console.log('Received time entry data:', JSON.stringify(req.body));
     
@@ -183,7 +183,7 @@ router.post('/', async (req, res) => {
       const result = await pool.query(
         `INSERT INTO time_entries (id, task_id, user_id, hours, date, notes, category, project, activity, time_format) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-        [nextId, taskIdInt, userIdInt, hoursNumber, date, notes || null, category || null, project || null, activity || null, timeFormat || null]
+        [nextId, taskIdInt, userIdInt, hoursNumber, date, notes || null, category || null, project || null, activity || null, time_format || null]
       );
       
       // Normalize response data types
@@ -220,7 +220,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { task_id, user_id, hours, date, notes, category, project, activity, timeFormat } = req.body;
+    const { task_id, user_id, hours, date, notes, category, project, activity, time_format } = req.body;
     
     // Ensure IDs are integers
     const entryIdInt = parseInt(id, 10);
@@ -238,7 +238,7 @@ router.put('/:id', async (req, res) => {
         task_id = $1, user_id = $2, hours = $3, date = $4, 
         notes = $5, category = $6, project = $7, activity = $8, time_format = $9
        WHERE id = $10 RETURNING *`,
-      [taskIdInt, userIdInt, hours, date, notes, category, project, activity, timeFormat, entryIdInt]
+      [taskIdInt, userIdInt, hours, date, notes, category, project, activity, time_format, entryIdInt]
     );
     
     if (result.rows.length === 0) {

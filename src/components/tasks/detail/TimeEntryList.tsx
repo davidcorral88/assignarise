@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TimeEntry, User } from '@/utils/types';
 import { UserAvatar } from './UserAvatar';
-import { decimalToTimeFormat } from '@/lib/utils';
 
 interface TimeEntryListProps {
   taskId: string;
@@ -47,9 +46,6 @@ export const TimeEntryList: React.FC<TimeEntryListProps> = ({
     <div className="space-y-4">
       {timeEntries.map(entry => {
         const user = assignedUsers[entry.user_id];
-        // Mostrar el formato de hora guardado o convertir desde decimal
-        const hoursDisplay = entry.timeFormat || decimalToTimeFormat(entry.hours);
-        
         return (
           <div key={entry.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg bg-muted/50">
             <div className="flex items-center gap-3 flex-1">
@@ -61,7 +57,7 @@ export const TimeEntryList: React.FC<TimeEntryListProps> = ({
             </div>
             
             <div className="flex items-center gap-4">
-              <Badge variant="secondary">{hoursDisplay}</Badge>
+              <Badge variant="secondary">{entry.hours} horas</Badge>
               {entry.notes && (
                 <p className="text-sm text-muted-foreground">
                   "{entry.notes}"
