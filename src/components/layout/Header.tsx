@@ -195,7 +195,7 @@ export const Header: React.FC = () => {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={() => navigate('/user-config')}
+                onClick={() => navigate('/config')}
                 className="cursor-pointer"
               >
                 <User className="mr-2 h-4 w-4" />

@@ -18,6 +18,20 @@ const UserConfig = () => {
   const { currentUser } = useAuth();
   const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
   
+  // Function to get role display name
+  const getRoleDisplayName = (role: string | undefined) => {
+    switch (role) {
+      case 'admin':
+        return 'Administrador';
+      case 'director':
+        return 'Director';
+      case 'worker':
+        return 'Traballador';
+      default:
+        return 'Non especificado';
+    }
+  };
+  
   return (
     <Layout>
       <div className="space-y-6">
@@ -48,8 +62,7 @@ const UserConfig = () => {
                 </div>
                 <div>
                   <p className="font-medium">Rol:</p>
-                  <p>{currentUser?.role === 'admin' ? 'Administrador' : 
-                      currentUser?.role === 'director' ? 'Director' : 'Traballador'}</p>
+                  <p>{getRoleDisplayName(currentUser?.role)}</p>
                 </div>
                 <div>
                   <p className="font-medium">Organización:</p>
