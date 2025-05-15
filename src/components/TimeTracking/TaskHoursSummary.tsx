@@ -98,15 +98,36 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
                   
                   <Separator className="my-4" />
                   
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progreso: {progress.percentage}%</span>
-                      <span>
-                        {formatHoursToDecimal(progress.worked)} / 
-                        {formatHoursToDecimal(progress.allocated)} horas
-                      </span>
+                  <div className="space-y-4">
+                    {/* Progreso do usuario */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium">Progreso do usuario: {progress.percentage}%</span>
+                        <span>
+                          {formatHoursToDecimal(progress.worked)} / 
+                          {formatHoursToDecimal(progress.allocated)} horas
+                        </span>
+                      </div>
+                      <Progress value={progress.percentage} className="h-2" />
                     </div>
-                    <Progress value={progress.percentage} className="h-2" />
+                    
+                    {/* Progreso xeral */}
+                    {task.generalProgress && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-medium">Progreso xeral: {task.generalProgress.percentage}%</span>
+                          <span>
+                            {formatHoursToDecimal(task.generalProgress.worked)} / 
+                            {formatHoursToDecimal(task.generalProgress.allocated)} horas
+                          </span>
+                        </div>
+                        <Progress 
+                          value={task.generalProgress.percentage} 
+                          className="h-2 bg-secondary/50"
+                          indicatorClassName="bg-secondary" 
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -124,4 +145,3 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
     </Card>
   );
 };
-
