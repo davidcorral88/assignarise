@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { 
   getTasksAssignments, getTimeEntriesByUserId, deleteTimeEntry,
-  setStateFromPromise, getTotalHoursByTask, getTotalHoursAllocatedByTask
+  setStateFromPromise, getTotalHoursByTask, getTotalHoursAllocatedByTask,
+  getTimeEntries
 } from '../utils/dataService';
 import { useAuth } from '../components/auth/useAuth';
 import { Task, TimeEntry } from '../utils/types';
@@ -114,30 +116,90 @@ const TimeTracking = () => {
       .map(task => task.id);
       
     if (!userTaskIds.length) return;
-      
-    const progressData: Record<string, {worked: number, allocated: number, percentage: number}> = {};
+    
+    const progressData: Record<string, {
+      worked: number;
+      allocated: number;
+      percentage: number;
+      generalWorked: number;
+      generalAllocated: number;
+      generalPercentage: number;
+    }> = {};
       
     for (const taskId of userTaskIds) {
       if (!taskId) continue;
-        
+      
       try {
-        const totalHoursWorked = await getTotalHoursByTask(taskId);
-        const totalHoursAllocated = await getTotalHoursAllocatedByTask(taskId);
-          
-        const progressPercentage = totalHoursAllocated > 0 
-          ? Math.min(Math.round((totalHoursWorked / totalHoursAllocated) * 100), 100) 
+        // Get all time entries for this task
+        const allTaskTimeEntries = await getTimeEntries({ task_id: taskId });
+        
+        // Calculate individual progress
+        const task = fetchedTasks.find(t => {
+          const tId = typeof t.id === 'string' ? t.id : String(t.id);
+          const taskIdStr = typeof taskId === 'string' ? taskId : String(taskId);
+          return tId === taskIdStr;
+        });
+        
+        if (!task || !task.assignments) continue;
+        
+        // Get user's allocated hours for this task
+        const userIdNumber = typeof currentUser?.id === 'string' 
+          ? parseInt(currentUser.id, 10) 
+          : currentUser?.id;
+        
+        const userAssignment = task.assignments.find(assignment => {
+          const assignmentUserId = typeof assignment.user_id === 'string' 
+            ? parseInt(assignment.user_id, 10) 
+            : assignment.user_id;
+          return assignmentUserId === userIdNumber;
+        });
+        
+        // Calculate user's worked hours for this task
+        const userEntries = allTaskTimeEntries.filter(entry => {
+          const entryUserId = typeof entry.user_id === 'string' 
+            ? parseInt(entry.user_id, 10) 
+            : entry.user_id;
+          return entryUserId === userIdNumber;
+        });
+        
+        const userWorkedHours = userEntries.reduce((total, entry) => 
+          total + Number(entry.hours), 0);
+        
+        const userAllocatedHours = userAssignment ? Number(userAssignment.allocatedHours) : 0;
+        const userProgressPercentage = userAllocatedHours > 0 
+          ? Math.min(Math.round((userWorkedHours / userAllocatedHours) * 100), 100) 
           : 0;
-            
-        progressData[taskId] = {
-          worked: totalHoursWorked,
-          allocated: totalHoursAllocated,
-          percentage: progressPercentage
+        
+        // Calculate general progress for all users on this task
+        const totalAllocatedHours = task.assignments.reduce(
+          (total, assignment) => total + Number(assignment.allocatedHours), 0
+        );
+        
+        const totalWorkedHours = allTaskTimeEntries.reduce(
+          (total, entry) => total + Number(entry.hours), 0
+        );
+        
+        const generalProgressPercentage = totalAllocatedHours > 0 
+          ? Math.min(Math.round((totalWorkedHours / totalAllocatedHours) * 100), 100) 
+          : 0;
+        
+        const taskIdStr = typeof taskId === 'string' ? taskId : String(taskId);
+        
+        progressData[taskIdStr] = {
+          worked: userWorkedHours,
+          allocated: userAllocatedHours,
+          percentage: userProgressPercentage,
+          generalWorked: totalWorkedHours,
+          generalAllocated: totalAllocatedHours,
+          generalPercentage: generalProgressPercentage
         };
+        
+        console.log(`Task ${taskIdStr} progress:`, progressData[taskIdStr]);
       } catch (error) {
         console.error(`Error calculating progress for task ${taskId}:`, error);
       }
     }
-      
+    
     setTaskProgress(progressData);
   };
   
