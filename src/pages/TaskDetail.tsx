@@ -222,7 +222,20 @@ const TaskDetail = () => {
           task={task} 
           currentUserId={currentUserId} 
           canEdit={true}
+          userRole={currentUser?.role}
         />
+        
+        {/* Task Title and Info */}
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">{task.title}</h1>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">
+              {task.status === 'completed' ? 'Completada' : 
+               task.status === 'in_progress' ? 'En progreso' : 
+               task.status === 'pending' ? 'Pendente' : task.status}
+            </span>
+          </div>
+        </div>
         
         {timeEntries.length === 0 && (
           <Alert variant="warning" className="mb-4">
