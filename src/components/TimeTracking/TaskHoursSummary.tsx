@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Eye, Search, ChartLineUp, ChartLine } from 'lucide-react';
+import { Clock, Eye, Search, ChartLine } from 'lucide-react';
 import { Task } from '@/utils/types';
 import { useNavigate } from 'react-router-dom';
 import { ChartContainer, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
