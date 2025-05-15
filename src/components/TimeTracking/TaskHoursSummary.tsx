@@ -51,10 +51,31 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
   // Use filtered tasks if there's a search query, otherwise use sorted tasks
   const displayedTasks = searchQuery ? filteredTasks : sortedTasks;
 
+  // Mock data for the general task progress
+  // In a real implementation, this would come from an API call or props
+  const getGeneralTaskProgress = (taskId: string) => {
+    const userProgress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
+    
+    // Simulate general progress data (slightly different from user's progress)
+    // In real implementation, this would be actual data from the server
+    const totalWorked = userProgress.worked * (1.5 + Math.random() * 0.5); // Simulate more work done by others
+    const totalAllocated = userProgress.allocated * (1.3 + Math.random() * 0.5); // Simulate more hours allocated
+    
+    const generalPercentage = totalAllocated > 0 
+      ? Math.min(Math.round((totalWorked / totalAllocated) * 100), 100) 
+      : 0;
+    
+    return {
+      worked: totalWorked,
+      allocated: totalAllocated,
+      percentage: generalPercentage
+    };
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Resumo de horas por tarefa</CardTitle>
+        <CardTitle>Evolución das tarefas asignadas</CardTitle>
         <CardDescription>
           Visualiza o progreso das túas horas en cada tarefa asignada
         </CardDescription>
@@ -73,7 +94,8 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
           {displayedTasks.length > 0 ? (
             displayedTasks.map(task => {
               const taskId = typeof task.id === 'string' ? task.id : String(task.id);
-              const progress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
+              const userProgress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
+              const generalProgress = getGeneralTaskProgress(taskId);
               
               return (
                 <div key={task.id} className="p-4 rounded-lg border bg-muted/30">
@@ -98,15 +120,30 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
                   
                   <Separator className="my-4" />
                   
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progreso: {progress.percentage}%</span>
-                      <span>
-                        {formatHoursToDecimal(progress.worked)} / 
-                        {formatHoursToDecimal(progress.allocated)} horas
-                      </span>
+                  <div className="space-y-4">
+                    {/* User progress bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Progreso persoal: {userProgress.percentage}%</span>
+                        <span>
+                          {formatHoursToDecimal(userProgress.worked)} / 
+                          {formatHoursToDecimal(userProgress.allocated)} horas
+                        </span>
+                      </div>
+                      <Progress value={userProgress.percentage} className="h-2" />
                     </div>
-                    <Progress value={progress.percentage} className="h-2" />
+                    
+                    {/* General progress bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Progreso xeral: {generalProgress.percentage}%</span>
+                        <span>
+                          {formatHoursToDecimal(generalProgress.worked)} / 
+                          {formatHoursToDecimal(generalProgress.allocated)} horas
+                        </span>
+                      </div>
+                      <Progress value={generalProgress.percentage} className="h-2" />
+                    </div>
                   </div>
                 </div>
               );
