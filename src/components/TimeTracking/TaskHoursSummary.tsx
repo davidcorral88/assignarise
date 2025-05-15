@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Eye, Search, ChartLine } from 'lucide-react';
+import { Clock, Eye, Search } from 'lucide-react';
 import { Task } from '@/utils/types';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,9 +13,6 @@ interface TaskProgress {
   worked: number;
   allocated: number;
   percentage: number;
-  generalWorked?: number;
-  generalAllocated?: number;
-  generalPercentage?: number;
 }
 
 interface TaskHoursSummaryProps {
@@ -57,7 +54,7 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Evolución das tarefas asignadas</CardTitle>
+        <CardTitle>Resumo de horas por tarefa</CardTitle>
         <CardDescription>
           Visualiza o progreso das túas horas en cada tarefa asignada
         </CardDescription>
@@ -76,7 +73,7 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
           {displayedTasks.length > 0 ? (
             displayedTasks.map(task => {
               const taskId = typeof task.id === 'string' ? task.id : String(task.id);
-              const progress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0, generalPercentage: 0, generalWorked: 0, generalAllocated: 0 };
+              const progress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
               
               return (
                 <div key={task.id} className="p-4 rounded-lg border bg-muted/30">
@@ -101,46 +98,15 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
                   
                   <Separator className="my-4" />
                   
-                  <div className="space-y-4">
-                    {/* Progreso individual del usuario */}
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm mb-1">
-                        <Clock className="mr-1.5 h-4 w-4 text-blue-500" />
-                        <span className="font-medium">Progreso individual</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Progreso: {progress.percentage}%</span>
-                        <span>
-                          {formatHoursToDecimal(progress.worked)} / 
-                          {formatHoursToDecimal(progress.allocated)} horas
-                        </span>
-                      </div>
-                      <Progress 
-                        value={progress.percentage} 
-                        className="h-2" 
-                        indicatorClassName="bg-blue-500"
-                      />
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Progreso: {progress.percentage}%</span>
+                      <span>
+                        {formatHoursToDecimal(progress.worked)} / 
+                        {formatHoursToDecimal(progress.allocated)} horas
+                      </span>
                     </div>
-                    
-                    {/* Progreso general de la tarea */}
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm mb-1">
-                        <ChartLine className="mr-1.5 h-4 w-4 text-emerald-600" />
-                        <span className="font-medium">Progreso xeral</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Progreso: {progress.generalPercentage || 0}%</span>
-                        <span>
-                          {formatHoursToDecimal(progress.generalWorked || 0)} / 
-                          {formatHoursToDecimal(progress.generalAllocated || 0)} horas
-                        </span>
-                      </div>
-                      <Progress 
-                        value={progress.generalPercentage || 0}
-                        className="h-2"
-                        indicatorClassName="bg-emerald-600"
-                      />
-                    </div>
+                    <Progress value={progress.percentage} className="h-2" />
                   </div>
                 </div>
               );
