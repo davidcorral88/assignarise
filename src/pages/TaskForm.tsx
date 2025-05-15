@@ -612,7 +612,7 @@ const TaskForm = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle style={{ color: '#007bc4' }}>Arquivos adjuntos</CardTitle>
+                  <CardTitle style={{ color: '#007bc4' }}>Arquivos adxuntos</CardTitle>
                   <CardDescription>
                     Xestión de arquivos relacionados coa tarefa
                   </CardDescription>
