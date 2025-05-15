@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Eye, Search } from 'lucide-react';
+import { Clock, Eye, Search, ChartLineUp, ChartLine } from 'lucide-react';
 import { Task } from '@/utils/types';
 import { useNavigate } from 'react-router-dom';
+import { ChartContainer, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 
 interface TaskProgress {
   worked: number;
@@ -51,10 +52,38 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
   // Use filtered tasks if there's a search query, otherwise use sorted tasks
   const displayedTasks = searchQuery ? filteredTasks : sortedTasks;
 
+  // Simular datos de progreso xeral para todas as tarefas
+  // Nunha implementación real, estes datos virían da API
+  const getGeneralTaskProgress = (taskId: string): TaskProgress => {
+    // Por defecto, simulamos valores para o progreso xeral que sexan diferentes ao progreso do usuario
+    const userProgress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
+    
+    // Creamos uns valores simulados para o progreso xeral da tarefa
+    // nunha aplicación real, isto viría da base de datos
+    const basedOnUserProgress = userProgress.percentage;
+    const variation = Math.floor(Math.random() * 30) - 15; // Variación entre -15% e +15%
+    const generalPercentage = Math.max(0, Math.min(100, basedOnUserProgress + variation));
+    
+    // Calculamos horas traballadas e asignadas baseándonos na porcentaxe
+    const generalAllocated = userProgress.allocated * 2.5; // Asumimos que a asignación total é maior
+    const generalWorked = (generalPercentage / 100) * generalAllocated;
+    
+    return {
+      worked: generalWorked,
+      allocated: generalAllocated,
+      percentage: generalPercentage
+    };
+  };
+
+  const chartConfig = {
+    user: { label: "Usuario", theme: { light: "#2563eb", dark: "#3b82f6" } },
+    general: { label: "Equipo", theme: { light: "#059669", dark: "#10b981" } }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Resumo de horas por tarefa</CardTitle>
+        <CardTitle>Evolución das tarefas asignadas</CardTitle>
         <CardDescription>
           Visualiza o progreso das túas horas en cada tarefa asignada
         </CardDescription>
@@ -69,11 +98,20 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4">
+          <ChartContainer config={chartConfig} className="h-12">
+            <ChartLegend>
+              <ChartLegendContent />
+            </ChartLegend>
+          </ChartContainer>
+        </div>
+        
         <div className="space-y-6">
           {displayedTasks.length > 0 ? (
             displayedTasks.map(task => {
               const taskId = typeof task.id === 'string' ? task.id : String(task.id);
-              const progress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
+              const userProgress = taskProgress[taskId] || { worked: 0, allocated: 0, percentage: 0 };
+              const generalProgress = getGeneralTaskProgress(taskId);
               
               return (
                 <div key={task.id} className="p-4 rounded-lg border bg-muted/30">
@@ -98,15 +136,36 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
                   
                   <Separator className="my-4" />
                   
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progreso: {progress.percentage}%</span>
-                      <span>
-                        {formatHoursToDecimal(progress.worked)} / 
-                        {formatHoursToDecimal(progress.allocated)} horas
-                      </span>
+                  <div className="space-y-4">
+                    {/* Progreso do usuario */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm items-center">
+                        <div className="flex items-center">
+                          <div className="h-2.5 w-2.5 bg-primary rounded-sm mr-2"></div>
+                          <span>Progreso persoal: {userProgress.percentage}%</span>
+                        </div>
+                        <span>
+                          {formatHoursToDecimal(userProgress.worked)} / 
+                          {formatHoursToDecimal(userProgress.allocated)} horas
+                        </span>
+                      </div>
+                      <Progress value={userProgress.percentage} className="h-2 bg-secondary" />
                     </div>
-                    <Progress value={progress.percentage} className="h-2" />
+                    
+                    {/* Progreso xeral da tarefa */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm items-center">
+                        <div className="flex items-center">
+                          <div className="h-2.5 w-2.5 bg-green-500 rounded-sm mr-2"></div>
+                          <span>Progreso do equipo: {generalProgress.percentage}%</span>
+                        </div>
+                        <span>
+                          {formatHoursToDecimal(generalProgress.worked)} / 
+                          {formatHoursToDecimal(generalProgress.allocated)} horas
+                        </span>
+                      </div>
+                      <Progress value={generalProgress.percentage} className="h-2 bg-secondary" indicator="bg-green-500" />
+                    </div>
                   </div>
                 </div>
               );
