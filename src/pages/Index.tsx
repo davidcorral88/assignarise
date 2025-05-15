@@ -45,10 +45,6 @@ const Index = () => {
               className="h-full object-contain"
             />
           </div>
-          
-          <Button onClick={() => navigate('/login')}>
-            {isAuthenticated ? 'Panel' : 'Iniciar sesión'}
-          </Button>
         </div>
       </header>
       
