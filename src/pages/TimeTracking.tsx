@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { 
   getTasksAssignments, getTimeEntriesByUserId, deleteTimeEntry,
-  setStateFromPromise, getTotalHoursByTask, getTotalHoursAllocatedByTask,
-  getTimeEntriesByTaskId
+  setStateFromPromise, getTotalHoursByTask, getTotalHoursAllocatedByTask
 } from '../utils/dataService';
 import { useAuth } from '../components/auth/useAuth';
 import { Task, TimeEntry } from '../utils/types';
@@ -117,85 +116,29 @@ const TimeTracking = () => {
     if (!userTaskIds.length) return;
       
     const progressData: Record<string, {worked: number, allocated: number, percentage: number}> = {};
-    const tasksWithGeneralProgress: Task[] = [];
       
     for (const taskId of userTaskIds) {
       if (!taskId) continue;
-      
-      const task = fetchedTasks.find(t => t.id === taskId);
-      if (!task) continue;
         
       try {
-        // Calculate user's progress
-        const userIdNumber = typeof currentUser?.id === 'string' 
-          ? parseInt(currentUser.id, 10) 
-          : currentUser?.id;
-        
-        // Get user's allocated hours for this task
-        const userAssignment = task.assignments?.find(a => {
-          const assignmentUserId = typeof a.user_id === 'string' 
-            ? parseInt(a.user_id, 10) 
-            : a.user_id;
-          return assignmentUserId === userIdNumber;
-        });
-        
-        // Get user's worked hours for this task
-        const userHoursWorked = timeEntries
-          .filter(entry => {
-            const entryTaskId = typeof entry.task_id === 'string' 
-              ? parseInt(entry.task_id, 10) 
-              : entry.task_id;
-            const taskIdNumber = typeof taskId === 'string' ? parseInt(taskId, 10) : taskId;
-            return entryTaskId === taskIdNumber;
-          })
-          .reduce((total, entry) => total + entry.hours, 0);
-        
-        const userAllocatedHours = userAssignment?.allocatedHours || 0;
-        const userProgressPercentage = userAllocatedHours > 0 
-          ? Math.min(Math.round((userHoursWorked / userAllocatedHours) * 100), 100) 
-          : 0;
-        
-        progressData[taskId] = {
-          worked: userHoursWorked,
-          allocated: userAllocatedHours,
-          percentage: userProgressPercentage
-        };
-        
-        // Calculate general progress for all users
-        // Get all time entries for this task
-        const allTimeEntries = await getTimeEntriesByTaskId(taskId.toString());
-        
-        // Calculate total hours worked by all users
-        const totalHoursWorked = allTimeEntries.reduce((total, entry) => total + entry.hours, 0);
-        
-        // Calculate total hours allocated to all users
-        const totalHoursAllocated = task.assignments?.reduce(
-          (total, assignment) => total + (assignment.allocatedHours || 0), 0
-        ) || 0;
-        
-        // Calculate general progress percentage
-        const generalProgressPercentage = totalHoursAllocated > 0 
+        const totalHoursWorked = await getTotalHoursByTask(taskId);
+        const totalHoursAllocated = await getTotalHoursAllocatedByTask(taskId);
+          
+        const progressPercentage = totalHoursAllocated > 0 
           ? Math.min(Math.round((totalHoursWorked / totalHoursAllocated) * 100), 100) 
           : 0;
-        
-        // Add general progress to the task object
-        const taskWithGeneralProgress = {
-          ...task,
-          generalProgress: {
-            worked: totalHoursWorked,
-            allocated: totalHoursAllocated,
-            percentage: generalProgressPercentage
-          }
+            
+        progressData[taskId] = {
+          worked: totalHoursWorked,
+          allocated: totalHoursAllocated,
+          percentage: progressPercentage
         };
-        
-        tasksWithGeneralProgress.push(taskWithGeneralProgress);
       } catch (error) {
         console.error(`Error calculating progress for task ${taskId}:`, error);
       }
     }
       
     setTaskProgress(progressData);
-    setTasks(tasksWithGeneralProgress);
   };
   
   const handleTimeEntryAdded = async (entry: TimeEntry) => {
