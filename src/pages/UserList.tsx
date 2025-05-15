@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -80,6 +81,24 @@ const UserList = () => {
     return currentUser.id === userId;
   };
   
+  const sortUsers = (usersList: User[]): User[] => {
+    return [...usersList].sort((a, b) => {
+      // Sort by organization first (Xunta first, then iPlan)
+      const orgA = (a.organization || a.organism || '').toLowerCase();
+      const orgB = (b.organization || b.organism || '').toLowerCase();
+      
+      // Put Xunta first
+      if (orgA.includes('xunta') && !orgB.includes('xunta')) return -1;
+      if (!orgA.includes('xunta') && orgB.includes('xunta')) return 1;
+      
+      // Then by organization alphabetically
+      if (orgA !== orgB) return orgA.localeCompare(orgB);
+      
+      // If same organization, sort by name
+      return a.name.localeCompare(b.name);
+    });
+  };
+  
   const loadUsers = async () => {
     try {
       setIsLoading(true);
@@ -90,8 +109,11 @@ const UserList = () => {
         ? loadedUsers 
         : loadedUsers.filter(user => user.role !== 'admin');
       
-      setUsers(filteredLoadedUsers);
-      setFilteredUsers(filteredLoadedUsers);
+      // Sort users by organization and name
+      const sortedUsers = sortUsers(filteredLoadedUsers);
+      
+      setUsers(sortedUsers);
+      setFilteredUsers(sortedUsers);
     } catch (error) {
       console.error('Error loading users:', error);
       toast({
@@ -113,13 +135,13 @@ const UserList = () => {
       setFilteredUsers(users);
     } else {
       const query = searchQuery.toLowerCase();
-      setFilteredUsers(
-        users.filter(
-          user => 
-            user.name.toLowerCase().includes(query) || 
-            user.email.toLowerCase().includes(query)
-        )
+      const filtered = users.filter(
+        user => 
+          user.name.toLowerCase().includes(query) || 
+          user.email.toLowerCase().includes(query)
       );
+      
+      setFilteredUsers(filtered);
     }
   }, [users, searchQuery]);
   
@@ -466,3 +488,4 @@ const UserList = () => {
 };
 
 export default UserList;
+
