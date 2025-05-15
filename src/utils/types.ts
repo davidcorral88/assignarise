@@ -1,4 +1,3 @@
-
 export interface User {
   id: number;
   name: string;
@@ -40,6 +39,11 @@ export interface Task {
   attachments?: TaskAttachment[];
   category?: string;
   project?: string;
+  generalProgress?: {
+    worked: number;
+    allocated: number;
+    percentage: number;
+  };
 }
 
 export interface TaskAssignment {

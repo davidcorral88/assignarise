@@ -1,4 +1,3 @@
-
 // Define all types and interfaces for the application
 
 export interface User {
@@ -55,6 +54,11 @@ export interface Task {
   attachments?: TaskAttachment[];
   category?: string;
   project?: string;
+  generalProgress?: {
+    worked: number;
+    allocated: number;
+    percentage: number;
+  };
 }
 
 export interface TimeEntry {
