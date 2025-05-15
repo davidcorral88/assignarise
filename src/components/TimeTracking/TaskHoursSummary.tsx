@@ -54,7 +54,7 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Resumo de horas por tarefa</CardTitle>
+        <CardTitle>Evolución das tarefas asignadas</CardTitle>
         <CardDescription>
           Visualiza o progreso das túas horas en cada tarefa asignada
         </CardDescription>
@@ -124,3 +124,4 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
     </Card>
   );
 };
+
