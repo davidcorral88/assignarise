@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { 
   getTasksAssignments, getTimeEntriesByUserId, deleteTimeEntry,
-  setStateFromPromise, getTotalHoursByTask, getTotalHoursAllocatedByTask
+  setStateFromPromise, getTotalHoursByTask, getTotalHoursAllocatedByTask,
+  getUsers
 } from '../utils/dataService';
 import { useAuth } from '../components/auth/useAuth';
-import { Task, TimeEntry } from '../utils/types';
+import { Task, TimeEntry, User } from '../utils/types';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { Clock, Calendar, PlusCircle, Timer, Save, Eye, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,12 +39,25 @@ const TimeTracking = () => {
   const [taskProgress, setTaskProgress] = useState<Record<string, {worked: number, allocated: number, percentage: number}>>({});
   const [selectedWeek, setSelectedWeek] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [workers, setWorkers] = useState<User[]>([]);
   
   useEffect(() => {
     const fetchData = async () => {
       if (currentUser) {
         try {
           setLoading(true);
+          
+          // Fetch worker users for filtering if user is admin/manager
+          if (currentUser.role === 'admin' || currentUser.role === 'dxm' || currentUser.role === 'xerenteATSXPTPG') {
+            try {
+              const allUsers = await getUsers();
+              // Filter to only get worker users
+              const workerUsers = allUsers.filter(user => user.role === 'worker');
+              setWorkers(workerUsers);
+            } catch (error) {
+              console.error('Error fetching workers:', error);
+            }
+          }
           
           const fetchedTasks = await getTasksAssignments();
           console.log('Fetched tasks with assignments:', fetchedTasks);
@@ -111,7 +124,13 @@ const TimeTracking = () => {
           ? parseInt(currentUser.id, 10) 
           : currentUser?.id;
         
-        return assignmentUserId === userIdNumber;
+        const isAssigned = assignmentUserId === userIdNumber;
+        
+        if (isAssigned) {
+          console.log(`User ${userIdNumber} is assigned to task ${task.id}`);
+        }
+        
+        return isAssigned;
       }))
       .map(task => task.id);
       
@@ -374,6 +393,8 @@ const TimeTracking = () => {
             tasks={userTasks}
             taskProgress={taskProgress}
             formatHoursToDecimal={formatHoursToDecimal}
+            currentUser={currentUser}
+            workers={workers}
           />
         )}
       </div>
