@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -302,13 +303,23 @@ const UserForm = () => {
             <label htmlFor="avatar" className="block text-gray-700 text-sm font-bold mb-2">
               Avatar URL:
             </label>
-            <input
-              type="text"
-              id="avatar"
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-            />
+            {isAdmin ? (
+              <input
+                type="text"
+                id="avatar"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                value={avatar}
+                onChange={(e) => setAvatar(e.target.value)}
+              />
+            ) : (
+              <input
+                type="text"
+                id="avatar"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight"
+                value={avatar}
+                readOnly
+              />
+            )}
           </div>
           
           <div className="mb-4">
