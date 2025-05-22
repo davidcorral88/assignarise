@@ -1,3 +1,4 @@
+
 import * as apiService from './apiService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
@@ -227,13 +228,17 @@ export const getStorageUsage = () => {
 // Nueva función para obtener todas las etiquetas únicas
 export const getAllTags = async (): Promise<string[]> => {
   try {
+    console.log('Fetching all unique tags');
     const response = await fetch(`${API_URL}/tasks/tags`);
     if (!response.ok) {
       throw new Error('Error al obtener etiquetas');
     }
-    return await response.json();
+    const tags = await response.json();
+    console.log(`Retrieved ${tags.length} unique tags:`, tags);
+    return tags;
   } catch (error) {
     console.error('Error fetching tags:', error);
     return [];
   }
 };
+

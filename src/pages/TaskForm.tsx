@@ -90,12 +90,23 @@ const TaskForm = () => {
   
   useEffect(() => {
     const fetchTags = async () => {
-      const tags = await getAllTags();
-      setExistingTags(tags);
+      try {
+        console.log('Fetching all tags from database');
+        const fetchedTags = await getAllTags();
+        console.log('Fetched tags:', fetchedTags);
+        setExistingTags(fetchedTags);
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+        toast({
+          title: 'Erro',
+          description: 'Non se puideron cargar as etiquetas existentes',
+          variant: 'destructive',
+        });
+      }
     };
     fetchTags();
   }, []);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -315,6 +326,7 @@ const TaskForm = () => {
   const handleSelectTag = (selectedTag: string) => {
     if (!tags.includes(selectedTag)) {
       setTags([...tags, selectedTag]);
+      console.log(`Added existing tag: ${selectedTag}`);
     }
     setTag('');
     setShowTagOptions(false);
