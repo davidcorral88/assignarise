@@ -484,11 +484,19 @@ const TaskList = () => {
     );
   }, [tasks, tagSearchQuery]);
 
-  const filteredUsers = useMemo(() => {
-    return allUsers.filter(user => 
-      user.name.toLowerCase().includes(userSearchQuery.toLowerCase())
-    );
-  }, [allUsers, userSearchQuery]);
+  // Filter users based on role
+  const filteredUsers = users.filter(user => {
+    // Admins see all users
+    if (currentUser?.role === 'admin') return true;
+    
+    // DXM and Xerente users see only their own organization's users
+    if (currentUser?.role === 'dxm' || currentUser?.role === 'xerenteATSXPTPG') {
+      return user.organization === currentUser.organization;
+    }
+    
+    // Workers see only themselves
+    return user.id === currentUser?.id;
+  });
 
   const filteredAssignees = useMemo(() => {
     return allUsers.filter(user => 

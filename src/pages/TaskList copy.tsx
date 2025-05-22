@@ -52,7 +52,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
-import { getTasks, getTaskById, updateTask, deleteTask, getUsers, getUserById } from '../utils/dataService';
+import { getTasks, getTaskById, updateTask, deleteTask, getUsers, getUserById, getTasksAssignments, getUsersByIds } from '../utils/dataService';
 import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
