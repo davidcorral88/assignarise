@@ -105,44 +105,63 @@ const TaskList = () => {
       let tasksData;
       let tasksDataAssignments;
       
-      const userId = currentUser.id;
-      tasksData = await getTasks();
-      tasksDataAssignments = await getTasksAssignments();
+      // Check if currentUser exists before accessing its properties
+      if (currentUser && currentUser.id) {
+        // If user is logged in, proceed normally
+        tasksData = await getTasks();
+        tasksDataAssignments = await getTasksAssignments();
 
-      console.log("Raw tasks data:", tasksData);
-      
-      const normalizedTasks = tasksData.map(task => ({
-        ...task,
-        assignments: task.assignments || [],
-        tags: task.tags || []
-      }));
+        console.log("Raw tasks data:", tasksData);
+        
+        const normalizedTasks = tasksData.map(task => ({
+          ...task,
+          assignments: task.assignments || [],
+          tags: task.tags || []
+        }));
 
-      const normalizedTasks2 = tasksDataAssignments.map(task => ({
-        ...task,
-        assignments: task.assignments || [],
-        tags: task.tags || [],
-        createdAt: task.createdAt || task.created_at,
-        dueDate: task.dueDate || task.due_date
-      }));
+        const normalizedTasks2 = tasksDataAssignments.map(task => ({
+          ...task,
+          assignments: task.assignments || [],
+          tags: task.tags || [],
+          createdAt: task.createdAt || task.created_at,
+          dueDate: task.dueDate || task.due_date
+        }));
 
-      console.log("Normalized tasks with date fields and tags:", normalizedTasks2);
-      
-      setTasks(normalizedTasks2);
-      setFilteredTasks(normalizedTasks2);
-      
-      const usersData = await getUsers();
-      const userMap: Record<number, User> = {};
-      
-      usersData.forEach(user => {
-        const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
-        userMap[userId] = { ...user, id: userId };
-      });
-      
-      setUsers(userMap);
-      setAllUsers(usersData);
-      
-      console.log("User map:", userMap);
-      console.log("Normalized tasks:", normalizedTasks2);
+        console.log("Normalized tasks with date fields and tags:", normalizedTasks2);
+        
+        setTasks(normalizedTasks2);
+        setFilteredTasks(normalizedTasks2);
+        
+        const usersData = await getUsers();
+        const userMap: Record<number, User> = {};
+        
+        usersData.forEach(user => {
+          const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
+          userMap[userId] = { ...user, id: userId };
+        });
+        
+        setUsers(userMap);
+        setAllUsers(usersData);
+        
+        console.log("User map:", userMap);
+        console.log("Normalized tasks:", normalizedTasks2);
+      } else {
+        // If user is not logged in, set empty arrays for tasks
+        setTasks([]);
+        setFilteredTasks([]);
+        setUsers({});
+        setAllUsers([]);
+        
+        // Optionally, you could redirect to login or show a message
+        toast({
+          title: 'Usuario non conectado',
+          description: 'Debe iniciar sesión para ver as tarefas',
+          variant: 'destructive',
+        });
+        
+        // Redirect to login page
+        navigate('/login');
+      }
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast({
@@ -981,19 +1000,10 @@ const TaskList = () => {
                       <TableCell>
                         {taskCreator ? (
                           <div className="flex items-center">
-                            <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                              {taskCreator.avatar ? (
-                                <img 
-                                  src={taskCreator.avatar} 
-                                  alt={taskCreator.name} 
-                                  className="h-full w-full rounded-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-xs font-medium text-primary-foreground">
-                                  {taskCreator.name.substring(0, 2)}
-                                </span>
-                              )}
-                            </div>
+                            <Avatar className="h-6 w-6 mr-2">
+                              <AvatarImage src={taskCreator?.avatar || ''} alt={taskCreator?.name || ''} />
+                              <AvatarFallback>{taskCreator?.name ? taskCreator.name.substring(0, 2) : 'U'}</AvatarFallback>
+                            </Avatar>
                             <span className="text-sm">{taskCreator.name}</span>
                           </div>
                         ) : (
@@ -1004,7 +1014,7 @@ const TaskList = () => {
                         <div className="flex -space-x-2">
                           {task.assignments && task.assignments.length > 0 ? (
                             <>
-                              {task.assignments.slice(0, 3).map((assignment) => {
+                              {task.assignments.slice(0, 3).map((assignment, index) => {
                                 const assignedUserId = typeof assignment.user_id === 'string' 
                                   ? parseInt(assignment.user_id, 10) 
                                   : assignment.user_id;
@@ -1012,7 +1022,7 @@ const TaskList = () => {
                                 const user = users[assignedUserId];
                                 return (
                                   <div 
-                                    key={assignedUserId} 
+                                    key={`${task.id}-${assignedUserId}-${index}`} 
                                     className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" 
                                     title={user?.name || `User ${assignedUserId}`}
                                   >
