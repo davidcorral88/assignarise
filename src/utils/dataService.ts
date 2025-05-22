@@ -1,4 +1,3 @@
-
 import * as apiService from './apiService';
 import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
 import { toast } from '@/components/ui/use-toast';
@@ -230,17 +229,20 @@ export const getAllTags = async (): Promise<string[]> => {
   try {
     console.log('Fetching all unique tags');
     const response = await fetch(`${API_URL}/tasks/tags`);
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Error response from tags endpoint:', errorText);
       throw new Error('Error al obtener etiquetas');
     }
+    
     const tags = await response.json();
     console.log(`Retrieved ${tags.length} unique tags:`, tags);
+    
+    // Filter out any null, undefined or non-string tags
     return tags.filter(tag => tag && typeof tag === 'string');
   } catch (error) {
     console.error('Error fetching tags:', error);
     return [];
   }
 };
-

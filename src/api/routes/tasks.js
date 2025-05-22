@@ -529,7 +529,8 @@ router.delete('/:id', async (req, res) => {
 router.get('/tags', async (req, res) => {
   try {
     console.log('Fetching all unique tags from task_tags table');
-    const query = 'SELECT DISTINCT tag FROM task_tags ORDER BY tag';
+    // Simplified query to get all unique tags
+    const query = 'SELECT DISTINCT tag FROM task_tags WHERE tag IS NOT NULL ORDER BY tag';
     const result = await pool.query(query);
     
     const tags = result.rows.map(row => row.tag);
