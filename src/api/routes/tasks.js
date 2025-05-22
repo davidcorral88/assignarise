@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
@@ -521,24 +522,6 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
     console.error('Error deleting task:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get all unique tags
-router.get('/tags', async (req, res) => {
-  try {
-    const query = `
-      SELECT DISTINCT tag FROM task_tags
-      ORDER BY tag ASC
-    `;
-    
-    const result = await pool.query(query);
-    const tags = result.rows.map(row => row.tag);
-    
-    res.json(tags);
-  } catch (error) {
-    console.error('Error fetching tags:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
