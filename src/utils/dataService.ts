@@ -1,225 +1,322 @@
-import * as apiService from './apiService';
-import { User, Task, TimeEntry, Holiday, VacationDay, WorkdaySchedule, WorkSchedule } from './types';
-import { toast } from '@/components/ui/use-toast';
-import { API_URL } from './dbConfig';
+import { Task, User, TaskAssignment, TaskAttachment } from './types';
 
-// Always true - PostgreSQL is the only storage option
-const useAPI = true;
+const API_URL = 'http://localhost:3000';
 
-export const setUseAPI = (value: boolean) => {
-  // Always keep useAPI as true regardless of the request
-  if (!value) {
-    toast({
-      title: 'Operación no permitida',
-      description: 'Esta aplicación sólo puede utilizar PostgreSQL como almacenamiento.',
-      variant: 'destructive',
-    });
-  }
+const getToken = () => {
+  return localStorage.getItem('token');
 };
 
-export const getUseAPI = () => useAPI;
-
-// Utility function to handle promises in async functions for useState
-const resolvePromise = async <T>(promise: Promise<T>): Promise<T> => {
+export const login = async (credentials: any) => {
   try {
-    return await promise;
-  } catch (error) {
-    console.error('Error resolving promise:', error);
-    throw error;
-  }
-};
-
-// Re-export functions from apiService with properly typed re-exports
-export const { 
-  getUsers,
-  getUserById,
-  getUserByEmail,
-  addUser,
-  updateUser,
-  deleteUser,
-  getNextUserId,
-  getTasks,
-  getTasksAssignments,
-  getTaskById,
-  getTasksByUserId,
-  addTask,
-  updateTask,
-  deleteTask,
-  getTimeEntries,
-  getTimeEntryById,
-  getTimeEntriesByUserId,
-  getTimeEntriesByTaskId,
-  addTimeEntry,
-  updateTimeEntry,
-  deleteTimeEntry,
-  getTotalHoursByTask,
-  getTotalHoursAllocatedByTask,
-  getNextTaskId,
-  getHolidays,
-  addHoliday,
-  removeHoliday,
-  updateHoliday,
-  getVacationDays,
-  addVacationDay,
-  removeVacationDay,
-  getWorkdaySchedules,
-  getWorkdayScheduleById,
-  addWorkdaySchedule,
-  updateWorkdaySchedule,
-  deleteWorkdaySchedule,
-  getWorkSchedule,
-  updateWorkSchedule,
-  verifyUserPassword,
-  changeUserPassword,
-  resetUserPassword,
-  uploadTaskAttachment,
-  getTaskAttachments,
-  deleteTaskAttachment
-} = apiService;
-
-// Helper functions for React useState - these all need to be adjusted to work with the correct typings
-export const getTaskByIdForState = async (id: string, setState: React.Dispatch<React.SetStateAction<Task | null>>) => {
-  try {
-    console.log(`Fetching task with ID: ${id}`);
-    const task = await apiService.getTaskById(id);
-    console.log(`Task retrieved:`, task);
-    
-    // Ensure date fields are properly set
-    if (task) {
-      task.createdAt = task.createdAt || (task.created_at as string);
-      task.dueDate = task.dueDate || (task.due_date as string);
-    }
-    
-    setState(task || null);
-    return task;
-  } catch (error) {
-    console.error(`Error en getTaskByIdForState(${id}):`, error);
-    setState(null);
-    return null;
-  }
-};
-
-export const getUserByIdForState = async (
-  id: number, 
-  setState: React.Dispatch<React.SetStateAction<User | null>>
-) => {
-  try {
-    console.log(`Fetching user with ID: ${id}`);
-    const user = await apiService.getUserById(id);
-    console.log(`User retrieved:`, user);
-    setState(user || null);
-    return user;
-  } catch (error) {
-    console.error(`Error en getUserByIdForState(${id}):`, error);
-    setState(null);
-    return null;
-  }
-};
-
-// New helper function to get multiple users by their IDs
-export const getUsersByIds = async (userIds: number[]): Promise<Record<number, User | null>> => {
-  try {
-    console.log(`Fetching users with IDs: ${userIds.join(', ')}`);
-    const userMap: Record<number, User | null> = {};
-    
-    // Process in batches to avoid too many parallel requests
-    const batchSize = 5;
-    for (let i = 0; i < userIds.length; i += batchSize) {
-      const batch = userIds.slice(i, i + batchSize);
-      const userPromises = batch.map(userId => apiService.getUserById(userId));
-      const users = await Promise.all(userPromises);
-      
-      batch.forEach((userId, index) => {
-        userMap[userId] = users[index];
-      });
-    }
-    
-    console.log(`Retrieved ${Object.keys(userMap).length} users`);
-    return userMap;
-  } catch (error) {
-    console.error('Error fetching multiple users:', error);
-    return {};
-  }
-};
-
-export const getTimeEntriesByTaskIdForState = async (
-  taskId: string, 
-  setState: React.Dispatch<React.SetStateAction<TimeEntry[]>>
-) => {
-  try {
-    const entries = await apiService.getTimeEntriesByTaskId(taskId);
-    setState(entries);
-    return entries;
-  } catch (error) {
-    console.error(`Error en getTimeEntriesByTaskIdForState(${taskId}):`, error);
-    setState([]);
-    return [];
-  }
-};
-
-// Helper for setting states from promises
-export const setStateFromPromise = async <T>(
-  promise: Promise<T>, 
-  setState: React.Dispatch<React.SetStateAction<T>>
-) => {
-  try {
-    const data = await promise;
-    setState(data);
-    return data;
-  } catch (error) {
-    console.error('Error setting state from promise:', error);
-    throw error;
-  }
-};
-
-// Reset database functionality
-export const resetDatabase = async (): Promise<void> => {
-  try {
-    const response = await fetch(`${API_URL}/reset-database`, {
+    const response = await fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        scriptName: 'reset_controldetarefas3.sql'
-      }),
+      body: JSON.stringify(credentials),
     });
-    
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Error al reiniciar la base de datos');
+      throw new Error('Login failed');
     }
-    
-    return await response.json();
+
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('Error resetting database:', error);
-    toast({
-      title: 'Error al reiniciar la base de datos',
-      description: `${error instanceof Error ? error.message : 'Error desconocido'}. Contacte con el administrador del sistema.`,
-      variant: 'destructive',
-    });
+    console.error('Login error:', error);
     throw error;
   }
 };
 
-export const downloadDatabaseBackup = () => {
-  toast({
-    title: 'Operación no disponible',
-    description: 'La función de respaldo local no está disponible en modo PostgreSQL.',
-    variant: 'destructive',
-  });
+export const register = async (userData: any) => {
+    try {
+        const response = await fetch(`${API_URL}/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+        });
+
+        if (!response.ok) {
+            throw new Error('Registration failed');
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Registration error:', error);
+        throw error;
+    }
 };
 
-export const importDatabaseFromJSON = () => {
-  toast({
-    title: 'Operación no disponible',
-    description: 'La importación local no está disponible en modo PostgreSQL.',
-    variant: 'destructive',
-  });
-  return false;
+export const getTasks = async (): Promise<Task[]> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Could not fetch tasks');
+    }
+    const tasks = await response.json();
+    return tasks;
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+    return [];
+  }
 };
 
-export const getStorageUsage = () => {
-  // Always return 0 as localStorage is not used
-  return 0;
+export const getTaskById = async (id: string): Promise<Task | null> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Could not fetch task');
+    }
+    const task = await response.json();
+    return task;
+  } catch (error) {
+    console.error('Error fetching task:', error);
+    return null;
+  }
+};
+
+export const addTask = async (task: Task): Promise<Task> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(task),
+    });
+    if (!response.ok) {
+      throw new Error('Could not add task');
+    }
+    const newTask = await response.json();
+    return newTask;
+  } catch (error) {
+    console.error('Error adding task:', error);
+    throw error;
+  }
+};
+
+export const updateTask = async (id: string, task: Task): Promise<Task> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(task),
+    });
+    if (!response.ok) {
+      throw new Error('Could not update task');
+    }
+    const updatedTask = await response.json();
+    return updatedTask;
+  } catch (error) {
+    console.error('Error updating task:', error);
+    throw error;
+  }
+};
+
+export const deleteTask = async (id: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Could not delete task');
+    }
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    throw error;
+  }
+};
+
+export const getUsers = async (): Promise<User[]> => {
+  try {
+    const response = await fetch(`${API_URL}/users`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Could not fetch users');
+    }
+    const users = await response.json();
+    return users;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return [];
+  }
+};
+
+export const getUsersByIds = async (ids: number[]): Promise<Record<number, User | null>> => {
+  try {
+    const response = await fetch(`${API_URL}/users/bulk`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Could not fetch users by IDs');
+    }
+
+    const users: User[] = await response.json();
+    const usersMap: Record<number, User | null> = {};
+    users.forEach(user => {
+      usersMap[user.id] = user;
+    });
+
+    return usersMap;
+  } catch (error) {
+    console.error('Error fetching users by IDs:', error);
+    return {};
+  }
+};
+
+export const getUserById = async (id: number): Promise<User | null> => {
+  try {
+    const response = await fetch(`${API_URL}/users/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Could not fetch user');
+    }
+    const user = await response.json();
+    return user;
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return null;
+  }
+};
+
+export const addUser = async (user: User): Promise<User> => {
+  try {
+    const response = await fetch(`${API_URL}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(user),
+    });
+    if (!response.ok) {
+      throw new Error('Could not add user');
+    }
+    const newUser = await response.json();
+    return newUser;
+  } catch (error) {
+    console.error('Error adding user:', error);
+    throw error;
+  }
+};
+
+export const updateUser = async (id: number, user: User): Promise<User> => {
+  try {
+    const response = await fetch(`${API_URL}/users/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(user),
+    });
+    if (!response.ok) {
+      throw new Error('Could not update user');
+    }
+    const updatedUser = await response.json();
+    return updatedUser;
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw error;
+  }
+};
+
+export const deleteUser = async (id: number): Promise<void> => {
+  try {
+    const response = await fetch(`${API_URL}/users/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Could not delete user');
+    }
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
+};
+
+export const getNextUserId = async (): Promise<number> => {
+    try {
+        const response = await fetch(`${API_URL}/users/nextId`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            }
+        });
+        if (!response.ok) {
+            throw new Error('Could not fetch next user ID');
+        }
+        const data = await response.json();
+        return data.nextId;
+    } catch (error) {
+        console.error('Error fetching next user ID:', error);
+        throw error;
+    }
+};
+
+// Add this function to fetch all tags used in tasks
+export const getAllTags = async (): Promise<string[]> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/tags`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error fetching tags');
+    }
+    
+    const tags = await response.json();
+    return tags;
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    return [];
+  }
 };

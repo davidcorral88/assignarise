@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../components/auth/useAuth';
-import { getUserById, addTask, updateTask, getTaskById, deleteTask, getUsers, getUsersByIds } from '../utils/dataService';
+import { getUserById, addTask, updateTask, getTaskById, deleteTask, getUsers, getUsersByIds, getAllTags } from '../utils/dataService';
 import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -54,6 +55,10 @@ const TaskForm = () => {
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [assignedUserData, setAssignedUserData] = useState<Record<number, User | null>>({});
   const [recentlyAddedUsers, setRecentlyAddedUsers] = useState<Record<number, User | null>>({});
+  
+  // New state for available tags
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedTag, setSelectedTag] = useState<string>('');
 
   const handleCategoryChange = (newCategory: string) => {
     setCategory(newCategory);
@@ -84,6 +89,20 @@ const TaskForm = () => {
     
     fetchUsers();
   }, [currentUser]);
+
+  // New effect to fetch all existing tags
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const tagsData = await getAllTags();
+        setAvailableTags(tagsData);
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+      }
+    };
+
+    fetchTags();
+  }, []);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -297,6 +316,14 @@ const TaskForm = () => {
     if (tag.trim() && !tags.includes(tag.trim().toLowerCase())) {
       setTags([...tags, tag.trim().toLowerCase()]);
       setTag('');
+    }
+  };
+
+  // New handler for selecting an existing tag from dropdown
+  const handleSelectExistingTag = () => {
+    if (selectedTag && !tags.includes(selectedTag)) {
+      setTags([...tags, selectedTag]);
+      setSelectedTag('');
     }
   };
   
@@ -588,24 +615,64 @@ const TaskForm = () => {
                     )}
                   </div>
                   
-                  <div className="flex items-center space-x-2">
-                    <div className="flex-1">
-                      <Input
-                        value={tag}
-                        onChange={(e) => setTag(e.target.value)}
-                        placeholder="Engadir nova etiqueta"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTag();
-                          }
-                        }}
-                      />
+                  {/* Dropdown for selecting existing tags */}
+                  <div className="mb-4">
+                    <Label htmlFor="existingTags" className="text-sm font-medium mb-1 block">
+                      Seleccionar etiqueta existente
+                    </Label>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-1">
+                        <Select value={selectedTag} onValueChange={setSelectedTag}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Etiquetas existentes" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTags
+                              .filter(t => !tags.includes(t))
+                              .map((availableTag) => (
+                                <SelectItem key={availableTag} value={availableTag}>
+                                  {availableTag}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        onClick={handleSelectExistingTag}
+                        disabled={!selectedTag}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Engadir
+                      </Button>
                     </div>
-                    <Button type="button" size="sm" onClick={handleAddTag}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Engadir
-                    </Button>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="newTag" className="text-sm font-medium mb-1 block">
+                      Crear nova etiqueta
+                    </Label>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-1">
+                        <Input
+                          id="newTag"
+                          value={tag}
+                          onChange={(e) => setTag(e.target.value)}
+                          placeholder="Engadir nova etiqueta"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTag();
+                            }
+                          }}
+                        />
+                      </div>
+                      <Button type="button" size="sm" onClick={handleAddTag}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Engadir
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
