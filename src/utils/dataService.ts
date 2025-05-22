@@ -1,4 +1,3 @@
-
 import { Task, User, TaskAssignment, TaskAttachment, TimeEntry, VacationDay } from './types';
 
 const API_URL = 'http://localhost:3000';
@@ -812,22 +811,18 @@ export const deleteWorkdaySchedule = async (id: number | string): Promise<void> 
 };
 
 // Settings related functions
-export const getUseAPI = async (): Promise<boolean> => {
+export const getUseAPI = (): boolean => {
   try {
-    const response = await fetch(`${API_URL}/settings/use-api`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getToken()}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Could not fetch API usage setting');
+    // First check localStorage for a direct setting
+    const localStorageSetting = localStorage.getItem('useAPI');
+    if (localStorageSetting !== null) {
+      return localStorageSetting === 'true';
     }
-    const data = await response.json();
-    return data.useAPI;
+    
+    // Default to false if not found
+    return false;
   } catch (error) {
-    console.error('Error fetching API usage setting:', error);
+    console.error('Error getting API usage setting:', error);
     return false;
   }
 };

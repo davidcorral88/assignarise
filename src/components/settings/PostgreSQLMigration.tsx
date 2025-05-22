@@ -19,22 +19,43 @@ const PostgreSQLMigration: React.FC = () => {
   const [migrationProgress, setMigrationProgress] = useState(0);
   const [apiUrl, setApiUrl] = useState(API_URL);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [usePostgresStorage, setUsePostgresStorage] = useState(getUseAPI);
+  // Fix: Change the state type from Promise<boolean> to boolean
+  const [usePostgresStorage, setUsePostgresStorage] = useState<boolean>(() => {
+    // Use a function to initialize the state to ensure it's a boolean value
+    try {
+      return getUseAPI();
+    } catch (error) {
+      console.error("Error getting API usage setting:", error);
+      return false;
+    }
+  });
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [lastConnectionError, setLastConnectionError] = useState<string | null>(null);
   
   const isAdmin = currentUser?.role === 'admin';
   
   useEffect(() => {
-    if (DEFAULT_USE_POSTGRESQL && !getUseAPI()) {
-      handleTestConnection();
-    }
+    const initializeSettings = async () => {
+      // If DEFAULT_USE_POSTGRESQL is true and not using API already, test connection
+      if (DEFAULT_USE_POSTGRESQL && !usePostgresStorage) {
+        handleTestConnection();
+      }
+      
+      // Update storage setting from the current value
+      try {
+        const currentSetting = getUseAPI();
+        setUsePostgresStorage(currentSetting);
+        
+        // If using PostgreSQL storage, test the connection
+        if (currentSetting) {
+          handleTestConnection();
+        }
+      } catch (error) {
+        console.error("Error initializing PostgreSQL settings:", error);
+      }
+    };
     
-    setUsePostgresStorage(getUseAPI());
-    
-    if (getUseAPI()) {
-      handleTestConnection();
-    }
+    initializeSettings();
   }, []);
   
   const handleTestConnection = async () => {
@@ -63,7 +84,7 @@ const PostgreSQLMigration: React.FC = () => {
           description: errorMsg,
           variant: "destructive"
         });
-        if (getUseAPI()) {
+        if (usePostgresStorage) {
           setUseAPI(false);
           setUsePostgresStorage(false);
         }
@@ -79,7 +100,7 @@ const PostgreSQLMigration: React.FC = () => {
       });
       console.error("Error detallado:", error);
       
-      if (getUseAPI()) {
+      if (usePostgresStorage) {
         setUseAPI(false);
         setUsePostgresStorage(false);
       }
