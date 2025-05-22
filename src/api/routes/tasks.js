@@ -528,8 +528,14 @@ router.delete('/:id', async (req, res) => {
 // Get all unique tags
 router.get('/tags', async (req, res) => {
   try {
-    const result = await pool.query('SELECT DISTINCT tag FROM task_tags ORDER BY tag');
-    res.json(result.rows.map(row => row.tag));
+    console.log('Fetching all unique tags from task_tags table');
+    const query = 'SELECT DISTINCT tag FROM task_tags ORDER BY tag';
+    const result = await pool.query(query);
+    
+    const tags = result.rows.map(row => row.tag);
+    console.log(`Retrieved ${tags.length} unique tags:`, tags);
+    
+    res.json(tags);
   } catch (error) {
     console.error('Error fetching tags:', error);
     res.status(500).json({ error: 'Internal server error' });

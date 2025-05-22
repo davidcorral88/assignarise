@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -125,7 +124,7 @@ const TimeTrackingForm: React.FC<TimeTrackingFormProps> = ({
       console.error('Error ao rexistrar tempo:', error);
       toast({
         title: 'Erro',
-        description: 'Non se puido gardar o rexistro de tempo. Comproba que a tarefa existe.',
+        description: 'Non se puido gardar o rexistro de tempo. Comproba que a tarea existe.',
         variant: 'destructive',
       });
     } finally {
