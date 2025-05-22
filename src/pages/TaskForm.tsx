@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../components/auth/useAuth';
-import { getUserById, addTask, updateTask, getTaskById, deleteTask, getUsers, getUsersByIds, getAllTags } from '../utils/dataService';
+import { getUserById, addTask, updateTask, getTaskById, deleteTask, getUsers, getUsersByIds } from '../utils/dataService';
 import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -21,7 +21,6 @@ import { cn } from '@/lib/utils';
 import { CheckSquare, ArrowLeft, Trash2, Plus, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
 import { FileUploader } from '@/components/files/FileUploader';
 import { getCategoryOptions, getProjectOptions } from '@/utils/categoryProjectData';
-import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -38,8 +37,6 @@ const TaskForm = () => {
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [tag, setTag] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
-  const [existingTags, setExistingTags] = useState<string[]>([]);
-  const [showTagOptions, setShowTagOptions] = useState(false);
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [allocatedHours, setAllocatedHours] = useState<number>(0);
@@ -88,25 +85,6 @@ const TaskForm = () => {
     fetchUsers();
   }, [currentUser]);
   
-  useEffect(() => {
-    const fetchTags = async () => {
-      try {
-        console.log('Fetching all tags from database');
-        const fetchedTags = await getAllTags();
-        console.log('Fetched tags:', fetchedTags);
-        setExistingTags(fetchedTags);
-      } catch (error) {
-        console.error('Error fetching tags:', error);
-        toast({
-          title: 'Erro',
-          description: 'Non se puideron cargar as etiquetas existentes',
-          variant: 'destructive',
-        });
-      }
-    };
-    fetchTags();
-  }, []);
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -320,16 +298,6 @@ const TaskForm = () => {
       setTags([...tags, tag.trim().toLowerCase()]);
       setTag('');
     }
-    setShowTagOptions(false);
-  };
-  
-  const handleSelectTag = (selectedTag: string) => {
-    if (!tags.includes(selectedTag)) {
-      setTags([...tags, selectedTag]);
-      console.log(`Added existing tag: ${selectedTag}`);
-    }
-    setTag('');
-    setShowTagOptions(false);
   };
   
   const handleRemoveTag = (tagToRemove: string) => {
@@ -620,57 +588,19 @@ const TaskForm = () => {
                     )}
                   </div>
                   
-                  <div className="flex items-center space-x-2 relative">
+                  <div className="flex items-center space-x-2">
                     <div className="flex-1">
-                      <Popover open={showTagOptions} onOpenChange={setShowTagOptions}>
-                        <PopoverTrigger asChild>
-                          <div className="w-full">
-                            <Input
-                              value={tag}
-                              onChange={(e) => {
-                                setTag(e.target.value);
-                                if (e.target.value.length > 0) {
-                                  setShowTagOptions(true);
-                                }
-                              }}
-                              placeholder="Engadir nova etiqueta"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  handleAddTag();
-                                }
-                              }}
-                              onClick={() => setShowTagOptions(true)}
-                              className="w-full"
-                            />
-                          </div>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Command>
-                            <CommandInput 
-                              placeholder="Buscar etiqueta..." 
-                              value={tag}
-                              onValueChange={setTag}
-                            />
-                            <CommandList>
-                              <CommandEmpty>Non se atoparon etiquetas</CommandEmpty>
-                              <CommandGroup>
-                                {existingTags
-                                  .filter(t => t && !tags.includes(t) && (tag.trim() === '' || t.toLowerCase().includes(tag.toLowerCase())))
-                                  .map((t) => (
-                                    <CommandItem
-                                      key={t}
-                                      onSelect={() => handleSelectTag(t)}
-                                      className="cursor-pointer"
-                                    >
-                                      {t}
-                                    </CommandItem>
-                                  ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                      <Input
+                        value={tag}
+                        onChange={(e) => setTag(e.target.value)}
+                        placeholder="Engadir nova etiqueta"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                        }}
+                      />
                     </div>
                     <Button type="button" size="sm" onClick={handleAddTag}>
                       <Plus className="h-4 w-4 mr-1" />
