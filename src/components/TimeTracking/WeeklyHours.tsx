@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, parseISO, getDay, addWeeks, subWeeks } from 'date-fns';
 import { es, gl } from 'date-fns/locale';
@@ -432,19 +431,9 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                 return (
                   <tr key={taskId} className="border-b hover:bg-muted/50">
                     <td className="p-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <Clock className="mr-2 h-4 w-4 text-primary" />
-                          <span className="font-medium">{task.title}</span>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6" 
-                          onClick={() => removeTaskFromWeek(taskId)}
-                        >
-                          <X className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                      <div className="flex items-center">
+                        <Clock className="mr-2 h-4 w-4 text-primary" />
+                        <span className="font-medium">{task.title}</span>
                       </div>
                     </td>
                     
@@ -452,7 +441,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                       const hasEntry = weekTimeEntries[taskId]?.[day.date];
                       return (
                         <td key={day.date} className="p-2 text-center">
-                          <div className="flex items-center justify-center group">
+                          <div className="flex items-center justify-center group relative">
                             <TimePicker
                               className={`w-20 text-center ${hasEntry ? 'bg-green-50' : ''}`}
                               value={taskHours[taskId]?.[day.date] || ''}
@@ -463,7 +452,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-6 w-6 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute right-[-25px] h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={() => handleDeleteTimeEntry(taskId, day.date)}
                               >
                                 <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
