@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, Plus, Clock, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Clock, Search, X } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -31,6 +31,7 @@ interface WeeklyHoursProps {
   timeEntries: TimeEntry[];
   userId: string | number;
   onEntryAdded: (entry: TimeEntry) => void;
+  onEntryDeleted?: (entryId: string | number) => void;
   selectedWeek: Date;
   onWeekChange: (newWeek: Date) => void;
 }
@@ -40,6 +41,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
   timeEntries,
   userId,
   onEntryAdded,
+  onEntryDeleted,
   selectedWeek,
   onWeekChange
 }) => {
@@ -139,13 +141,69 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
     });
   };
 
+  const removeTaskFromWeek = (taskId: string) => {
+    setSelectedTasks(prev => prev.filter(id => id !== taskId));
+    setTaskHours(prev => {
+      const newHours = { ...prev };
+      delete newHours[taskId];
+      return newHours;
+    });
+  };
+
+  const handleDeleteTimeEntry = async (taskId: string, dayDate: string) => {
+    const existingEntry = findExistingEntry(taskId, dayDate);
+    
+    if (existingEntry) {
+      setIsLoading(true);
+      try {
+        await deleteTimeEntry(existingEntry.id);
+        
+        setWeekTimeEntries(prev => {
+          const updated = { ...prev };
+          if (updated[taskId] && updated[taskId][dayDate]) {
+            delete updated[taskId][dayDate];
+          }
+          return updated;
+        });
+        
+        updateHours(taskId, dayDate, '');
+        
+        if (onEntryDeleted) {
+          onEntryDeleted(existingEntry.id);
+        }
+        
+        toast({
+          title: 'Rexistro eliminado',
+          description: 'As horas foron eliminadas correctamente',
+        });
+      } catch (error) {
+        console.error('Error deleting time entry:', error);
+        toast({
+          title: 'Erro',
+          description: 'Non se puido eliminar o rexistro',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   const saveHours = async (taskId: string, dayDate: string) => {
+    // If empty value, skip saving
     if (!taskHours[taskId][dayDate]) return;
 
     setIsLoading(true);
     try {
       // Convert time format to decimal hours for storage
       const timeValue = taskHours[taskId][dayDate];
+      
+      // If time value is 00:00, delete the entry if it exists
+      if (timeValue === '00:00') {
+        await handleDeleteTimeEntry(taskId, dayDate);
+        return;
+      }
+      
       const hours = timeFormatToHours(timeValue);
       
       if (isNaN(hours) || hours === 0) {
@@ -374,9 +432,19 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                 return (
                   <tr key={taskId} className="border-b hover:bg-muted/50">
                     <td className="p-2">
-                      <div className="flex items-center">
-                        <Clock className="mr-2 h-4 w-4 text-primary" />
-                        <span className="font-medium">{task.title}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Clock className="mr-2 h-4 w-4 text-primary" />
+                          <span className="font-medium">{task.title}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          onClick={() => removeTaskFromWeek(taskId)}
+                        >
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        </Button>
                       </div>
                     </td>
                     
@@ -384,13 +452,23 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                       const hasEntry = weekTimeEntries[taskId]?.[day.date];
                       return (
                         <td key={day.date} className="p-2 text-center">
-                          <div className="flex items-center justify-center">
+                          <div className="flex items-center justify-center group">
                             <TimePicker
                               className={`w-20 text-center ${hasEntry ? 'bg-green-50' : ''}`}
                               value={taskHours[taskId]?.[day.date] || ''}
                               onChange={(value) => updateHours(taskId, day.date, value)}
                               onBlur={() => saveHours(taskId, day.date)}
                             />
+                            {hasEntry && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleDeleteTimeEntry(taskId, day.date)}
+                              >
+                                <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                              </Button>
+                            )}
                           </div>
                         </td>
                       );

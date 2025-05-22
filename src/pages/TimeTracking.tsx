@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -37,6 +38,7 @@ const TimeTracking = () => {
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [taskProgress, setTaskProgress] = useState<Record<string, {worked: number, allocated: number, percentage: number}>>({});
   const [selectedWeek, setSelectedWeek] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -82,7 +84,7 @@ const TimeTracking = () => {
     };
     
     fetchData();
-  }, [currentUser]);
+  }, [currentUser, refreshTrigger]);
 
   const handleWeekChange = (newWeek: Date) => {
     setSelectedWeek(newWeek);
@@ -141,70 +143,33 @@ const TimeTracking = () => {
     setTaskProgress(progressData);
   };
   
-  const handleTimeEntryAdded = async (entry: TimeEntry) => {
-    console.log('Entry added successfully, updating state:', entry);
-    setTimeEntries(prevEntries => [entry, ...prevEntries]);
-    setIsAddingEntry(false);
-    
-    if (entry.task_id) {
-      try {
-        const taskId = typeof entry.task_id === 'string' ? entry.task_id : String(entry.task_id);
-        const totalHoursWorked = await getTotalHoursByTask(taskId);
-        const totalHoursAllocated = await getTotalHoursAllocatedByTask(taskId);
-        
-        const progressPercentage = totalHoursAllocated > 0 
-          ? Math.min(Math.round((totalHoursWorked / totalHoursAllocated) * 100), 100) 
-          : 0;
-            
-        setTaskProgress(prev => ({
-          ...prev,
-          [taskId]: {
-            worked: totalHoursWorked,
-            allocated: totalHoursAllocated,
-            percentage: progressPercentage
-          }
-        }));
-      } catch (error) {
-        console.error('Error updating task progress:', error);
-      }
-    }
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1);
   };
   
+  const handleTimeEntryAdded = async (entry: TimeEntry) => {
+    console.log('Entry added successfully, updating state:', entry);
+    // Instead of manually updating the state, trigger a full refresh
+    refreshData();
+    setIsAddingEntry(false);
+  };
+  
+  const handleTimeEntryDeleted = async (entryId: string | number) => {
+    // Trigger a full refresh instead of manually filtering
+    refreshData();
+  };
+
   const handleDeleteEntry = async (entryId: string | number) => {
     try {
-      const entryToDelete = timeEntries.find(entry => entry.id === entryId);
       await deleteTimeEntry(entryId);
-      setTimeEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
       
       toast({
         title: 'Rexistro eliminado',
         description: 'O rexistro de horas eliminouse correctamente',
       });
       
-      if (entryToDelete && entryToDelete.task_id) {
-        const taskId = typeof entryToDelete.task_id === 'string' ? 
-          entryToDelete.task_id : String(entryToDelete.task_id);
-        
-        try {
-          const totalHoursWorked = await getTotalHoursByTask(taskId);
-          const totalHoursAllocated = await getTotalHoursAllocatedByTask(taskId);
-          
-          const progressPercentage = totalHoursAllocated > 0 
-            ? Math.min(Math.round((totalHoursWorked / totalHoursAllocated) * 100), 100) 
-            : 0;
-              
-          setTaskProgress(prev => ({
-            ...prev,
-            [taskId]: {
-              worked: totalHoursWorked,
-              allocated: totalHoursAllocated,
-              percentage: progressPercentage
-            }
-          }));
-        } catch (error) {
-          console.error('Error updating task progress after deletion:', error);
-        }
-      }
+      // Refresh the data after deletion
+      refreshData();
     } catch (error) {
       console.error('Error deleting time entry:', error);
       toast({
@@ -300,6 +265,7 @@ const TimeTracking = () => {
             timeEntries={timeEntries}
             userId={currentUser.id}
             onEntryAdded={handleTimeEntryAdded}
+            onEntryDeleted={handleTimeEntryDeleted}
             selectedWeek={selectedWeek}
             onWeekChange={handleWeekChange}
           />
@@ -345,7 +311,7 @@ const TimeTracking = () => {
                             </div>
                           </TableCell>
                           <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy')}</TableCell>
-                          <TableCell>{formatHoursToTimeFormat(entry.hours)}</TableCell>
+                          <TableCell>{entry.timeFormat || formatHoursToTimeFormat(entry.hours)}</TableCell>
                           <TableCell>
                             <span className="truncate block max-w-[200px]">
                               {entry.notes || '—'}
@@ -364,10 +330,6 @@ const TimeTracking = () => {
                                 <DropdownMenuItem onClick={() => navigate(`/tasks/${taskId}`)}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   Ver tarefa
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Editar rexistro
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 

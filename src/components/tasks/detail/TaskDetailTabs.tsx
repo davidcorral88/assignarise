@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Timer } from 'lucide-react';
@@ -13,6 +13,7 @@ interface TaskDetailTabsProps {
   timeEntries: TimeEntry[];
   assignedUsers: Record<string | number, User | null>;
   currentUserId?: number;
+  currentUserRole?: string;
 }
 
 export const TaskDetailTabs: React.FC<TaskDetailTabsProps> = ({
@@ -20,14 +21,22 @@ export const TaskDetailTabs: React.FC<TaskDetailTabsProps> = ({
   assignments,
   timeEntries,
   assignedUsers,
-  currentUserId
+  currentUserId,
+  currentUserRole
 }) => {
+  const [refreshTimeEntries, setRefreshTimeEntries] = useState(0);
+  
   // Check if user is assigned to this task - ensure we're comparing numbers with numbers
   const isAssignedToCurrentUser = assignments.some(a => {
     // Ensure user_id is a number for comparison
     const assignmentUserId = typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id;
     return assignmentUserId === currentUserId;
   });
+  
+  const handleEntryDeleted = () => {
+    // Trigger a refresh of the time entries
+    setRefreshTimeEntries(prev => prev + 1);
+  };
   
   return (
     <Tabs defaultValue="assignments">
@@ -75,7 +84,9 @@ export const TaskDetailTabs: React.FC<TaskDetailTabsProps> = ({
               timeEntries={timeEntries}
               assignedUsers={assignedUsers}
               currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
               isAssignedToCurrentUser={isAssignedToCurrentUser}
+              onEntryDeleted={handleEntryDeleted}
             />
           </CardContent>
         </Card>

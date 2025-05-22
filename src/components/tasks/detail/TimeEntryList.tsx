@@ -2,11 +2,13 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { Timer, PlusCircle } from 'lucide-react';
+import { Timer, PlusCircle, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TimeEntry, User } from '@/utils/types';
 import { UserAvatar } from './UserAvatar';
+import { toast } from '@/components/ui/use-toast';
+import { deleteTimeEntry } from '@/utils/dataService';
 
 interface TimeEntryListProps {
   taskId: string;
@@ -15,6 +17,7 @@ interface TimeEntryListProps {
   currentUserId?: number;
   currentUserRole?: string;
   isAssignedToCurrentUser: boolean;
+  onEntryDeleted?: () => void;
 }
 
 export const TimeEntryList: React.FC<TimeEntryListProps> = ({
@@ -23,9 +26,32 @@ export const TimeEntryList: React.FC<TimeEntryListProps> = ({
   assignedUsers,
   currentUserId,
   currentUserRole,
-  isAssignedToCurrentUser
+  isAssignedToCurrentUser,
+  onEntryDeleted
 }) => {
   const navigate = useNavigate();
+  
+  const handleDeleteEntry = async (entryId: string | number) => {
+    if (window.confirm('¿Estás seguro de querer eliminar este registro de horas?')) {
+      try {
+        await deleteTimeEntry(entryId);
+        toast({
+          title: 'Registro eliminado',
+          description: 'El registro de horas ha sido eliminado correctamente'
+        });
+        if (onEntryDeleted) {
+          onEntryDeleted();
+        }
+      } catch (error) {
+        console.error('Error deleting time entry:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar el registro',
+          variant: 'destructive'
+        });
+      }
+    }
+  };
   
   if (timeEntries.length === 0) {
     return (
@@ -62,6 +88,17 @@ export const TimeEntryList: React.FC<TimeEntryListProps> = ({
                 <p className="text-sm text-muted-foreground">
                   "{entry.notes}"
                 </p>
+              )}
+              {currentUserId === entry.user_id && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6" 
+                  onClick={() => handleDeleteEntry(entry.id)}
+                >
+                  <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                  <span className="sr-only">Eliminar</span>
+                </Button>
               )}
             </div>
           </div>
