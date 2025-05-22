@@ -223,3 +223,17 @@ export const getStorageUsage = () => {
   // Always return 0 as localStorage is not used
   return 0;
 };
+
+// Función para obtener todas las etiquetas existentes
+export const getAllTags = async (): Promise<string[]> => {
+  try {
+    const response = await fetch(`${API_URL}/tasks/tags`);
+    if (!response.ok) {
+      throw new Error('Error al obtener etiquetas');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error en getAllTags:', error);
+    return [];
+  }
+};

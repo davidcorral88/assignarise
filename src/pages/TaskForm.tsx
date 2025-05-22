@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
 import { useAuth } from '../components/auth/useAuth';
-import { getUserById, addTask, updateTask, getTaskById, deleteTask, getUsers, getUsersByIds } from '../utils/dataService';
+import { getUserById, addTask, updateTask, getTaskById, deleteTask, getUsers, getUsersByIds, getAllTags } from '../utils/dataService';
 import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
@@ -18,9 +18,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-import { CheckSquare, ArrowLeft, Trash2, Plus, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon } from 'lucide-react';
+import { CheckSquare, ArrowLeft, Trash2, Plus, Calendar as CalendarIcon, Clock, Save, X, FileUp, FilePlus2, User as UserIcon, Tag } from 'lucide-react';
 import { FileUploader } from '@/components/files/FileUploader';
 import { getCategoryOptions, getProjectOptions } from '@/utils/categoryProjectData';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 
 const TaskForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +38,8 @@ const TaskForm = () => {
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [tag, setTag] = useState<string>('');
   const [tags, setTags] = useState<string[]>([]);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
+  const [tagInputOpen, setTagInputOpen] = useState(false);
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [allocatedHours, setAllocatedHours] = useState<number>(0);
@@ -84,6 +87,19 @@ const TaskForm = () => {
     
     fetchUsers();
   }, [currentUser]);
+  
+  useEffect(() => {
+    const loadExistingTags = async () => {
+      try {
+        const tagsList = await getAllTags();
+        setExistingTags(tagsList);
+      } catch (error) {
+        console.error('Error al cargar etiquetas existentes:', error);
+      }
+    };
+    
+    loadExistingTags();
+  }, []);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -297,11 +313,19 @@ const TaskForm = () => {
     if (tag.trim() && !tags.includes(tag.trim().toLowerCase())) {
       setTags([...tags, tag.trim().toLowerCase()]);
       setTag('');
+      setTagInputOpen(false);
     }
   };
   
   const handleRemoveTag = (tagToRemove: string) => {
     setTags(tags.filter(t => t !== tagToRemove));
+  };
+  
+  const handleSelectExistingTag = (selectedTag: string) => {
+    if (!tags.includes(selectedTag)) {
+      setTags([...tags, selectedTag]);
+    }
+    setTagInputOpen(false);
   };
   
   const handleAddAssignment = () => {
@@ -590,17 +614,46 @@ const TaskForm = () => {
                   
                   <div className="flex items-center space-x-2">
                     <div className="flex-1">
-                      <Input
-                        value={tag}
-                        onChange={(e) => setTag(e.target.value)}
-                        placeholder="Engadir nova etiqueta"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTag();
-                          }
-                        }}
-                      />
+                      <Popover open={tagInputOpen} onOpenChange={setTagInputOpen}>
+                        <PopoverTrigger asChild>
+                          <div className="flex w-full">
+                            <Input
+                              value={tag}
+                              onChange={(e) => setTag(e.target.value)}
+                              placeholder="Engadir nova etiqueta"
+                              className="rounded-r-none"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddTag();
+                                }
+                              }}
+                            />
+                            <Button variant="outline" className="rounded-l-none border-l-0">
+                              <Tag className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0 w-[300px]" align="start">
+                          <Command>
+                            <CommandInput placeholder="Buscar etiqueta..." />
+                            <CommandEmpty>Non se atoparon etiquetas.</CommandEmpty>
+                            <CommandGroup heading="Etiquetas existentes">
+                              {existingTags
+                                .filter(t => !tags.includes(t))
+                                .map((t) => (
+                                  <CommandItem 
+                                    key={t} 
+                                    onSelect={() => handleSelectExistingTag(t)}
+                                  >
+                                    <Tag className="mr-2 h-4 w-4" />
+                                    {t}
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <Button type="button" size="sm" onClick={handleAddTag}>
                       <Plus className="h-4 w-4 mr-1" />
