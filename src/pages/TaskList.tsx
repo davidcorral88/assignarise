@@ -433,7 +433,7 @@ const TaskList = () => {
         <div>
           <p className="text-sm font-medium">{taskCreator?.name || 'Usuario descoñecido'}</p>
           <p className="text-xs text-muted-foreground">
-            {taskCreator?.role === 'director' ? 'Xerente' : 'Traballador'}
+            {taskCreator?.role === 'dxm' || taskCreator?.role === 'xerenteATSXPTPG' ? 'Xerente' : 'Traballador'}
           </p>
         </div>
       </div>
