@@ -47,6 +47,9 @@ const AbsencesCalendar = () => {
   const [selectedAbsenceType, setSelectedAbsenceType] = useState<VacationType>('vacacions');
   const [applyToWeekends, setApplyToWeekends] = useState<boolean>(false);
 
+  // Determine if current user is a worker (role: 'worker')
+  const isWorkerRole = currentUser?.role === 'worker';
+  
   const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 3 + i).toString());
 
   const handleDateRangeSelect = (range: DateRange | undefined) => {
@@ -70,6 +73,16 @@ const AbsencesCalendar = () => {
     const startDate = selectedDateRange.from;
     const endDate = selectedDateRange.to;
     const userId = parseInt(selectedUserId);
+    
+    // Workers can only add absences for themselves
+    if (isWorkerRole && currentUser && userId !== currentUser.id) {
+      toast({
+        title: 'Permiso denegado',
+        description: 'Só podes engadir ausencias para ti mesmo',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     const daysInRange = eachDayOfInterval({ start: startDate, end: endDate });
     const daysToApply = applyToWeekends 
@@ -138,6 +151,16 @@ const AbsencesCalendar = () => {
   };
 
   const handleDeleteAbsence = async (absence: VacationDay) => {
+    // Prevent workers from deleting others' absences
+    if (isWorkerRole && currentUser && absence.userId !== currentUser.id) {
+      toast({
+        title: 'Permiso denegado',
+        description: 'Só podes eliminar as túas propias ausencias',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     if (!confirm(`¿Seguro que desea eliminar esta ausencia de ${format(parseISO(absence.date), 'dd/MM/yyyy', { locale: es })}?`)) {
       return;
     }
@@ -188,13 +211,19 @@ const AbsencesCalendar = () => {
     const fetchUsers = async () => {
       try {
         const usersData = await getUsers();
-        setUsers(usersData);
+        
+        // Filter users for workers - they should only see themselves
+        const filteredUsers = isWorkerRole && currentUser 
+          ? usersData.filter(user => user.id === currentUser.id)
+          : usersData;
+          
+        setUsers(filteredUsers);
         
         // Set the current logged-in user as default if available
         if (currentUser && currentUser.id) {
           setSelectedUserId(currentUser.id.toString());
-        } else if (usersData.length > 0 && !selectedUserId) {
-          setSelectedUserId(usersData[0].id.toString());
+        } else if (filteredUsers.length > 0 && !selectedUserId) {
+          setSelectedUserId(filteredUsers[0].id.toString());
         }
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -207,7 +236,7 @@ const AbsencesCalendar = () => {
     };
 
     fetchUsers();
-  }, [currentUser]);
+  }, [currentUser, isWorkerRole]);
 
   useEffect(() => {
     const fetchAbsences = async () => {
@@ -278,19 +307,27 @@ const AbsencesCalendar = () => {
             </div>
             <div>
               <Label htmlFor="user-select">Empregado</Label>
-              <Select
-                value={selectedUserId}
-                onValueChange={setSelectedUserId}
-              >
-                <SelectTrigger id="user-select">
-                  <SelectValue placeholder="Selecciona un empregado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map(user => (
-                    <SelectItem key={user.id} value={user.id.toString()}>{user.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isWorkerRole ? (
+                // For workers: display a read-only select with their own name
+                <div className="bg-gray-100 border border-gray-300 px-4 py-2 rounded text-gray-700">
+                  {selectedUser?.name || currentUser?.name || 'Empregado'}
+                </div>
+              ) : (
+                // For admins and other roles: allow selecting any user
+                <Select
+                  value={selectedUserId}
+                  onValueChange={setSelectedUserId}
+                >
+                  <SelectTrigger id="user-select">
+                    <SelectValue placeholder="Selecciona un empregado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map(user => (
+                      <SelectItem key={user.id} value={user.id.toString()}>{user.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
