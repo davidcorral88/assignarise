@@ -1,21 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
 import { Layout } from '../components/layout/Layout';
 import { 
-  Clock, 
+  CheckSquare,
   PlusCircle, 
   Search, 
-  Filter, 
-  ChevronDown,
-  CheckCircle2, 
-  Circle,
-  Edit,
-  Eye,
-  Hash,
-  Calendar,
+  MoreHorizontal,
   User as UserIcon,
-  Trash2
+  Pencil,
+  Trash2,
+  AlertCircle,
+  Calendar as CalendarIcon,
+  Clock,
+  Save,
+  X,
+  FileUp,
+  FilePlus2,
+  Users,
+  FileJson,
 } from 'lucide-react';
 import { 
   Table, 
@@ -28,6 +31,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,29 +39,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuGroup,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger
 } from '@/components/ui/dropdown-menu';
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { 
-  getTasks, 
-  getTasksAssignments,
-  getTaskById as getTaskByIdFn, 
-  getTasksByUserId, 
-  getUserById,
-  deleteTask,
-  getUsers
-} from '../utils/dataService';
-import { Task, User, TaskAssignment } from '../utils/types';
-import { format, isAfter, isBefore, parseISO } from 'date-fns';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,10 +50,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { toast } from '@/components/ui/use-toast';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getTasks, getTaskById, updateTask, deleteTask, getUsers, getUserById } from '../utils/dataService';
+import { Task, User, TaskAssignment, TaskAttachment } from '../utils/types';
+import { format } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
+import { FileUploader } from '@/components/files/FileUploader';
+import { getCategoryOptions, getProjectOptions } from '@/utils/categoryProjectData';
 
 const TaskList = () => {
   const { currentUser } = useAuth();
@@ -78,56 +69,57 @@ const TaskList = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
-  const [creatorFilter, setCreatorFilter] = useState<number | null>(null);
-  const [startDateFilter, setStartDateFilter] = useState<Date | undefined>(undefined);
-  const [endDateFilter, setEndDateFilter] = useState<Date | undefined>(undefined);
-  const [dueDateStartFilter, setDueDateStartFilter] = useState<Date | undefined>(undefined);
-  const [dueDateEndFilter, setDueDateEndFilter] = useState<Date | undefined>(undefined);
-  const [dateFilterType, setDateFilterType] = useState<'creation' | 'due'>('creation');
-  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [users, setUsers] = useState<Record<number, User>>({});
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   
-  const loadData = async () => {
+  const [editMode, setEditMode] = useState(false);
+  const [editedStatus, setEditedStatus] = useState('');
+  const [editedPriority, setEditedPriority] = useState('');
+  const [editedDueDate, setEditedDueDate] = useState<Date | undefined>(undefined);
+  const [editedTags, setEditedTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
+  const [editedAssignments, setEditedAssignments] = useState<TaskAssignment[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [allocatedHours, setAllocatedHours] = useState<number>(0);
+  const [assignedUserData, setAssignedUserData] = useState<Record<number, User | null>>({});
+  const [recentlyAddedUsers, setRecentlyAddedUsers] = useState<Record<number, User | null>>({});
+  const [editedAttachments, setEditedAttachments] = useState<TaskAttachment[]>([]);
+  
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [availableProjects, setAvailableProjects] = useState<string[]>(['all']);
+  
+  const canEditTasks = currentUser?.role === 'admin' || currentUser?.role === 'dxm' || currentUser?.role === 'xerenteATSXPTPG';
+  const canDeleteTasks = currentUser?.role === 'admin';
+  const canExportTasks = currentUser?.role === 'admin';
+  
+  const handleCategoryFilterChange = (newCategory: string) => {
+    setCategoryFilter(newCategory);
+    const projectOptions = getProjectOptions(newCategory);
+    setAvailableProjects(['all', ...projectOptions]);
+    
+    if (!projectOptions.includes(projectFilter)) {
+      setProjectFilter('all');
+    }
+  };
+  
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase();
+  };
+  
+  const loadTasks = async () => {
     try {
       setIsLoading(true);
-      let tasksData;
-      let tasksDataAssignments;
-      
-      const userId = currentUser.id;
-      // Fix: Convert userId to string when needed
-      tasksData = await getTasks();
-      tasksDataAssignments = await getTasksAssignments();
-
-      const normalizedTasks = tasksData.map(task => ({
-        ...task,
-        assignments: task.assignments || []
-      }));
-
-      const normalizedTasks2 = tasksDataAssignments.map(task => ({
-        ...task,
-        assignments: task.assignments || []
-      }));
-
-      setTasks(normalizedTasks2);
-      setFilteredTasks(normalizedTasks2);
-      
-      const usersData = await getUsers();
-      const userMap: Record<number, User> = {};
-      
-      usersData.forEach(user => {
-        const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
-        userMap[userId] = { ...user, id: userId };
-      });
-      
-      setUsers(userMap);
-      setAllUsers(usersData);
-      
-      console.log("User map:", userMap);
-      console.log("Normalized tasks:", normalizedTasks2);
+      const loadedTasks = await getTasks();
+      setTasks(loadedTasks);
+      setFilteredTasks(loadedTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast({
@@ -141,222 +133,253 @@ const TaskList = () => {
   };
   
   useEffect(() => {
-    loadData();
+    loadTasks();
+  }, []);
+  
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const users = await getUsers();
+        const filteredUsers = users.filter(user => {
+          if (currentUser?.role === 'dxm' || currentUser?.role === 'xerenteATSXPTPG') {
+            return user.active !== false;
+          } else {
+            return user.role === 'worker' && user.active !== false;
+          }
+        });
+        setAvailableUsers(filteredUsers);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    
+    fetchUsers();
   }, [currentUser]);
   
   useEffect(() => {
-    let result = [...tasks];
-    
-    if (searchQuery) {
+    if (searchQuery.trim() === '') {
+      let filtered = [...tasks];
+      
+      if (categoryFilter !== 'all') {
+        filtered = filtered.filter(task => task.category === categoryFilter);
+      }
+      
+      if (projectFilter !== 'all') {
+        filtered = filtered.filter(task => task.project === projectFilter);
+      }
+      
+      setFilteredTasks(filtered);
+    } else {
       const query = searchQuery.toLowerCase();
-      result = result.filter(
+      let filtered = tasks.filter(
         task => 
-          task.title.toLowerCase().includes(query) || 
-          task.description.toLowerCase().includes(query) ||
-          task.id.includes(query)
+          task.title.toLowerCase().includes(query) ||
+          task.description?.toLowerCase().includes(query)
       );
+      
+      if (categoryFilter !== 'all') {
+        filtered = filtered.filter(task => task.category === categoryFilter);
+      }
+      
+      if (projectFilter !== 'all') {
+        filtered = filtered.filter(task => task.project === projectFilter);
+      }
+      
+      setFilteredTasks(filtered);
     }
+  }, [tasks, searchQuery, categoryFilter, projectFilter]);
+  
+  const handleDeleteTask = (task: Task) => {
+    setSelectedTask(task);
+    setShowDeleteDialog(true);
+  };
+  
+  const confirmDelete = async () => {
+    if (!selectedTask) return;
     
-    if (statusFilter) {
-      result = result.filter(task => task.status === statusFilter);
-    }
-
-    if (priorityFilter) {
-      result = result.filter(task => task.priority === priorityFilter);
-    }
-
-    if (creatorFilter) {
-      result = result.filter(task => {
-        const createdByNum = task.createdBy ? 
-          (typeof task.createdBy === 'string' ? parseInt(task.createdBy, 10) : task.createdBy) : 
-          null;
-        
-        console.log(`Filtering task ${task.id}: createdBy=${createdByNum}, filter=${creatorFilter}, match=${createdByNum === creatorFilter}`);
-        return createdByNum === creatorFilter;
-      });
-    }
-
-    if (startDateFilter || endDateFilter) {
-      result = result.filter(task => {
-        const taskDate = parseISO(task.createdAt);
-        let matches = true;
-
-        if (startDateFilter) {
-          const startOfDay = new Date(startDateFilter);
-          startOfDay.setHours(0, 0, 0, 0);
-          matches = matches && isAfter(taskDate, startOfDay);
-        }
-
-        if (endDateFilter) {
-          const endOfDay = new Date(endDateFilter);
-          endOfDay.setHours(23, 59, 59, 999);
-          matches = matches && isBefore(taskDate, endOfDay);
-        }
-
-        return matches;
-      });
-    }
-
-    if (dueDateStartFilter || dueDateEndFilter) {
-      result = result.filter(task => {
-        if (!task.dueDate) return false;
-        
-        const taskDueDate = parseISO(task.dueDate);
-        let matches = true;
-
-        if (dueDateStartFilter) {
-          const startOfDay = new Date(dueDateStartFilter);
-          startOfDay.setHours(0, 0, 0, 0);
-          matches = matches && isAfter(taskDueDate, startOfDay);
-        }
-
-        if (dueDateEndFilter) {
-          const endOfDay = new Date(dueDateEndFilter);
-          endOfDay.setHours(23, 59, 59, 999);
-          matches = matches && isBefore(taskDueDate, endOfDay);
-        }
-
-        return matches;
-      });
-    }
-    
-    setFilteredTasks(result);
-  }, [tasks, searchQuery, statusFilter, priorityFilter, creatorFilter, startDateFilter, endDateFilter, dueDateStartFilter, dueDateEndFilter]);
-  
-  
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case 'in_progress':
-        return <Clock className="h-4 w-4 text-amber-500" />;
-      case 'pending':
-        return <Circle className="h-4 w-4 text-gray-400" />;
-      default:
-        return null;
-    }
-  };
-
-  // Fix: Update getTaskById to use the imported function
-  const getTaskById = async (id: string): Promise<Task | undefined> => {
-    return await getTaskByIdFn(id);
-  };
-  
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'Completada';
-      case 'in_progress':
-        return 'En progreso';
-      case 'pending':
-        return 'Pendente';
-      default:
-        return status;
-    }
-  };
-  
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Alta</Badge>;
-      case 'medium':
-        return <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200">Media</Badge>;
-      case 'low':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Baixa</Badge>;
-      default:
-        return <Badge variant="outline">{priority}</Badge>;
-    }
-  };
-
-  const resetFilters = () => {
-    setStatusFilter(null);
-    setPriorityFilter(null);
-    setCreatorFilter(null);
-    setStartDateFilter(undefined);
-    setEndDateFilter(undefined);
-    setDueDateStartFilter(undefined);
-    setDueDateEndFilter(undefined);
-  };
-
-  const getActiveFiltersCount = () => {
-    let count = 0;
-    if (statusFilter) count++;
-    if (priorityFilter) count++;
-    if (creatorFilter) count++;
-    if (startDateFilter || endDateFilter) count++;
-    if (dueDateStartFilter || dueDateEndFilter) count++;
-    return count;
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
     try {
-      await deleteTask(taskId);
+      await deleteTask(selectedTask.id);
       toast({
-        title: 'Tarefa eliminada',
-        description: 'A tarefa foi eliminada correctamente.',
+        title: "Tarefa eliminada",
+        description: `A tarefa ${selectedTask.title} foi eliminada correctamente.`,
       });
-      loadData();
+      
+      loadTasks();
     } catch (error) {
-      console.error(`Error deleting task: ${error}`);
+      console.error('Error deleting task:', error);
       toast({
-        title: 'Error',
-        description: 'No se pudo eliminar la tarea',
-        variant: 'destructive'
+        title: "Error",
+        description: "No se pudo eliminar la tarea",
+        variant: "destructive"
       });
     }
+    
+    setShowDeleteDialog(false);
+    setSelectedTask(null);
   };
-
-  const handleTaskCreatorRender = useCallback(async (userId: number) => {
-    if (!userId) return '-';
+  
+  const handleEditTask = async (task: Task) => {
+    setSelectedTask(task);
+    setEditMode(true);
+    setEditedStatus(task.status);
+    setEditedPriority(task.priority);
+    setEditedDueDate(task.dueDate ? new Date(task.dueDate) : undefined);
+    setEditedTags(task.tags || []);
+    
+    if (task.assignments && task.assignments.length > 0) {
+      const normalizedAssignments = task.assignments.map(assignment => {
+        const userId = typeof assignment.user_id === 'string' 
+          ? parseInt(assignment.user_id, 10) 
+          : assignment.user_id;
+          
+        return {
+          user_id: userId,
+          allocatedHours: assignment.allocatedHours || 0
+        };
+      });
+      setEditedAssignments(normalizedAssignments);
+      
+      const userIds = normalizedAssignments.map(a => a.user_id);
+      if (userIds.length > 0) {
+        const usersData = await getUsersByIds(userIds);
+        setAssignedUserData(usersData);
+      }
+    } else {
+      setEditedAssignments([]);
+    }
+    
+    setEditedAttachments(task.attachments || []);
+  };
+  
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setSelectedTask(null);
+    setEditedStatus('');
+    setEditedPriority('');
+    setEditedDueDate(undefined);
+    setEditedTags([]);
+    setEditedAssignments([]);
+    setEditedAttachments([]);
+  };
+  
+  const handleSaveTask = async () => {
+    if (!selectedTask) return;
+    
+    setIsSaving(true);
+    
     try {
-      const user = await getUserById(userId);
-      return user?.name || '-';
+      const normalizedAssignments = editedAssignments.map(assignment => {
+        const userId = typeof assignment.user_id === 'string'
+          ? parseInt(assignment.user_id, 10)
+          : assignment.user_id;
+          
+        return {
+          user_id: userId,
+          allocatedHours: assignment.allocatedHours
+        };
+      });
+      
+      const taskData: Task = {
+        ...selectedTask,
+        status: editedStatus as 'pending' | 'in_progress' | 'completed',
+        priority: editedPriority as 'low' | 'medium' | 'high',
+        dueDate: editedDueDate ? format(editedDueDate, 'yyyy-MM-dd') : undefined,
+        tags: editedTags || [],
+        assignments: normalizedAssignments,
+        attachments: editedAttachments || []
+      };
+      
+      await updateTask(selectedTask.id, taskData);
+      toast({
+        title: 'Tarefa actualizada',
+        description: 'A tarefa foi actualizada correctamente.',
+      });
+      
+      loadTasks();
+      handleCancelEdit();
     } catch (error) {
-      console.error('Error fetching task creator:', error);
-      return '-';
+      console.error("Error saving task:", error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu un erro ao gardar a tarefa. Por favor, inténtao de novo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
     }
-  }, []);
-
-  const getUserName = (userId: number | undefined): string => {
-    if (!userId) return 'Usuario descoñecido';
-    
-    const user = users[userId];
-    return user ? user.name : 'Usuario descoñecido';
   };
-
-  // Modify the render function to handle the Promise correctly
-  const renderCreatorName = async (userId: number) => {
-    const name = await handleTaskCreatorRender(userId);
-    return name;
+  
+  const handleAddTag = () => {
+    if (newTag.trim() && !editedTags.includes(newTag.trim().toLowerCase())) {
+      setEditedTags([...editedTags, newTag.trim().toLowerCase()]);
+      setNewTag('');
+    }
   };
-
-  const handleViewTask = (taskId: string) => {
-    navigate(`/tasks/${taskId}`);
+  
+  const handleRemoveTag = (tagToRemove: string) => {
+    setEditedTags(editedTags.filter(t => t !== tagToRemove));
   };
-
-  const handleEditTask = (taskId: string) => {
-    navigate(`/tasks/${taskId}/edit`);
+  
+  const handleAddAssignment = () => {
+    if (selectedUserId && allocatedHours > 0) {
+      if (!editedAssignments.some(a => {
+        const aUserId = typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id;
+        return aUserId === selectedUserId;
+      })) {
+        setEditedAssignments([
+          ...editedAssignments,
+          { 
+            user_id: selectedUserId, 
+            allocatedHours: allocatedHours 
+          }
+        ]);
+        
+        const selectedUser = availableUsers.find(u => u.id === selectedUserId);
+        if (selectedUser) {
+          setRecentlyAddedUsers(prev => ({
+            ...prev,
+            [selectedUserId]: selectedUser
+          }));
+          
+          setAssignedUserData(prev => ({
+            ...prev,
+            [selectedUserId]: selectedUser
+          }));
+        }
+        
+        setSelectedUserId(null);
+        setAllocatedHours(0);
+      } else {
+        toast({
+          title: 'Usuario xa asignado',
+          description: 'Este usuario xa está asignado á tarefa.',
+          variant: 'destructive',
+        });
+      }
+    } else {
+      toast({
+        title: 'Campos incompletos',
+        description: 'Por favor selecciona un usuario e asigna horas.',
+        variant: 'destructive',
+      });
+    }
   };
-
-  const renderCreatorCell = (task: Task) => {
-    const creator = Object.values(users).find(u => u.id === task.createdBy);
-    
-    return (
-      <div className="flex items-center">
-        <Avatar className="h-7 w-7 mr-2">
-          <AvatarImage src={creator?.avatar || ''} alt={creator?.name || ''} />
-          <AvatarFallback>{creator?.name ? creator.name.substring(0, 2) : 'U'}</AvatarFallback>
-        </Avatar>
-        <div>
-          <p className="text-sm font-medium">{creator?.name || 'Usuario descoñecido'}</p>
-          <p className="text-xs text-muted-foreground">
-            {creator?.role === 'director' ? 'Xerente' : 'Traballador'}
-          </p>
-        </div>
-      </div>
-    );
+  
+  const handleRemoveAssignment = (userId: number) => {
+    setEditedAssignments(editedAssignments.filter(a => {
+      const assignmentUserId = typeof a.user_id === 'string' ? parseInt(a.user_id, 10) : a.user_id;
+      return assignmentUserId !== userId;
+    }));
   };
-
+  
+  const handleAttachmentAdded = (attachment: TaskAttachment) => {
+    setEditedAttachments(prev => [...prev, attachment]);
+  };
+  
+  const handleAttachmentRemoved = (attachmentId: string) => {
+    setEditedAttachments(prev => prev.filter(a => a.id !== attachmentId));
+  };
+  
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -364,328 +387,112 @@ const TaskList = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Tarefas</h1>
             <p className="text-muted-foreground mt-1">
-              {currentUser?.role === 'director' ? 'Administra todas as tarefas' : 'Administra as túas tarefas asignadas'}
+              Xestiona as tarefas do sistema
             </p>
           </div>
-          <Button 
-            className="mt-4 sm:mt-0" 
-            onClick={() => navigate('/tasks/new')}
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nova tarefa
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
+            {canExportTasks && (
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  const jsonStr = JSON.stringify(tasks, null, 2);
+                  const blob = new Blob([jsonStr], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  const date = new Date().toISOString().split('T')[0];
+                  a.href = url;
+                  a.download = `tasks-${date}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  
+                  toast({
+                    title: "Tarefas exportadas",
+                    description: "O arquivo JSON foi descargado correctamente",
+                  });
+                }}
+              >
+                <FileJson className="mr-2 h-4 w-4" />
+                Descargar JSON
+              </Button>
+            )}
+            <Button onClick={() => navigate('/tasks/new')}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nova tarefa
+            </Button>
+          </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+        <div className="flex space-x-3">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Buscar tarefas por nome ou ID..."
+              placeholder="Buscar tarefas..."
               className="pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
-                <Filter className="mr-2 h-4 w-4" />
-                Filtrar
-                {getActiveFiltersCount() > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {getActiveFiltersCount()}
-                  </Badge>
-                )}
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Filtrar tarefas</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuGroup>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Circle className="mr-2 h-4 w-4" />
-                    <span>Estado</span>
-                    {statusFilter && <Badge variant="outline" className="ml-auto">{getStatusText(statusFilter)}</Badge>}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem onClick={() => setStatusFilter(null)}>
-                      Todos
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter('pending')}>
-                      <Circle className="mr-2 h-4 w-4 text-gray-400" />
-                      Pendente
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter('in_progress')}>
-                      <Clock className="mr-2 h-4 w-4 text-amber-500" />
-                      En progreso
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter('completed')}>
-                      <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                      Completada
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </DropdownMenuGroup>
-
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuGroup>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <span className="flex items-center">
-                      {priorityFilter === 'high' && <Badge variant="outline" className="mr-2 bg-red-100 text-red-800 border-red-200">Alta</Badge>}
-                      {priorityFilter === 'medium' && <Badge variant="outline" className="mr-2 bg-amber-100 text-amber-800 border-amber-200">Media</Badge>}
-                      {priorityFilter === 'low' && <Badge variant="outline" className="mr-2 bg-green-100 text-green-800 border-green-200">Baixa</Badge>}
-                      Prioridade
-                    </span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem onClick={() => setPriorityFilter(null)}>
-                      Todas
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPriorityFilter('high')}>
-                      <Badge variant="outline" className="mr-2 bg-red-100 text-red-800 border-red-200">Alta</Badge>
-                      Alta prioridade
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPriorityFilter('medium')}>
-                      <Badge variant="outline" className="mr-2 bg-amber-100 text-amber-800 border-amber-200">Media</Badge>
-                      Media prioridade
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPriorityFilter('low')}>
-                      <Badge variant="outline" className="mr-2 bg-green-100 text-green-800 border-green-200">Baixa</Badge>
-                      Baixa prioridade
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </DropdownMenuGroup>
-
-              <DropdownMenuSeparator />
-              
-              <DropdownMenuGroup>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Creador</span>
-                    {creatorFilter && (
-                      <Badge variant="outline" className="ml-auto">
-                        {getUserName(creatorFilter)}
-                      </Badge>
-                    )}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem onClick={() => setCreatorFilter(null)}>
-                      Todos os usuarios
-                    </DropdownMenuItem>
-                    {allUsers.map(user => (
-                      <DropdownMenuItem key={user.id} onClick={() => setCreatorFilter(user.id)}>
-                        <div className="flex items-center">
-                          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                            {user.avatar ? (
-                              <img src={user.avatar} alt={user.name} className="h-full w-full rounded-full" />
-                            ) : (
-                              <span className="text-xs font-medium text-primary-foreground">
-                                {user.name.substring(0, 2)}
-                              </span>
-                            )}
-                          </div>
-                          {user.name}
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </DropdownMenuGroup>
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuGroup>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <span>Data de creación</span>
-                    {(startDateFilter || endDateFilter) && (
-                      <Badge variant="outline" className="ml-auto">
-                        {startDateFilter && format(startDateFilter, "dd/MM/yy")}
-                        {startDateFilter && endDateFilter && ' - '}
-                        {endDateFilter && format(endDateFilter, "dd/MM/yy")}
-                      </Badge>
-                    )}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="p-0">
-                    <div className="p-2">
-                      <div className="mb-2">
-                        <div className="mb-1 text-sm font-medium">Desde</div>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !startDateFilter && "text-muted-foreground"
-                              )}
-                            >
-                              <Calendar className="mr-2 h-4 w-4" />
-                              {startDateFilter ? format(startDateFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <CalendarComponent
-                              mode="single"
-                              selected={startDateFilter}
-                              onSelect={setStartDateFilter}
-                              className="rounded-md border"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="mb-2">
-                        <div className="mb-1 text-sm font-medium">Hasta</div>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !endDateFilter && "text-muted-foreground"
-                              )}
-                            >
-                              <Calendar className="mr-2 h-4 w-4" />
-                              {endDateFilter ? format(endDateFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <CalendarComponent
-                              mode="single"
-                              selected={endDateFilter}
-                              onSelect={setEndDateFilter}
-                              className="rounded-md border"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <Button variant="outline" className="w-full mt-1" onClick={() => {
-                        setStartDateFilter(undefined);
-                        setEndDateFilter(undefined);
-                      }}>
-                        Borrar datas
-                      </Button>
-                    </div>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </DropdownMenuGroup>
-
-              <DropdownMenuSeparator />
-
-              <DropdownMenuGroup>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <span>Data de vencemento</span>
-                    {(dueDateStartFilter || dueDateEndFilter) && (
-                      <Badge variant="outline" className="ml-auto">
-                        {dueDateStartFilter && format(dueDateStartFilter, "dd/MM/yy")}
-                        {dueDateStartFilter && dueDateEndFilter && ' - '}
-                        {dueDateEndFilter && format(dueDateEndFilter, "dd/MM/yy")}
-                      </Badge>
-                    )}
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="p-0">
-                    <div className="p-2">
-                      <div className="mb-2">
-                        <div className="mb-1 text-sm font-medium">Desde</div>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !dueDateStartFilter && "text-muted-foreground"
-                              )}
-                            >
-                              <Calendar className="mr-2 h-4 w-4" />
-                              {dueDateStartFilter ? format(dueDateStartFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <CalendarComponent
-                              mode="single"
-                              selected={dueDateStartFilter}
-                              onSelect={setDueDateStartFilter}
-                              className="rounded-md border"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="mb-2">
-                        <div className="mb-1 text-sm font-medium">Hasta</div>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !dueDateEndFilter && "text-muted-foreground"
-                              )}
-                            >
-                              <Calendar className="mr-2 h-4 w-4" />
-                              {dueDateEndFilter ? format(dueDateEndFilter, "dd/MM/yyyy") : <span>Seleccionar data</span>}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <CalendarComponent
-                              mode="single"
-                              selected={dueDateEndFilter}
-                              onSelect={setDueDateEndFilter}
-                              className="rounded-md border"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <Button variant="outline" className="w-full mt-1" onClick={() => {
-                        setDueDateStartFilter(undefined);
-                        setDueDateEndFilter(undefined);
-                      }}>
-                        Borrar datas
-                      </Button>
-                    </div>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              </DropdownMenuGroup>
-
-              <DropdownMenuSeparator />
-              
-              <div className="p-2">
-                <Button className="w-full" variant="outline" onClick={resetFilters}>
-                  Limpar filtros
-                </Button>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
         
-        <div className="rounded-md border animate-scale-in">
+        <div className="flex space-x-3">
+          <div className="relative flex-1">
+            <Select
+              value={categoryFilter}
+              onValueChange={handleCategoryFilterChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filtrar por categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as categorías</SelectItem>
+                {getCategoryOptions().map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="relative flex-1">
+            <Select
+              value={projectFilter}
+              onValueChange={(value) => setProjectFilter(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filtrar por proxecto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tódolos proxectos</SelectItem>
+                {availableProjects.map((proj) => (
+                  <SelectItem key={proj} value={proj}>
+                    {proj}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="rounded-md border animate-scale-in overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Título</TableHead>
+                <TableHead>Tarefa</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Prioridade</TableHead>
-                <TableHead>Creador</TableHead>
-                <TableHead>Asignados</TableHead>
-                <TableHead>Vencemento</TableHead>
+                <TableHead>Data de vencemento</TableHead>
+                <TableHead>Asignado a</TableHead>
                 <TableHead className="text-right">Accións</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
                       <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                       <p className="mt-2 text-sm text-muted-foreground">Cargando tarefas...</p>
@@ -693,149 +500,194 @@ const TaskList = () => {
                   </TableCell>
                 </TableRow>
               ) : filteredTasks.length > 0 ? (
-                filteredTasks.map((task) => {
-                  const createdById = task.createdBy;
-                  const taskCreator = createdById ? users[createdById] : null;
-                  
-                  return (
-                    <TableRow key={task.id}>
-                      <TableCell className="font-mono text-xs">
-                        <div className="flex items-center">
-                          <Hash className="h-3 w-3 mr-1 text-muted-foreground" />
-                          {task.id}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center">
-                          {getStatusIcon(task.status)}
-                          <span className="ml-2">{task.title}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusText(task.status)}</TableCell>
-                      <TableCell>{getPriorityBadge(task.priority)}</TableCell>
-                      <TableCell>
-                        {taskCreator ? (
-                          <div className="flex items-center">
-                            <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center mr-2">
-                              {taskCreator.avatar ? (
-                                <img 
-                                  src={taskCreator.avatar} 
-                                  alt={taskCreator.name} 
-                                  className="h-full w-full rounded-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-xs font-medium text-primary-foreground">
-                                  {taskCreator.name.substring(0, 2)}
-                                </span>
+                filteredTasks.map((task) => (
+                  <TableRow key={task.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">{task.title}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {editMode && selectedTask?.id === task.id ? (
+                        <Select value={editedStatus} onValueChange={setEditedStatus}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pendente</SelectItem>
+                            <SelectItem value="in_progress">En progreso</SelectItem>
+                            <SelectItem value="completed">Completada</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge 
+                          variant="outline"
+                          className={
+                            task.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                              : task.status === 'in_progress'
+                                ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                : 'bg-green-100 text-green-800 border-green-200'
+                          }
+                        >
+                          {task.status === 'pending'
+                            ? 'Pendente'
+                            : task.status === 'in_progress'
+                              ? 'En progreso'
+                              : 'Completada'}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editMode && selectedTask?.id === task.id ? (
+                        <Select value={editedPriority} onValueChange={setEditedPriority}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar prioridade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Baixa</SelectItem>
+                            <SelectItem value="medium">Media</SelectItem>
+                            <SelectItem value="high">Alta</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className={
+                            task.priority === 'low'
+                              ? 'bg-green-100 text-green-800 border-green-200'
+                              : task.priority === 'medium'
+                                ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                : 'bg-red-100 text-red-800 border-red-200'
+                          }
+                        >
+                          {task.priority === 'low'
+                            ? 'Baixa'
+                            : task.priority === 'medium'
+                              ? 'Media'
+                              : 'Alta'}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editMode && selectedTask?.id === task.id ? (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !editedDueDate && "text-muted-foreground"
                               )}
-                            </div>
-                            <span className="text-sm">{taskCreator.name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">Sen asignar</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex -space-x-2">
-                          {task.assignments && task.assignments.length > 0 ? (
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {editedDueDate ? format(editedDueDate, "dd/MM/yyyy") : <span>Seleccionar data</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={editedDueDate}
+                              onSelect={setEditedDueDate}
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        task.dueDate ? format(new Date(task.dueDate), "dd/MM/yyyy") : 'Sen data'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {task.assignments && task.assignments.length > 0 ? (
+                        <div className="flex items-center space-x-2">
+                          {task.assignments.map(assignment => {
+                            const userId = typeof assignment.user_id === 'string' 
+                              ? parseInt(assignment.user_id, 10) 
+                              : assignment.user_id;
+                            
+                            return (
+                              <div key={`assigned-user-${userId}`} className="flex items-center">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={assignedUserData[userId]?.avatar} alt={assignedUserData[userId]?.name || `Usuario ID: ${userId}`} />
+                                  <AvatarFallback>{getInitials(assignedUserData[userId]?.name || `Usuario ID: ${userId}`)}</AvatarFallback>
+                                </Avatar>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Sen asignar</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Accións</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Accións</DropdownMenuLabel>
+                          
+                          <DropdownMenuItem onClick={() => navigate(`/tasks/${task.id}`)}>
+                            <CheckSquare className="mr-2 h-4 w-4" />
+                            Ver detalles
+                          </DropdownMenuItem>
+                          
+                          {canEditTasks ? (
+                            editMode && selectedTask?.id === task.id ? (
+                              <>
+                                <DropdownMenuItem onClick={handleSaveTask} disabled={isSaving}>
+                                  {isSaving ? (
+                                    <>
+                                      <Clock className="mr-2 h-4 w-4 animate-spin" />
+                                      Gardando...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Save className="mr-2 h-4 w-4" />
+                                      Gardar
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleCancelEdit}>
+                                  <X className="mr-2 h-4 w-4" />
+                                  Cancelar
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <DropdownMenuItem onClick={() => handleEditTask(task)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                            )
+                          ) : null}
+                          
+                          {canDeleteTasks ? (
                             <>
-                              {task.assignments.slice(0, 3).map((assignment) => {
-                                const assignedUserId = typeof assignment.user_id === 'string' 
-                                  ? parseInt(assignment.user_id, 10) 
-                                  : assignment.user_id;
-                                
-                                const user = users[assignedUserId];
-                                return (
-                                  <div 
-                                    key={assignedUserId} 
-                                    className="h-8 w-8 rounded-full bg-primary flex items-center justify-center border-2 border-background" 
-                                    title={user?.name || `User ${assignedUserId}`}
-                                  >
-                                    {user && user.avatar ? (
-                                      <img 
-                                        src={user.avatar} 
-                                        alt={user.name} 
-                                        className="h-full w-full rounded-full object-cover"
-                                      />
-                                    ) : (
-                                      <span className="text-xs font-medium text-primary-foreground">
-                                        {user ? user.name.substring(0, 2) : assignedUserId.toString().substring(0, 2)}
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                              {task.assignments.length > 3 && (
-                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center border-2 border-background">
-                                  <span className="text-xs">+{task.assignments.length - 3}</span>
-                                </div>
-                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="text-red-500"
+                                onClick={() => handleDeleteTask(task)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar
+                              </DropdownMenuItem>
                             </>
-                          ) : (
-                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">0</span>
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {task.dueDate 
-                          ? format(new Date(task.dueDate), 'dd/MM/yyyy')
-                          : '—'
-                        }
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleViewTask(task.id)}
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span className="sr-only">Ver</span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleEditTask(task.id)}
-                          >
-                            <Edit className="h-4 w-4" />
-                            <span className="sr-only">Editar</span>
-                          </Button>
-                          {(currentUser?.role === 'director' || currentUser?.role === 'admin') && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-red-500">
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">Eliminar</span>
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Esta acción non se pode desfacer. Eliminarás permanentemente esta tarefa.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteTask(task.id)}>
-                                    Eliminar
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                          ) : null}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center py-8">
-                      <Clock className="h-10 w-10 text-muted-foreground/50 mb-4" />
+                      <CheckSquare className="h-10 w-10 text-muted-foreground/50 mb-4" />
                       <p className="text-sm text-muted-foreground">Non se atoparon tarefas</p>
                     </div>
                   </TableCell>
@@ -845,6 +697,30 @@ const TaskList = () => {
           </Table>
         </div>
       </div>
+      
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-destructive mr-2" />
+              Confirmar eliminación
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que deseas eliminar a tarefa <strong>{selectedTask?.title}</strong>?
+              Esta acción no se pode deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

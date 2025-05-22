@@ -70,7 +70,7 @@ const TaskForm = () => {
       try {
         const users = await getUsers();
         const filteredUsers = users.filter(user => {
-          if (currentUser?.role === 'director') {
+          if (currentUser?.role === 'dxm' || currentUser?.role === 'xerenteATSXPTPG') {
             return user.active !== false;
           } else {
             return user.role === 'worker' && user.active !== false;
@@ -726,7 +726,7 @@ const TaskForm = () => {
                           <SelectContent>
                             {availableUsers.map(user => (
                               <SelectItem key={user.id} value={String(user.id)}>
-                                {user.name} {user.role === 'director' ? ' (Xerente)' : ''}
+                                {user.name} {user.role === 'dxm' || user.role === 'xerenteATSXPTPG' ? ' (Xerente)' : ''}
                               </SelectItem>
                             ))}
                           </SelectContent>

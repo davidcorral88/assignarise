@@ -519,7 +519,7 @@ const TaskList = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Tarefas</h1>
             <p className="text-muted-foreground mt-1">
-              {currentUser?.role === 'director' ? 'Administra todas as tarefas' : 'Administra as túas tarefas asignadas'}
+              {currentUser?.role === 'dxm' || currentUser?.role === 'xerenteATSXPTPG' || currentUser?.role === 'admin' ? 'Administra todas as tarefas' : 'Administra as túas tarefas asignadas'}
             </p>
           </div>
           <Button 

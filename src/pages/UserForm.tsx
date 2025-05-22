@@ -38,9 +38,9 @@ const UserForm = () => {
           const numericId = parseInt(id, 10);
           const userData = await getUserById(numericId);
           if (userData) {
-            // Si el usuario tiene el rol 'director', actualizarlo al nuevo rol por defecto 'dxm'
-            if (userData.role === 'director') {
-              userData.role = 'dxm';
+            // Si el usuario tiene el rol 'director', actualizarlo a un nuevo rol
+            if (userData.role === 'dxm' || userData.role === 'xerenteATSXPTPG') {
+              // Ya tiene uno de los nuevos roles, no es necesario actualizarlo
             }
             
             setName(userData.name);

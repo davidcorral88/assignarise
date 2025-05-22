@@ -15,6 +15,11 @@ Los siguientes archivos se han actualizado para reemplazar las comprobaciones de
 6. ✅ src/pages/UserProfile.tsx - Visualización del perfil del usuario
 7. ✅ src/pages/UserForm.tsx - Formulario de creación/edición de usuarios
 8. ✅ src/pages/UserConfig.tsx - Configuración del usuario
+9. ✅ src/components/dashboard/AnalyticsChart.tsx - Funcionalidad basada en roles
+10. ✅ src/pages/Dashboard.tsx - Visualización basada en roles
+11. ✅ src/pages/TaskForm.tsx - Asignaciones y permisos basados en roles
+12. ✅ src/pages/TaskList.tsx - Filtros y funcionalidades basadas en roles
+13. ✅ src/pages/UserList.tsx - Visualización y gestión de usuarios
 
 ## Changes Made
 En cada archivo, todas las comparaciones de roles como:

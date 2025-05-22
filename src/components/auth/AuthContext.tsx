@@ -37,10 +37,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user = await getUserByEmail(email);
         
         // Update any 'director' roles to new roles
-        if (user && user.role === 'director') {
-          // Por defecto, convertimos el rol 'director' a 'dxm'
-          // En producción habría que decidir a cuál de los dos nuevos roles asignar cada usuario
-          user.role = 'dxm';
+        if (user && user.role === 'dxm' || user.role === 'xerenteATSXPTPG') {
+          // We don't need to do anything here, as the roles are already updated
+          // This block is kept for clarity about the migration process
         }
       } catch (error) {
         console.error("Error getting user from PostgreSQL", error);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/auth/useAuth';
@@ -339,10 +338,10 @@ const UserList = () => {
                           <Shield className="mr-1 h-3 w-3" />
                           Administrador
                         </Badge>
-                      ) : user.role === 'director' ? (
+                      ) : user.role === 'dxm' || user.role === 'xerenteATSXPTPG' ? (
                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                           <Shield className="mr-1 h-3 w-3" />
-                          Director
+                          {user.role === 'dxm' ? 'DXM' : 'Xerente ATSXPTPG'}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="bg-muted text-muted-foreground">
@@ -488,4 +487,3 @@ const UserList = () => {
 };
 
 export default UserList;
-
