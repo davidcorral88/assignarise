@@ -1,9 +1,8 @@
-
 export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'admin' | 'director' | 'worker';
+  role: 'admin' | 'dxm' | 'xerenteATSXPTPG' | 'worker';
   active?: boolean;
   password?: string;
   avatar?: string | null;
@@ -19,7 +18,7 @@ export interface User {
   email_notification?: boolean;
 }
 
-export type UserRole = 'admin' | 'director' | 'worker';
+export type UserRole = 'admin' | 'dxm' | 'xerenteATSXPTPG' | 'worker';
 
 export interface Task {
   id?: string; // Make ID optional for new tasks

@@ -1,4 +1,3 @@
-
 // Define all types and interfaces for the application
 
 export interface User {
@@ -6,7 +5,7 @@ export interface User {
   name: string;
   email: string;
   password: string;
-  role: 'admin' | 'director' | 'worker';
+  role: 'admin' | 'dxm' | 'xerenteATSXPTPG' | 'worker';
   active?: boolean;
   avatar?: string | null;
   phone?: string;
@@ -16,7 +15,7 @@ export interface User {
   email_notification?: boolean;
 }
 
-export type UserRole = 'admin' | 'director' | 'worker';
+export type UserRole = 'admin' | 'dxm' | 'xerenteATSXPTPG' | 'worker';
 
 export interface TaskAssignment {
   user_id: number;

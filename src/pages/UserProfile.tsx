@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getUserById } from '../utils/dataService';
@@ -58,8 +57,10 @@ const UserProfile = () => {
     switch (role) {
       case 'admin':
         return 'Administrador';
-      case 'director':
-        return 'Director';
+      case 'dxm':
+        return 'DXM';
+      case 'xerenteATSXPTPG':
+        return 'Xerente ATSXPTPG';
       case 'worker':
         return 'Traballador';
       default:
@@ -71,8 +72,10 @@ const UserProfile = () => {
     switch (role) {
       case 'admin':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'director':
+      case 'dxm':
         return 'bg-primary/10 text-primary border-primary/20';
+      case 'xerenteATSXPTPG':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -123,7 +126,7 @@ const UserProfile = () => {
           </div>
           
           {canEdit && (
-            <Button onClick={() => navigate(`/users/${user.id}/edit`)}>
+            <Button onClick={() => navigate(`/users/${user?.id}/edit`)}>
               Editar perfil
             </Button>
           )}
@@ -135,29 +138,29 @@ const UserProfile = () => {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={user.avatar || undefined} alt={user.name} />
-                    <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
+                    <AvatarImage src={user?.avatar || undefined} alt={user?.name} />
+                    <AvatarFallback className="text-lg">{user?.name ? getInitials(user.name) : ''}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-2xl">{user.name}</CardTitle>
-                    <Badge variant="outline" className={getRoleBadgeClass(user.role)}>
-                      {user.role === 'admin' ? (
+                    <CardTitle className="text-2xl">{user?.name}</CardTitle>
+                    <Badge variant="outline" className={user?.role ? getRoleBadgeClass(user.role) : ''}>
+                      {user?.role === 'admin' ? (
                         <Shield className="mr-1 h-3 w-3" />
-                      ) : user.role === 'director' ? (
+                      ) : (user?.role === 'dxm' || user?.role === 'xerenteATSXPTPG') ? (
                         <Shield className="mr-1 h-3 w-3" />
                       ) : (
                         <UserIcon className="mr-1 h-3 w-3" />
                       )}
-                      {getRoleDisplayName(user.role)}
+                      {user?.role ? getRoleDisplayName(user.role) : ''}
                     </Badge>
-                    {user.active === false && (
+                    {user?.active === false && (
                       <Badge variant="outline" className="ml-2 bg-red-50 text-red-800 border-red-100">
                         Inactivo
                       </Badge>
                     )}
                   </div>
                 </div>
-                {user.organization && (
+                {user?.organization && (
                   <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-100 flex items-center">
                     <Building className="mr-1 h-3 w-3" />
                     {user.organization}
@@ -175,11 +178,11 @@ const UserProfile = () => {
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Email</h3>
                     <div className="flex items-start gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <p>{user.email}</p>
+                      <p>{user?.email}</p>
                     </div>
                   </div>
                   
-                  {user.emailATSXPTPG && (
+                  {user?.emailATSXPTPG && (
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground mb-1">Email ATSXPTPG</h3>
                       <div className="flex items-start gap-2">
@@ -189,7 +192,7 @@ const UserProfile = () => {
                     </div>
                   )}
                   
-                  {user.phone && (
+                  {user?.phone && (
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground mb-1">Teléfono</h3>
                       <div className="flex items-start gap-2">
@@ -201,17 +204,17 @@ const UserProfile = () => {
                   
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Estado</h3>
-                    <p>{user.active ? 'Activo' : 'Inactivo'}</p>
+                    <p>{user?.active ? 'Activo' : 'Inactivo'}</p>
                   </div>
                   
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Organización</h3>
-                    <p>{user.organization || 'Non especificada'}</p>
+                    <p>{user?.organization || 'Non especificada'}</p>
                   </div>
                   
                   <div>
                     <h3 className="text-sm font-medium text-muted-foreground mb-1">Notificacións por email</h3>
-                    <p>{user.email_notification ? 'Activadas' : 'Desactivadas'}</p>
+                    <p>{user?.email_notification ? 'Activadas' : 'Desactivadas'}</p>
                   </div>
                 </div>
               </div>

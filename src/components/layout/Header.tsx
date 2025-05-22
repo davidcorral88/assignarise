@@ -111,6 +111,22 @@ export const Header: React.FC = () => {
   };
 
   if (!currentUser) return null;
+  
+  // Helper function to get the display name for the user role
+  const getRoleDisplayName = (role: string): string => {
+    switch (role) {
+      case 'admin':
+        return 'Administrador';
+      case 'dxm':
+        return 'DXM';
+      case 'xerenteATSXPTPG':
+        return 'Xerente ATSXPTPG';
+      case 'worker':
+        return 'Traballador';
+      default:
+        return role;
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
@@ -185,11 +201,7 @@ export const Header: React.FC = () => {
                   <p className="text-sm font-medium leading-none">{currentUser.name}</p>
                   <p className="text-xs leading-none text-muted-foreground">{currentUser.email}</p>
                   <p className="text-xs leading-none text-muted-foreground capitalize">
-                    {currentUser.role === 'admin' 
-                      ? 'Administrador' 
-                      : currentUser.role === 'director' 
-                        ? 'Director' 
-                        : 'Traballador'}
+                    {getRoleDisplayName(currentUser.role)}
                   </p>
                 </div>
               </DropdownMenuLabel>

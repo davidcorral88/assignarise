@@ -23,8 +23,10 @@ const UserConfig = () => {
     switch (role) {
       case 'admin':
         return 'Administrador';
-      case 'director':
-        return 'Director';
+      case 'dxm':
+        return 'DXM';
+      case 'xerenteATSXPTPG':
+        return 'Xerente ATSXPTPG';
       case 'worker':
         return 'Traballador';
       default:

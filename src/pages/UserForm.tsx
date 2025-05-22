@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -39,6 +38,11 @@ const UserForm = () => {
           const numericId = parseInt(id, 10);
           const userData = await getUserById(numericId);
           if (userData) {
+            // Si el usuario tiene el rol 'director', actualizarlo al nuevo rol por defecto 'dxm'
+            if (userData.role === 'director') {
+              userData.role = 'dxm';
+            }
+            
             setName(userData.name);
             setEmail(userData.email);
             setRole(userData.role);
@@ -266,7 +270,8 @@ const UserForm = () => {
                 required
               >
                 <option value="admin">Admin</option>
-                <option value="director">Director</option>
+                <option value="dxm">DXM</option>
+                <option value="xerenteATSXPTPG">Xerente ATSXPTPG</option>
                 <option value="worker">Worker</option>
               </select>
             ) : (
@@ -274,7 +279,7 @@ const UserForm = () => {
                 type="text"
                 id="role"
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight"
-                value={role === 'admin' ? 'Admin' : role === 'director' ? 'Director' : 'Worker'}
+                value={role === 'admin' ? 'Admin' : role === 'dxm' ? 'DXM' : role === 'xerenteATSXPTPG' ? 'Xerente ATSXPTPG' : 'Worker'}
                 readOnly
               />
             )}
