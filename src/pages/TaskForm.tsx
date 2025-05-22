@@ -629,7 +629,7 @@ const TaskForm = () => {
                               value={tag}
                               onChange={(e) => {
                                 setTag(e.target.value);
-                                if (e.target.value) {
+                                if (e.target.value.length > 0) {
                                   setShowTagOptions(true);
                                 }
                               }}
@@ -656,7 +656,7 @@ const TaskForm = () => {
                               <CommandEmpty>Non se atoparon etiquetas</CommandEmpty>
                               <CommandGroup>
                                 {existingTags
-                                  .filter(t => !tags.includes(t) && t.includes(tag.toLowerCase()))
+                                  .filter(t => t && !tags.includes(t) && (tag.trim() === '' || t.toLowerCase().includes(tag.toLowerCase())))
                                   .map((t) => (
                                     <CommandItem
                                       key={t}
