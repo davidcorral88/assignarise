@@ -485,7 +485,7 @@ const TaskList = () => {
   }, [tasks, tagSearchQuery]);
 
   // Filter users based on role
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = Object.values(users).filter(user => {
     // Admins see all users
     if (currentUser?.role === 'admin') return true;
     
