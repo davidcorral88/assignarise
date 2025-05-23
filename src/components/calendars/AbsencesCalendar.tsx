@@ -431,8 +431,10 @@ const AbsencesCalendar = () => {
                         const absenceType = absence.type || 'vacacions';
                         const typeLabel = vacationTypeToLabel(absenceType);
                         
-                        // Check if current user can delete this absence
-                        const canDelete = !isWorkerRole || (currentUser && absence.userId === currentUser.id);
+                        // Check if current user can delete this absence - fix the comparison
+                        const absenceUserId = typeof absence.userId === 'string' ? parseInt(absence.userId) : absence.userId;
+                        const currentUserId = currentUser?.id;
+                        const canDelete = !isWorkerRole || (currentUser && absenceUserId === currentUserId);
                         
                         return (
                           <div 
