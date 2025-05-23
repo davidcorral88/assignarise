@@ -151,8 +151,22 @@ const AbsencesCalendar = () => {
   };
 
   const handleDeleteAbsence = async (absence: VacationDay) => {
+    console.log('Deleting absence:', absence);
+    console.log('Current user:', currentUser);
+    console.log('Is worker role:', isWorkerRole);
+    console.log('Absence userId:', absence.userId, 'type:', typeof absence.userId);
+    console.log('Current user ID:', currentUser?.id, 'type:', typeof currentUser?.id);
+    
+    // Convert both IDs to numbers for proper comparison
+    const absenceUserId = typeof absence.userId === 'string' ? parseInt(absence.userId) : absence.userId;
+    const currentUserId = currentUser?.id;
+    
+    console.log('Converted absence userId:', absenceUserId);
+    console.log('Current user ID for comparison:', currentUserId);
+    
     // Prevent workers from deleting others' absences
-    if (isWorkerRole && currentUser && absence.userId !== currentUser.id) {
+    if (isWorkerRole && currentUser && absenceUserId !== currentUserId) {
+      console.log('Permission denied - worker trying to delete others absence');
       toast({
         title: 'Permiso denegado',
         description: 'Só podes eliminar as túas propias ausencias',
@@ -417,6 +431,9 @@ const AbsencesCalendar = () => {
                         const absenceType = absence.type || 'vacacions';
                         const typeLabel = vacationTypeToLabel(absenceType);
                         
+                        // Check if current user can delete this absence
+                        const canDelete = !isWorkerRole || (currentUser && absence.userId === currentUser.id);
+                        
                         return (
                           <div 
                             key={`${absence.userId}-${absence.date}`} 
@@ -435,14 +452,16 @@ const AbsencesCalendar = () => {
                               <div className="text-sm font-medium">
                                 {typeLabel}
                               </div>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0" 
-                                onClick={() => handleDeleteAbsence(absence)}
-                              >
-                                ×
-                              </Button>
+                              {canDelete && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0" 
+                                  onClick={() => handleDeleteAbsence(absence)}
+                                >
+                                  ×
+                                </Button>
+                              )}
                             </div>
                           </div>
                         );
