@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, eachDayOfInterval, isSameDay, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -155,7 +156,23 @@ const AbsencesCalendar = () => {
     }
     
     try {
-      const userId = Number(absence.userId);
+      // Get userId - try from absence first, then fallback to selectedUserId
+      let userId: number;
+      
+      if (absence.userId && !isNaN(Number(absence.userId))) {
+        userId = Number(absence.userId);
+      } else if (selectedUserId && !isNaN(Number(selectedUserId))) {
+        userId = Number(selectedUserId);
+      } else {
+        console.error('No valid userId found:', { absence, selectedUserId });
+        toast({
+          title: 'Erro',
+          description: 'Non foi posible identificar o usuario para eliminar a ausencia',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       const formattedDate = format(parseISO(absence.date), 'yyyy-MM-dd');
       
       console.log(`Deleting absence for user ${userId} on date ${formattedDate}`);
