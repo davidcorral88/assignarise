@@ -30,7 +30,7 @@ router.get('/test', async (req, res) => {
   }
 });
 
-// Send task assignment notification with CC functionality
+// Send task assignment notification with individual emails for each user
 router.post('/send-task-assignment', async (req, res) => {
   try {
     const { taskId, userId, allocatedHours, isNewTask } = req.body;
@@ -91,26 +91,11 @@ router.post('/send-task-assignment', async (req, res) => {
       ? `Asignóusevos unha nova tarefa no sistema de xestión.`
       : `Actualizouse a vosa asignación dunha tarefa no sistema de xestión.`;
     
-    // Add user's own emailATSXPTPG as CC if it exists and is different from the primary
+    // Add only this user's own emailATSXPTPG as CC if it exists and is different from the primary
     const ccAddresses = [];
     if (user.emailATSXPTPG && user.emailATSXPTPG !== user.email) {
       ccAddresses.push(user.emailATSXPTPG);
     }
-    
-    // Get all users assigned to this task (for CC)
-    const assignmentsResult = await pool.query(
-      'SELECT u.id, u.name, u.email, u."emailATSXPTPG", u.email_notification FROM users u ' +
-      'JOIN task_assignments ta ON u.id = ta.user_id ' +
-      'WHERE ta.task_id = $1 AND u.id <> $2', // exclude current user
-      [taskId, userId]
-    );
-    
-    // Add other assigned users' emailATSXPTPG to CC list if available
-    assignmentsResult.rows.forEach(assignedUser => {
-      if (assignedUser.emailATSXPTPG && assignedUser.email_notification !== false) {
-        ccAddresses.push(assignedUser.emailATSXPTPG);
-      }
-    });
     
     // Create email content
     const mailOptions = {
