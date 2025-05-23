@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
@@ -307,7 +306,7 @@ const TimeTracking = () => {
                           <TableCell className="font-medium">
                             <div className="flex items-center">
                               <Clock className="mr-2 h-4 w-4 text-primary" />
-                              <span>{task?.title || 'Tarefa non atopada'}</span>
+                              <span>{task ? `${taskId} - ${task.title}` : 'Tarefa non atopada'}</span>
                             </div>
                           </TableCell>
                           <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy')}</TableCell>

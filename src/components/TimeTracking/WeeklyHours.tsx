@@ -433,7 +433,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                     <td className="p-2">
                       <div className="flex items-center">
                         <Clock className="mr-2 h-4 w-4 text-primary" />
-                        <span className="font-medium">{task.title}</span>
+                        <span className="font-medium">{taskId} - {task.title}</span>
                       </div>
                     </td>
                     
@@ -495,10 +495,7 @@ const WeeklyHours: React.FC<WeeklyHoursProps> = ({
                             const taskId = typeof task.id === 'string' ? task.id : String(task.id);
                             return (
                               <SelectItem key={taskId} value={taskId}>
-                                <span className="font-medium">{taskId}</span>
-                                <span className="ml-2 text-muted-foreground">
-                                  - {task.title}
-                                </span>
+                                <span className="font-medium">{taskId} - {task.title}</span>
                               </SelectItem>
                             );
                           })

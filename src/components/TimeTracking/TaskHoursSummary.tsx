@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -79,7 +78,7 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
                 <div key={task.id} className="p-4 rounded-lg border bg-muted/30">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                     <div className="flex-1">
-                      <h3 className="font-medium text-lg mb-1">{task.title}</h3>
+                      <h3 className="font-medium text-lg mb-1">{taskId} - {task.title}</h3>
                       <div className="flex items-center text-sm text-muted-foreground">
                         <Clock className="mr-1.5 h-4 w-4" />
                         <span>
@@ -124,4 +123,3 @@ export const TaskHoursSummary: React.FC<TaskHoursSummaryProps> = ({
     </Card>
   );
 };
-
