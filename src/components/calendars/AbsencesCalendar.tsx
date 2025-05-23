@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, eachDayOfInterval, isSameDay, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -154,15 +153,13 @@ const AbsencesCalendar = () => {
     console.log('Deleting absence:', absence);
     console.log('Current user:', currentUser);
     console.log('Is worker role:', isWorkerRole);
-    console.log('Absence userId:', absence.userId, 'type:', typeof absence.userId);
-    console.log('Current user ID:', currentUser?.id, 'type:', typeof currentUser?.id);
     
     // Convert both IDs to numbers for proper comparison
     const absenceUserId = typeof absence.userId === 'string' ? parseInt(absence.userId) : absence.userId;
     const currentUserId = currentUser?.id;
     
-    console.log('Converted absence userId:', absenceUserId);
-    console.log('Current user ID for comparison:', currentUserId);
+    console.log('Absence userId:', absenceUserId);
+    console.log('Current user ID:', currentUserId);
     
     // Prevent workers from deleting others' absences
     if (isWorkerRole && currentUser && absenceUserId !== currentUserId) {
@@ -431,10 +428,9 @@ const AbsencesCalendar = () => {
                         const absenceType = absence.type || 'vacacions';
                         const typeLabel = vacationTypeToLabel(absenceType);
                         
-                        // Check if current user can delete this absence - fix the comparison
-                        const absenceUserId = typeof absence.userId === 'string' ? parseInt(absence.userId) : absence.userId;
-                        const currentUserId = currentUser?.id;
-                        const canDelete = !isWorkerRole || (currentUser && absenceUserId === currentUserId);
+                        // For workers: if they can see the absence, they can delete it
+                        // For admins/other roles: they can delete any absence
+                        const canDelete = true; // Simplified logic - if visible, deletable
                         
                         return (
                           <div 
