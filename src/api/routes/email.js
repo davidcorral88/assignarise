@@ -126,6 +126,7 @@ router.post('/send-task-assignment', async (req, res) => {
           
           <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3 style="margin-top: 0; color: #333;">Detalles da tarefa</h3>
+            <p><strong>ID da tarefa:</strong> ${task.id}</p>
             <p><strong>Título:</strong> ${task.title}</p>
             <p><strong>Descrición:</strong> ${task.description || 'Non dispoñible'}</p>
             <p><strong>Estado:</strong> ${task.status}</p>
