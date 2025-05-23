@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Tag, Users } from 'lucide-react';
+import { Calendar, Tag, Users, Hash } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Task, User } from '@/utils/types';
 import { UserAvatar } from './UserAvatar';
@@ -46,6 +45,16 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
         <CardTitle>Detalles</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-1">ID de tarefa</h3>
+          <div className="flex items-center gap-2">
+            <Hash className="h-4 w-4 text-muted-foreground" />
+            <span>{task.id}</span>
+          </div>
+        </div>
+        
+        <Separator />
+        
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-1">Creado por</h3>
           <div className="flex items-center gap-2">
