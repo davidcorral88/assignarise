@@ -150,52 +150,15 @@ const AbsencesCalendar = () => {
   };
 
   const handleDeleteAbsence = async (absence: VacationDay) => {
-    console.log('Deleting absence:', absence);
-    console.log('Current user:', currentUser);
-    console.log('Is worker role:', isWorkerRole);
-    
-    // Convert both IDs to numbers for proper comparison
-    const absenceUserId = typeof absence.userId === 'string' ? parseInt(absence.userId) : absence.userId;
-    const currentUserId = currentUser?.id;
-    
-    console.log('Absence userId:', absenceUserId);
-    console.log('Current user ID:', currentUserId);
-    
-    // Prevent workers from deleting others' absences
-    if (isWorkerRole && currentUser && absenceUserId !== currentUserId) {
-      console.log('Permission denied - worker trying to delete others absence');
-      toast({
-        title: 'Permiso denegado',
-        description: 'Só podes eliminar as túas propias ausencias',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
     if (!confirm(`¿Seguro que desea eliminar esta ausencia de ${format(parseISO(absence.date), 'dd/MM/yyyy', { locale: es })}?`)) {
       return;
     }
     
     try {
-      let userId: number;
-      
-      if (typeof absence.userId === 'number') {
-        userId = absence.userId;
-      } else if (typeof absence.userId === 'string') {
-        userId = Number(absence.userId);
-        if (isNaN(userId)) {
-          throw new Error(`Invalid user ID: ${absence.userId}`);
-        }
-      } else {
-        userId = Number(selectedUserId);
-        if (isNaN(userId)) {
-          throw new Error('Invalid or missing user ID');
-        }
-      }
-      
+      const userId = Number(absence.userId);
       const formattedDate = format(parseISO(absence.date), 'yyyy-MM-dd');
       
-      console.log(`Attempting to delete absence for user ${userId} on date ${formattedDate}`);
+      console.log(`Deleting absence for user ${userId} on date ${formattedDate}`);
       
       await removeVacationDay(userId, formattedDate);
       
@@ -428,10 +391,6 @@ const AbsencesCalendar = () => {
                         const absenceType = absence.type || 'vacacions';
                         const typeLabel = vacationTypeToLabel(absenceType);
                         
-                        // For workers: if they can see the absence, they can delete it
-                        // For admins/other roles: they can delete any absence
-                        const canDelete = true; // Simplified logic - if visible, deletable
-                        
                         return (
                           <div 
                             key={`${absence.userId}-${absence.date}`} 
@@ -450,16 +409,14 @@ const AbsencesCalendar = () => {
                               <div className="text-sm font-medium">
                                 {typeLabel}
                               </div>
-                              {canDelete && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 w-8 p-0" 
-                                  onClick={() => handleDeleteAbsence(absence)}
-                                >
-                                  ×
-                                </Button>
-                              )}
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                onClick={() => handleDeleteAbsence(absence)}
+                              >
+                                ×
+                              </Button>
                             </div>
                           </div>
                         );
